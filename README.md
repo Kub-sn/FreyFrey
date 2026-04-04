@@ -77,9 +77,9 @@ The app now stores its state persistently in Local Storage. In addition, Supabas
 ### Configure Invite Emails
 
 1. Deploy the Edge Function:
-	`supabase functions deploy send-family-invite`
+   `supabase functions deploy send-family-invite`
 2. Set the required secrets in Supabase:
-	`supabase secrets set RESEND_API_KEY=... FAMILY_INVITE_FROM_EMAIL=Family Planner <noreply@your-domain.tld> INVITE_APP_URL=https://your-app-url`
+   `supabase secrets set RESEND_API_KEY=... FAMILY_INVITE_FROM_EMAIL=frey frey <noreply@your-domain.tld> INVITE_APP_URL=https://your-app-url`
 3. Use a verified sender address in Resend.
 4. After that, new family invitations are stored in Supabase and sent by email.
 

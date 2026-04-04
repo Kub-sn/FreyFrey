@@ -240,6 +240,10 @@ function deriveDisplayName(user: User, fallbackDisplayName?: string) {
   );
 }
 
+function normalizeEmailAddress(email: string) {
+  return email.trim().toLowerCase();
+}
+
 export async function getCurrentSession(): Promise<Session | null> {
   if (!supabase) {
     return null;
@@ -269,7 +273,10 @@ export function subscribeToAuthChanges(callback: (session: Session | null) => vo
 }
 
 export async function signInWithPassword(email: string, password: string) {
-  return requireSupabase().auth.signInWithPassword({ email, password });
+  return requireSupabase().auth.signInWithPassword({
+    email: normalizeEmailAddress(email),
+    password,
+  });
 }
 
 export async function signUpWithPassword(
@@ -278,7 +285,7 @@ export async function signUpWithPassword(
   displayName: string,
 ) {
   return requireSupabase().auth.signUp({
-    email,
+    email: normalizeEmailAddress(email),
     password,
     options: {
       data: {

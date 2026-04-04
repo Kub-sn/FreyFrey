@@ -9,3 +9,4 @@ dist/
 test-results/
 android/.gradle/
 android/local.properties
+supabase/.temp/

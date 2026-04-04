@@ -23,6 +23,58 @@ function buildExistingInviteBuilder(result: { data: unknown; error: unknown }) {
   };
 }
 
+describe('auth email normalization', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'publishable-key');
+  });
+
+  it('normalizes sign-in email addresses to lowercase', async () => {
+    const signInWithPasswordMock = vi.fn().mockResolvedValue({ data: {}, error: null });
+
+    createClientMock.mockReturnValue({
+      auth: {
+        signInWithPassword: signInWithPasswordMock,
+      },
+    });
+
+    const { signInWithPassword } = await import('./supabase');
+
+    await signInWithPassword('Kubi.Y@Example.com ', 'supersecret');
+
+    expect(signInWithPasswordMock).toHaveBeenCalledWith({
+      email: 'kubi.y@example.com',
+      password: 'supersecret',
+    });
+  });
+
+  it('normalizes sign-up email addresses to lowercase', async () => {
+    const signUpMock = vi.fn().mockResolvedValue({ data: {}, error: null });
+
+    createClientMock.mockReturnValue({
+      auth: {
+        signUp: signUpMock,
+      },
+    });
+
+    const { signUpWithPassword } = await import('./supabase');
+
+    await signUpWithPassword('Kubi.Y@Example.com ', 'supersecret', 'Kubi');
+
+    expect(signUpMock).toHaveBeenCalledWith({
+      email: 'kubi.y@example.com',
+      password: 'supersecret',
+      options: {
+        data: {
+          display_name: 'Kubi',
+        },
+      },
+    });
+  });
+});
+
 describe('createFamilyInvite', () => {
   beforeEach(() => {
     vi.resetModules();
