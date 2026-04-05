@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  RESET_PASSWORD_PATH,
   clearAuthRedirectState,
   getAuthRedirectError,
   getAuthRedirectMessage,
@@ -29,6 +30,18 @@ describe('auth redirect helpers', () => {
         'http://localhost:5173/#access_token=test-token&type=recovery&expires_in=3600',
       ),
     ).toBe('reset-password');
+  });
+
+  it('detects the dedicated reset-password route', () => {
+    expect(getAuthRedirectMode(`http://localhost:5173${RESET_PASSWORD_PATH}`)).toBe('reset-password');
+  });
+
+  it('returns to the sign-in route after clearing auth state on the reset route', () => {
+    expect(
+      clearAuthRedirectState(
+        `http://localhost:5173${RESET_PASSWORD_PATH}#access_token=test-token&type=recovery`,
+      ),
+    ).toBe('/');
   });
 
   it('humanizes expired auth redirect errors', () => {

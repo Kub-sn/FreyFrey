@@ -1,3 +1,5 @@
+export const RESET_PASSWORD_PATH = '/auth/reset-password';
+
 function readParamFromUrl(param: string, url: URL) {
   const searchValue = url.searchParams.get(param);
 
@@ -14,6 +16,10 @@ export function getAuthRedirectMode(href: string) {
   const type = readParamFromUrl('type', url);
   const accessToken = readParamFromUrl('access_token', url);
   const tokenHash = readParamFromUrl('token_hash', url);
+
+  if (url.pathname === RESET_PASSWORD_PATH) {
+    return 'reset-password' as const;
+  }
 
   if (type === 'recovery' && (accessToken || tokenHash)) {
     return 'reset-password' as const;
@@ -74,6 +80,10 @@ export function clearAuthRedirectState(href: string) {
 
   for (const param of authSearchParams) {
     url.searchParams.delete(param);
+  }
+
+  if (url.pathname === RESET_PASSWORD_PATH) {
+    url.pathname = '/';
   }
 
   url.hash = '';

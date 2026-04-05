@@ -99,7 +99,7 @@ describe('auth email normalization', () => {
     await resetPasswordForEmail('Kubi.Y@Example.com ');
 
     expect(resetPasswordForEmailMock).toHaveBeenCalledWith('kubi.y@example.com', {
-      redirectTo: window.location.origin,
+      redirectTo: `${window.location.origin}/auth/reset-password`,
     });
   });
 

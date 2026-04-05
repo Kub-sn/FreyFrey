@@ -2399,6 +2399,19 @@ export default function App() {
         return;
       }
 
+      if (redirectAuthMode === 'reset-password') {
+        setAuthState((current) => ({
+          ...current,
+          stage: 'signed-out',
+          session,
+          profile: null,
+          family: null,
+          error: redirectAuthError,
+          message: null,
+        }));
+        return;
+      }
+
       if (!session?.user) {
         setAuthState((current) => ({
           ...current,
@@ -2481,7 +2494,7 @@ export default function App() {
       disposed = true;
       unsubscribe();
     };
-  }, [redirectAuthError, redirectAuthMessage]);
+  }, [redirectAuthError, redirectAuthMessage, redirectAuthMode]);
 
   const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -2651,6 +2664,10 @@ export default function App() {
   };
 
   const handleAuthModeChange = (mode: AuthMode) => {
+    if (mode !== 'reset-password' && typeof window !== 'undefined' && authMode === 'reset-password') {
+      window.history.replaceState({}, document.title, clearAuthRedirectState(window.location.href));
+    }
+
     setAuthMode(mode);
     setAuthDraft((current) => ({
       ...EMPTY_AUTH_DRAFT,

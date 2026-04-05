@@ -4,6 +4,7 @@ import {
   type SupabaseClient,
   type User,
 } from '@supabase/supabase-js';
+import { RESET_PASSWORD_PATH } from './auth-redirect';
 import { resolveSupabasePublicKey } from './supabase-config';
 import type {
   CalendarItem,
@@ -252,6 +253,16 @@ function getAuthRedirectBaseUrl() {
   return window.location.origin;
 }
 
+function getResetPasswordRedirectUrl() {
+  const baseUrl = getAuthRedirectBaseUrl();
+
+  if (!baseUrl) {
+    return undefined;
+  }
+
+  return `${baseUrl}${RESET_PASSWORD_PATH}`;
+}
+
 export async function getCurrentSession(): Promise<Session | null> {
   if (!supabase) {
     return null;
@@ -307,7 +318,7 @@ export async function signUpWithPassword(
 }
 
 export async function resetPasswordForEmail(email: string) {
-  const redirectTo = getAuthRedirectBaseUrl();
+  const redirectTo = getResetPasswordRedirectUrl();
 
   return requireSupabase().auth.resetPasswordForEmail(normalizeEmailAddress(email), {
     ...(redirectTo ? { redirectTo } : {}),

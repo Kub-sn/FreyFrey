@@ -188,7 +188,14 @@ describe('App auth flow', () => {
   it('lets the user set a new password from a recovery link', async () => {
     const user = userEvent.setup();
 
-    window.history.replaceState({}, '', '/#access_token=test-token&type=recovery');
+    window.history.replaceState({}, '', '/auth/reset-password#access_token=test-token&type=recovery');
+    getCurrentSession.mockResolvedValue({
+      user: {
+        id: 'user-recovery',
+        email: 'alex@example.com',
+        user_metadata: {},
+      },
+    });
 
     render(<App />);
 
@@ -197,12 +204,15 @@ describe('App auth flow', () => {
       name: 'Familienplaner mit echten Benutzerkonten',
     });
 
+    expect(screen.queryByRole('heading', { level: 1, name: 'Familienplaner' })).not.toBeInTheDocument();
+
     await user.type(screen.getByPlaceholderText('Neues Passwort'), 'supersecret2');
     await user.type(screen.getByPlaceholderText('Passwort wiederholen'), 'supersecret2');
     await user.click(screen.getByRole('button', { name: 'Passwort speichern' }));
 
     expect(updatePassword).toHaveBeenCalledWith('supersecret2');
     expect(await screen.findByText('Passwort erfolgreich aktualisiert.')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/');
   });
 
   it('accepts a pending invitation during session hydration', async () => {
