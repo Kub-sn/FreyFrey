@@ -244,6 +244,14 @@ function normalizeEmailAddress(email: string) {
   return email.trim().toLowerCase();
 }
 
+function getAuthRedirectBaseUrl() {
+  if (typeof window === 'undefined' || !window.location.origin) {
+    return undefined;
+  }
+
+  return window.location.origin;
+}
+
 export async function getCurrentSession(): Promise<Session | null> {
   if (!supabase) {
     return null;
@@ -284,6 +292,8 @@ export async function signUpWithPassword(
   password: string,
   displayName: string,
 ) {
+  const emailRedirectTo = getAuthRedirectBaseUrl();
+
   return requireSupabase().auth.signUp({
     email: normalizeEmailAddress(email),
     password,
@@ -291,6 +301,7 @@ export async function signUpWithPassword(
       data: {
         display_name: displayName,
       },
+      ...(emailRedirectTo ? { emailRedirectTo } : {}),
     },
   });
 }

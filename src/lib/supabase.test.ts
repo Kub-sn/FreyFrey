@@ -80,6 +80,7 @@ describe('auth email normalization', () => {
         data: {
           display_name: 'Kubi',
         },
+        emailRedirectTo: window.location.origin,
       },
     });
   });
