@@ -512,17 +512,36 @@ async function extractEdgeFunctionErrorMessage(error: EdgeFunctionErrorLike) {
   return text || error.message;
 }
 
-async function triggerFamilyInviteEmail(client: SupabaseClient, inviteId: string) {
+async function resolveEdgeFunctionAccessToken(client: SupabaseClient) {
+  const {
+    data: refreshData,
+    error: refreshError,
+  } = await client.auth.refreshSession();
+
+  if (refreshData.session?.access_token) {
+    return refreshData.session.access_token;
+  }
+
   const {
     data: { session },
     error: sessionError,
   } = await client.auth.getSession();
 
-  if (sessionError || !session?.access_token) {
-    throw new Error('Die Einladungs-E-Mail konnte nicht gesendet werden, weil keine gueltige Anmeldung gefunden wurde. Bitte erneut anmelden und noch einmal versuchen.');
+  if (session?.access_token) {
+    return session.access_token;
   }
 
-  client.functions.setAuth(session.access_token);
+  if (refreshError || sessionError) {
+    throw new Error('Die Einladungs-E-Mail konnte nicht gesendet werden, weil deine Anmeldung nicht mehr gueltig ist. Bitte einmal abmelden und erneut anmelden.');
+  }
+
+  throw new Error('Die Einladungs-E-Mail konnte nicht gesendet werden, weil keine gueltige Anmeldung gefunden wurde. Bitte erneut anmelden und noch einmal versuchen.');
+}
+
+async function triggerFamilyInviteEmail(client: SupabaseClient, inviteId: string) {
+  const accessToken = await resolveEdgeFunctionAccessToken(client);
+
+  client.functions.setAuth(accessToken);
 
   const { error } = await client.functions.invoke('send-family-invite', {
     body: {
@@ -530,7 +549,7 @@ async function triggerFamilyInviteEmail(client: SupabaseClient, inviteId: string
       appUrl: window.location.origin,
     },
     headers: {
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
 

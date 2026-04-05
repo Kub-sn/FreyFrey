@@ -107,20 +107,22 @@ describe('createFamilyInvite', () => {
       data: inviteRow,
       error: null,
     });
-    const getSessionMock = vi.fn().mockResolvedValue({
+    const refreshSessionMock = vi.fn().mockResolvedValue({
       data: {
         session: {
-          access_token: 'access-token-1',
+          access_token: 'fresh-access-token-1',
         },
       },
       error: null,
     });
+    const getSessionMock = vi.fn();
     const invokeMock = vi.fn().mockResolvedValue({ data: { success: true }, error: null });
     const setAuthMock = vi.fn();
 
     createClientMock.mockReturnValue({
       from: vi.fn().mockReturnValue(familyInviteBuilder),
       auth: {
+        refreshSession: refreshSessionMock,
         getSession: getSessionMock,
       },
       functions: {
@@ -148,16 +150,17 @@ describe('createFamilyInvite', () => {
       },
       emailSent: true,
     });
-    expect(setAuthMock).toHaveBeenCalledWith('access-token-1');
+    expect(setAuthMock).toHaveBeenCalledWith('fresh-access-token-1');
     expect(invokeMock).toHaveBeenCalledWith('send-family-invite', {
       body: {
         inviteId: 'invite-1',
         appUrl: window.location.origin,
       },
       headers: {
-        Authorization: 'Bearer access-token-1',
+        Authorization: 'Bearer fresh-access-token-1',
       },
     });
+    expect(getSessionMock).not.toHaveBeenCalled();
   });
 
   it('reuses an existing pending invite when the email is already invited', async () => {
@@ -184,20 +187,22 @@ describe('createFamilyInvite', () => {
     const fromMock = vi.fn()
       .mockReturnValueOnce(insertBuilder)
       .mockReturnValueOnce(existingInviteBuilder);
-    const getSessionMock = vi.fn().mockResolvedValue({
+    const refreshSessionMock = vi.fn().mockResolvedValue({
       data: {
         session: {
-          access_token: 'access-token-2',
+          access_token: 'fresh-access-token-2',
         },
       },
       error: null,
     });
+    const getSessionMock = vi.fn();
     const invokeMock = vi.fn().mockResolvedValue({ data: { success: true }, error: null });
     const setAuthMock = vi.fn();
 
     createClientMock.mockReturnValue({
       from: fromMock,
       auth: {
+        refreshSession: refreshSessionMock,
         getSession: getSessionMock,
       },
       functions: {
@@ -216,16 +221,17 @@ describe('createFamilyInvite', () => {
 
     expect(result.invite.id).toBe('invite-existing');
     expect(fromMock).toHaveBeenCalledTimes(2);
-    expect(setAuthMock).toHaveBeenCalledWith('access-token-2');
+    expect(setAuthMock).toHaveBeenCalledWith('fresh-access-token-2');
     expect(invokeMock).toHaveBeenCalledWith('send-family-invite', {
       body: {
         inviteId: 'invite-existing',
         appUrl: window.location.origin,
       },
       headers: {
-        Authorization: 'Bearer access-token-2',
+        Authorization: 'Bearer fresh-access-token-2',
       },
     });
+    expect(getSessionMock).not.toHaveBeenCalled();
   });
 
   it('shows a clear error when no session token is available for the invite email', async () => {
@@ -241,6 +247,12 @@ describe('createFamilyInvite', () => {
       data: inviteRow,
       error: null,
     });
+    const refreshSessionMock = vi.fn().mockResolvedValue({
+      data: {
+        session: null,
+      },
+      error: null,
+    });
     const getSessionMock = vi.fn().mockResolvedValue({
       data: {
         session: null,
@@ -253,6 +265,7 @@ describe('createFamilyInvite', () => {
     createClientMock.mockReturnValue({
       from: vi.fn().mockReturnValue(familyInviteBuilder),
       auth: {
+        refreshSession: refreshSessionMock,
         getSession: getSessionMock,
       },
       functions: {
@@ -271,6 +284,64 @@ describe('createFamilyInvite', () => {
 
     expect(setAuthMock).not.toHaveBeenCalled();
     expect(invokeMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the stored session when refresh does not return a new token', async () => {
+    const inviteRow = {
+      id: 'invite-3',
+      family_id: 'family-1',
+      email: 'new@example.com',
+      role: 'familyuser',
+      created_at: '2026-04-04T10:00:00.000Z',
+      accepted_at: null,
+    };
+    const familyInviteBuilder = buildInsertBuilder({
+      data: inviteRow,
+      error: null,
+    });
+    const refreshSessionMock = vi.fn().mockResolvedValue({
+      data: {
+        session: null,
+      },
+      error: null,
+    });
+    const getSessionMock = vi.fn().mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'stored-access-token-3',
+        },
+      },
+      error: null,
+    });
+    const invokeMock = vi.fn().mockResolvedValue({ data: { success: true }, error: null });
+    const setAuthMock = vi.fn();
+
+    createClientMock.mockReturnValue({
+      from: vi.fn().mockReturnValue(familyInviteBuilder),
+      auth: {
+        refreshSession: refreshSessionMock,
+        getSession: getSessionMock,
+      },
+      functions: {
+        setAuth: setAuthMock,
+        invoke: invokeMock,
+      },
+    });
+
+    const { createFamilyInvite } = await import('./supabase');
+
+    await createFamilyInvite('family-1', 'new@example.com', 'familyuser', 'user-1');
+
+    expect(setAuthMock).toHaveBeenCalledWith('stored-access-token-3');
+    expect(invokeMock).toHaveBeenCalledWith('send-family-invite', {
+      body: {
+        inviteId: 'invite-3',
+        appUrl: window.location.origin,
+      },
+      headers: {
+        Authorization: 'Bearer stored-access-token-3',
+      },
+    });
   });
 });
 
