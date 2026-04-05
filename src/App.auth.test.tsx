@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   acceptPendingFamilyInvite,
   createFamilyInvite,
+  emitAuthChange,
   ensureProfile,
   fetchCalendarEntries,
   fetchDocuments,
@@ -18,27 +19,42 @@ const {
   getCurrentSession,
   removeFamilyInvite,
   resetPasswordForEmail,
+  signInWithPassword,
   signUpWithPassword,
+  subscribeToAuthChanges,
   updatePassword,
-} = vi.hoisted(() => ({
-  acceptPendingFamilyInvite: vi.fn(),
-  createFamilyInvite: vi.fn(),
-  ensureProfile: vi.fn(),
-  fetchCalendarEntries: vi.fn(),
-  fetchDocuments: vi.fn(),
-  fetchFamilyContext: vi.fn(),
-  fetchFamilyInvites: vi.fn(),
-  fetchFamilyMembers: vi.fn(),
-  fetchMeals: vi.fn(),
-  fetchNotes: vi.fn(),
-  fetchShoppingItems: vi.fn(),
-  fetchTasks: vi.fn(),
-  getCurrentSession: vi.fn(),
-  removeFamilyInvite: vi.fn(),
-  resetPasswordForEmail: vi.fn(),
-  signUpWithPassword: vi.fn(),
-  updatePassword: vi.fn(),
-}));
+} = vi.hoisted(() => {
+  let authChangeListener: ((session: unknown) => void) | null = null;
+
+  return {
+    acceptPendingFamilyInvite: vi.fn(),
+    createFamilyInvite: vi.fn(),
+    emitAuthChange: (session: unknown) => authChangeListener?.(session),
+    ensureProfile: vi.fn(),
+    fetchCalendarEntries: vi.fn(),
+    fetchDocuments: vi.fn(),
+    fetchFamilyContext: vi.fn(),
+    fetchFamilyInvites: vi.fn(),
+    fetchFamilyMembers: vi.fn(),
+    fetchMeals: vi.fn(),
+    fetchNotes: vi.fn(),
+    fetchShoppingItems: vi.fn(),
+    fetchTasks: vi.fn(),
+    getCurrentSession: vi.fn(),
+    removeFamilyInvite: vi.fn(),
+    resetPasswordForEmail: vi.fn(),
+    signInWithPassword: vi.fn(),
+    signUpWithPassword: vi.fn(),
+    subscribeToAuthChanges: (callback: (session: unknown) => void) => {
+      authChangeListener = callback;
+
+      return () => {
+        authChangeListener = null;
+      };
+    },
+    updatePassword: vi.fn(),
+  };
+});
 
 vi.mock('./lib/supabase', async () => {
   const actual = await vi.importActual<typeof import('./lib/supabase')>('./lib/supabase');
@@ -61,7 +77,8 @@ vi.mock('./lib/supabase', async () => {
     getCurrentSession,
     removeFamilyInvite,
     resetPasswordForEmail,
-    subscribeToAuthChanges: () => () => undefined,
+    signInWithPassword,
+    subscribeToAuthChanges,
     signUpWithPassword,
     updatePassword,
   };
@@ -109,6 +126,7 @@ describe('App auth flow', () => {
     getCurrentSession.mockReset();
     removeFamilyInvite.mockReset();
     resetPasswordForEmail.mockReset();
+    signInWithPassword.mockReset();
     signUpWithPassword.mockReset();
     updatePassword.mockReset();
 
@@ -134,6 +152,7 @@ describe('App auth flow', () => {
     });
     removeFamilyInvite.mockResolvedValue(undefined);
     resetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
+    signInWithPassword.mockResolvedValue({ data: {}, error: null });
     updatePassword.mockResolvedValue({ data: {}, error: null });
   });
 
@@ -213,6 +232,69 @@ describe('App auth flow', () => {
     expect(updatePassword).toHaveBeenCalledWith('supersecret2');
     expect(await screen.findByText('Passwort erfolgreich aktualisiert.')).toBeInTheDocument();
     expect(window.location.pathname).toBe('/');
+  });
+
+  it('allows signing in normally after finishing the password reset flow', async () => {
+    const user = userEvent.setup();
+
+    window.history.replaceState({}, '', '/auth/reset-password#access_token=test-token&type=recovery');
+    getCurrentSession.mockResolvedValue({
+      user: {
+        id: 'user-recovery',
+        email: 'alex@example.com',
+        user_metadata: {},
+      },
+    });
+    ensureProfile.mockResolvedValue({
+      id: 'user-recovery',
+      display_name: 'Alex',
+      email: 'alex@example.com',
+      role: 'familyuser',
+    });
+    fetchFamilyContext.mockResolvedValue({
+      familyId: 'family-1',
+      familyName: 'Familie Test',
+      role: 'familyuser',
+    });
+    fetchFamilyMembers.mockResolvedValue([
+      {
+        id: 'user-recovery',
+        name: 'Alex',
+        email: 'alex@example.com',
+        role: 'familyuser',
+      },
+    ]);
+    signInWithPassword.mockImplementation(async () => {
+      emitAuthChange({
+        user: {
+          id: 'user-recovery',
+          email: 'alex@example.com',
+          user_metadata: {},
+        },
+      });
+
+      return { data: {}, error: null };
+    });
+
+    render(<App />);
+
+    await screen.findByRole('heading', {
+      level: 1,
+      name: 'Familienplaner mit echten Benutzerkonten',
+    });
+
+    await user.type(screen.getByPlaceholderText('Neues Passwort'), 'supersecret2');
+    await user.type(screen.getByPlaceholderText('Passwort wiederholen'), 'supersecret2');
+    await user.click(screen.getByRole('button', { name: 'Passwort speichern' }));
+
+    await screen.findByText('Passwort erfolgreich aktualisiert.');
+
+    await user.type(screen.getByPlaceholderText('E-Mail'), 'alex@example.com');
+    await user.type(screen.getByPlaceholderText('Passwort'), 'supersecret2');
+    await user.click(screen.getByRole('button', { name: 'Jetzt anmelden' }));
+
+    expect(signInWithPassword).toHaveBeenCalledWith('alex@example.com', 'supersecret2');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Familienplaner' })).toBeInTheDocument();
   });
 
   it('accepts a pending invitation during session hydration', async () => {

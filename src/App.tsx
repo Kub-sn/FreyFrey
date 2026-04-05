@@ -1,4 +1,4 @@
-import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
   defaultPlannerState,
@@ -2272,6 +2272,7 @@ export default function App() {
   const [authDraft, setAuthDraft] = useState<AuthDraft>(EMPTY_AUTH_DRAFT);
   const [authMode, setAuthMode] = useState<AuthMode>(redirectAuthMode ?? 'sign-in');
   const [authBusy, setAuthBusy] = useState(false);
+  const blocksSessionHydrationAfterRecovery = useRef(redirectAuthMode === 'reset-password');
   const [authState, setAuthState] = useState<AuthState>({
     stage: supabaseConfigured ? 'loading' : 'disabled',
     session: null,
@@ -2399,7 +2400,7 @@ export default function App() {
         return;
       }
 
-      if (redirectAuthMode === 'reset-password') {
+      if (blocksSessionHydrationAfterRecovery.current) {
         setAuthState((current) => ({
           ...current,
           stage: 'signed-out',
@@ -2494,7 +2495,7 @@ export default function App() {
       disposed = true;
       unsubscribe();
     };
-  }, [redirectAuthError, redirectAuthMessage, redirectAuthMode]);
+  }, [redirectAuthError, redirectAuthMessage]);
 
   const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -2572,6 +2573,8 @@ export default function App() {
         if (typeof window !== 'undefined') {
           window.history.replaceState({}, document.title, clearAuthRedirectState(window.location.href));
         }
+
+        blocksSessionHydrationAfterRecovery.current = false;
 
         setAuthState((current) => ({
           ...current,
@@ -2666,6 +2669,7 @@ export default function App() {
   const handleAuthModeChange = (mode: AuthMode) => {
     if (mode !== 'reset-password' && typeof window !== 'undefined' && authMode === 'reset-password') {
       window.history.replaceState({}, document.title, clearAuthRedirectState(window.location.href));
+      blocksSessionHydrationAfterRecovery.current = false;
     }
 
     setAuthMode(mode);
