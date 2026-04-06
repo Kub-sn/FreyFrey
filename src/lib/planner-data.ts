@@ -75,7 +75,7 @@ export const tabs = [
   { id: 'calendar', label: 'Kalender' },
   { id: 'meals', label: 'Essensplan' },
   { id: 'documents', label: 'Dokumente' },
-  { id: 'family', label: 'Familie & Rollen' },
+  { id: 'family', label: 'Einstellungen' },
 ] as const;
 
 export type TabId = (typeof tabs)[number]['id'];

@@ -807,10 +807,6 @@ function PlannerShell({
     () => plannerState.meals.filter((meal) => meal.prepared).length,
     [plannerState.meals],
   );
-  const adminCount = useMemo(
-    () => plannerState.members.filter((member) => member.role === 'admin').length,
-    [plannerState.members],
-  );
   const visibleTabs = useMemo(
     () => tabs.filter((tab) => tab.id !== 'family' || canViewFamily),
     [canViewFamily],
@@ -1793,11 +1789,9 @@ function PlannerShell({
         </nav>
 
         <div className="account-card">
-          <p className="eyebrow">Konto</p>
           <div className="account-family-summary">
-            <strong>{authState.family?.familyName ?? plannerState.familyName}</strong>
+            <strong>Familie: {authState.family?.familyName ?? plannerState.familyName}</strong>
             <div className="account-meta-row">
-              <span className="chip">{adminCount} Admin</span>
               {authState.profile ? (
                 renderFamilyStatusBadges({
                   role: authState.profile.role,
@@ -1810,18 +1804,9 @@ function PlannerShell({
             <div className="account-identity">
               <strong>{authState.profile.display_name}</strong>
               <small>{authState.profile.email}</small>
-              <div className="account-actions">
-                <button type="button" className="secondary-action" onClick={() => void onSignOut()}>
-                  Abmelden
-                </button>
-                <button
-                  type="button"
-                  className="secondary-action danger-action"
-                  onClick={() => setIsDeleteAccountDialogOpen(true)}
-                >
-                  Account löschen
-                </button>
-              </div>
+              <button type="button" className="secondary-action" onClick={() => void onSignOut()}>
+                Abmelden
+              </button>
             </div>
           ) : (
             <div className="account-identity">
@@ -2542,7 +2527,7 @@ function PlannerShell({
           <div className="module-layout role-layout">
             <article className="panel list-panel">
               <div className="panel-heading">
-                <h4>Mitglieder & Rollen</h4>
+                <h4>Familienmitglieder</h4>
               </div>
               <ul className="document-list">
                 {plannerState.members.length > 0 ? (
@@ -2567,7 +2552,7 @@ function PlannerShell({
                   </li>
                 )}
               </ul>
-              <div className="panel-heading panel-heading-tight">
+              <div className="panel-heading panel-heading-tight family-inline-heading">
                 <h4>Offene Einladungen</h4>
                 <span className="chip">{familyInvites.length}</span>
               </div>
@@ -2642,12 +2627,12 @@ function PlannerShell({
 
               {canManageFamily ? (
                 <article className="panel list-panel admin-directory-panel">
-                  <div className="panel-heading">
-                    <h4>Familienübersicht</h4>
+                  <div className="panel-heading family-inline-heading">
+                    <h4>Alle Familien</h4>
                     <span className="chip">{adminFamilyDirectory.length}</span>
                   </div>
                   {adminFamilyDirectoryBusy ? (
-                    <p className="family-management-note">Familienübersicht wird geladen…</p>
+                    <p className="family-management-note">Familienliste wird geladen…</p>
                   ) : null}
                   {adminFamilyDirectoryError ? (
                     <p className="auth-feedback auth-error">{adminFamilyDirectoryError}</p>
@@ -2657,7 +2642,7 @@ function PlannerShell({
                   ) : null}
                   {adminFamilyDirectory.length > 0 ? (
                     <>
-                      <div className="family-directory-switcher" role="tablist" aria-label="Familienübersicht wechseln">
+                      <div className="family-directory-switcher" role="tablist" aria-label="Zwischen Familien wechseln">
                         {adminFamilyDirectory.map((family) => (
                           <button
                             key={family.familyId}
@@ -2675,7 +2660,7 @@ function PlannerShell({
                       {selectedAdminFamily ? (
                         <div className="family-directory-detail">
                           <div className="panel-heading panel-heading-tight family-directory-summary">
-                            <div>
+                            <div className="family-directory-summary-copy">
                               <strong>{selectedAdminFamily.familyName}</strong>
                               <small>
                                 {selectedAdminFamily.members.filter((member) => member.role === 'admin').length} Admin · {selectedAdminFamily.members.length} Mitglieder
@@ -2732,10 +2717,26 @@ function PlannerShell({
                     />
                   </label>
                   <p className="family-config-note">
-                    {allowOpenRegistration
-                      ? 'Neue Nutzer koennen sich aktuell auch ohne Einladung registrieren.'
-                      : 'Neue Nutzer koennen sich aktuell nur per Einladung registrieren.'}
+                    {allowOpenRegistration ? 'Neue Nutzer koennen sich aktuell auch ohne Einladung registrieren.' : null}
                   </p>
+                </article>
+              ) : null}
+
+              {authState.profile ? (
+                <article className="panel list-panel account-management-panel">
+                  <div className="panel-heading">
+                    <h4>Konto</h4>
+                  </div>
+                  <p className="family-management-note">
+                    Wenn du dein Konto löschst, wird der Zugang dauerhaft entfernt.
+                  </p>
+                  <button
+                    type="button"
+                    className="secondary-action danger-action"
+                    onClick={() => setIsDeleteAccountDialogOpen(true)}
+                  >
+                    Account löschen
+                  </button>
                 </article>
               ) : null}
             </div>
@@ -2745,7 +2746,6 @@ function PlannerShell({
         {isDeleteAccountDialogOpen ? (
           <div className="modal-backdrop" role="presentation">
             <section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
-              <p className="eyebrow">Account löschen</p>
               <h3 id="delete-account-title">Bist du sicher?</h3>
               <p className="modal-note danger-note">
                 Dein Konto wird dauerhaft gelöscht. Wenn dieses Konto eine Familie besitzt, können auch zugehörige Familiendaten entfernt werden.
@@ -2783,11 +2783,9 @@ function PlannerShell({
         </section> : null}
 
         <div className="account-card mobile-account-card">
-          <p className="eyebrow">Konto</p>
           <div className="account-family-summary">
-            <strong>{authState.family?.familyName ?? plannerState.familyName}</strong>
+            <strong>Familie: {authState.family?.familyName ?? plannerState.familyName}</strong>
             <div className="account-meta-row">
-              <span className="chip">{adminCount} Admin</span>
               {authState.profile ? (
                 renderFamilyStatusBadges({
                   role: authState.profile.role,
@@ -2811,18 +2809,9 @@ function PlannerShell({
             <div className="account-identity">
               <strong>{authState.profile.display_name}</strong>
               <small>{authState.profile.email}</small>
-              <div className="account-actions">
-                <button type="button" className="secondary-action" onClick={() => void onSignOut()}>
-                  Abmelden
-                </button>
-                <button
-                  type="button"
-                  className="secondary-action danger-action"
-                  onClick={() => setIsDeleteAccountDialogOpen(true)}
-                >
-                  Account löschen
-                </button>
-              </div>
+              <button type="button" className="secondary-action" onClick={() => void onSignOut()}>
+                Abmelden
+              </button>
             </div>
           ) : (
             <div className="account-identity">

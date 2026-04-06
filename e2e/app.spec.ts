@@ -480,7 +480,7 @@ test('lets the user complete the password reset flow and sign in afterwards', as
   await page.getByRole('button', { name: 'Jetzt anmelden' }).click();
 
   await expect(page.getByRole('heading', { name: 'Frey Frey' })).toBeVisible();
-  await expect(page.getByText('Familie Test', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Familie: Familie Test', { exact: true }).first()).toBeVisible();
 });
 
 test('lets the user request a password reset email from the sign-in screen', async ({ page }) => {
@@ -579,8 +579,10 @@ test('asks for confirmation before deleting the account and lets the user cancel
 
   await expect(page.getByRole('heading', { name: 'Frey Frey' })).toBeVisible();
 
+  await page.getByRole('button', { name: 'Einstellungen' }).click();
   await page.getByRole('button', { name: 'Account löschen' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.locator('[role="dialog"]').getByText('Account löschen', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Bist du sicher?')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Ja, Account löschen' })).toBeVisible();
 
@@ -601,10 +603,10 @@ test('lets a familyuser owner invite members but hides configuration controls', 
   await page.getByPlaceholder('Passwort').fill('supersecret2');
   await page.getByRole('button', { name: 'Jetzt anmelden' }).click();
 
-  await expect(page.getByText('Familie Test', { exact: true }).first()).toBeVisible();
-  await page.getByRole('button', { name: 'Familie & Rollen' }).click();
+  await expect(page.getByText('Familie: Familie Test', { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Einstellungen' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Mitglieder & Rollen' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Familienmitglieder' })).toBeVisible();
   await expect(page.getByText('Gründerstatus').first()).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Familie fuer Einladung' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Einladung senden' })).toBeEnabled();
@@ -613,6 +615,71 @@ test('lets a familyuser owner invite members but hides configuration controls', 
   await expect(page.getByText('Einladung wurde zurückgezogen.')).toBeVisible();
   await expect(page.getByText('open@example.com')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Konfiguration' })).toHaveCount(0);
+});
+
+test('keeps family settings cards usable on mobile widths', async ({ page }) => {
+  await mockSupabaseRegistrationControls(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await page.goto('/');
+
+  await expect(page.getByRole('heading', { name: 'Frey Frey' })).toBeVisible();
+  await page.getByPlaceholder('E-Mail').fill('admin@example.com');
+  await page.getByPlaceholder('Passwort').fill('supersecret');
+  await page.getByRole('button', { name: 'Jetzt anmelden' }).click();
+
+  const mobileModuleSwitch = page.getByRole('combobox', { name: 'Bereich wechseln' });
+
+  await expect(mobileModuleSwitch).toBeVisible();
+  await mobileModuleSwitch.selectOption('family');
+
+  await expect(page.getByRole('heading', { name: 'Familienmitglieder' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Alle Familien' })).toBeVisible();
+  await expect(page.locator('.mobile-account-card .family-permission-note')).toBeHidden();
+
+  const firstMemberCopy = page.locator('.role-layout .document-list').first().locator('li').first().locator('.family-entry-copy');
+  const firstMemberBadges = page.locator('.role-layout .document-list').first().locator('li').first().locator('.family-status-badges');
+  const familyButtons = page.locator('.family-directory-button');
+  const openInvitesHeading = page.getByRole('heading', { name: 'Offene Einladungen' });
+  const openInvitesChip = openInvitesHeading.locator('..').locator('.chip');
+  const allFamiliesHeading = page.getByRole('heading', { name: 'Alle Familien' });
+  const allFamiliesChip = allFamiliesHeading.locator('..').locator('.chip');
+
+  const [memberCopyBox, memberBadgesBox, firstFamilyButtonBox, secondFamilyButtonBox, openInvitesHeadingBox, openInvitesChipBox, allFamiliesHeadingBox, allFamiliesChipBox, widths] = await Promise.all([
+    firstMemberCopy.boundingBox(),
+    firstMemberBadges.boundingBox(),
+    familyButtons.nth(0).boundingBox(),
+    familyButtons.nth(1).boundingBox(),
+    openInvitesHeading.boundingBox(),
+    openInvitesChip.boundingBox(),
+    allFamiliesHeading.boundingBox(),
+    allFamiliesChip.boundingBox(),
+    page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    })),
+  ]);
+
+  expect(memberCopyBox).not.toBeNull();
+  expect(memberBadgesBox).not.toBeNull();
+  expect(firstFamilyButtonBox).not.toBeNull();
+  expect(secondFamilyButtonBox).not.toBeNull();
+  expect(openInvitesHeadingBox).not.toBeNull();
+  expect(openInvitesChipBox).not.toBeNull();
+  expect(allFamiliesHeadingBox).not.toBeNull();
+  expect(allFamiliesChipBox).not.toBeNull();
+
+  expect(widths.scrollWidth).toBeLessThanOrEqual(widths.clientWidth + 1);
+  expect((memberBadgesBox as NonNullable<typeof memberBadgesBox>).y).toBeGreaterThan(
+    (memberCopyBox as NonNullable<typeof memberCopyBox>).y + (memberCopyBox as NonNullable<typeof memberCopyBox>).height - 2,
+  );
+  expect((secondFamilyButtonBox as NonNullable<typeof secondFamilyButtonBox>).y).toBeGreaterThan(
+    (firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).y +
+      (firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).height - 2,
+  );
+  expect((firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).width).toBeGreaterThan(widths.clientWidth * 0.7);
+  expect(Math.abs((openInvitesChipBox as NonNullable<typeof openInvitesChipBox>).y - (openInvitesHeadingBox as NonNullable<typeof openInvitesHeadingBox>).y)).toBeLessThanOrEqual(8);
+  expect(Math.abs((allFamiliesChipBox as NonNullable<typeof allFamiliesChipBox>).y - (allFamiliesHeadingBox as NonNullable<typeof allFamiliesHeadingBox>).y)).toBeLessThanOrEqual(8);
 });
 
 test('lets admins switch registration to invite-only and back again', async ({ page }) => {
@@ -625,10 +692,10 @@ test('lets admins switch registration to invite-only and back again', async ({ p
   await page.getByPlaceholder('Passwort').fill('supersecret');
   await page.getByRole('button', { name: 'Jetzt anmelden' }).click();
 
-  await expect(page.getByText('Familie Test', { exact: true }).first()).toBeVisible();
-  await page.getByRole('button', { name: 'Familie & Rollen' }).click();
+  await expect(page.getByText('Familie: Familie Test', { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Einstellungen' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Familienübersicht' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Alle Familien' })).toBeVisible();
   await page.getByRole('button', { name: /Familie Abendrot/i }).click();
   await expect(page.getByText('lea@example.com')).toBeVisible();
   await page.getByRole('combobox', { name: 'Familie fuer Einladung' }).selectOption('family-2');
@@ -644,7 +711,7 @@ test('lets admins switch registration to invite-only and back again', async ({ p
   await expect(registrationToggle).toBeChecked();
   await registrationToggle.click();
   await expect(registrationToggle).not.toBeChecked();
-  await expect(page.getByText('Neue Nutzer koennen sich aktuell nur per Einladung registrieren.')).toBeVisible();
+  await expect(page.getByText('Neue Nutzer koennen sich aktuell nur per Einladung registrieren.')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Abmelden' }).click();
   await expect(page.getByRole('button', { name: 'Jetzt anmelden' })).toBeVisible();
@@ -667,8 +734,8 @@ test('lets admins switch registration to invite-only and back again', async ({ p
   await page.getByPlaceholder('Passwort').fill('supersecret');
   await page.getByRole('button', { name: 'Jetzt anmelden' }).click();
 
-  await expect(page.getByText('Familie Test', { exact: true }).first()).toBeVisible();
-  await page.getByRole('button', { name: 'Familie & Rollen' }).click();
+  await expect(page.getByText('Familie: Familie Test', { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Einstellungen' }).click();
   await registrationToggle.click();
   await expect(registrationToggle).toBeChecked();
   await expect(page.getByText('Neue Nutzer koennen sich aktuell auch ohne Einladung registrieren.')).toBeVisible();

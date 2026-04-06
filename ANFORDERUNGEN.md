@@ -41,3 +41,22 @@
   - [ ] darin kann ich mehrere artikel hintereinander hinzufügen
 
 
+
+
+Melde dich mit dem einzigen Admin-Konto an und öffne Familie & Rollen. Im Formular Familienmitglied einladen muss ein zusätzliches Feld Familie sichtbar sein. Mit einem normalen Familiengründer oder familyuser darf dieses Feld nicht sichtbar sein.
+
+Wähle im Feld Familie bewusst eine andere Familie als die aktuell geöffnete. Trage eine frische Test-Mailadresse ein und sende eine Einladung als familyuser. Erwartung: Erfolgsmeldung erscheint, kein Fehler, und die Mail kommt an.
+
+Registriere dich mit genau dieser eingeladenen Mailadresse in einem frischen Browserfenster oder Inkognito-Fenster. Erwartung: Die Registrierung klappt auch dann, wenn offene Registrierung deaktiviert ist, weil die Einladung existiert.
+
+Melde dich mit dem neuen Konto an. Erwartung: Das Konto landet in der Familie, die du im Admin-Formular ausgewählt hast, nicht in der Familie, aus der du die Einladung abgeschickt hast.
+
+Prüfe den Negativfall. Schalte als Admin die offene Registrierung aus und versuche danach eine Registrierung mit einer nicht eingeladenen Mailadresse. Erwartung: Oben auf der Registrierungsseite erscheint der Hinweis, und beim Absenden kommt die Fehlermeldung, dass der Admin die Registrierung deaktiviert hat.
+
+Wenn etwas davon fehlschlägt, ist die Zuordnung meist sofort eingrenzbar:
+
+Familienauswahl fehlt: Frontend ist nicht aktuell.
+Einladung speichert nicht: SQL/Migration nicht live.
+Mail kommt nicht: send-family-invite oder Mail-Secrets nicht korrekt live.
+Registrierung trotz Sperre möglich: Registrierungsgate nicht live.
+Nutzer landet in falscher Familie: Invite-Annahme oder Ziel-Familien-ID stimmt nicht.

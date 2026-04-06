@@ -142,11 +142,11 @@ function getConfigCard() {
 }
 
 function getAdminDirectoryCard() {
-  const directoryHeading = screen.getByRole('heading', { level: 4, name: 'Familienübersicht' });
+  const directoryHeading = screen.getByRole('heading', { level: 4, name: 'Alle Familien' });
   const directoryCard = directoryHeading.closest('article');
 
   if (!directoryCard) {
-    throw new Error('Familienübersicht wurde nicht gefunden.');
+    throw new Error('Die Karte Alle Familien wurde nicht gefunden.');
   }
 
   return within(directoryCard as HTMLElement);
@@ -526,8 +526,8 @@ describe('App auth flow', () => {
     await expectPlannerShellHeading();
 
     expect(acceptPendingFamilyInvite).toHaveBeenCalledWith('user-1', 'mia@example.com');
-    expect(getAccountCard().getByText('Familie Test')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Familie & Rollen' })).toBeInTheDocument();
+    expect(getAccountCard().getByText('Familie: Familie Test')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Einstellungen' })).toBeInTheDocument();
   });
 
   it('lets family owners invite members without seeing the configuration card', async () => {
@@ -581,9 +581,9 @@ describe('App auth flow', () => {
     render(<App />);
 
     await expectPlannerShellHeading();
-    await user.click(screen.getByRole('button', { name: 'Familie & Rollen' }));
+    await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
 
-    expect(screen.getByRole('heading', { level: 4, name: 'Mitglieder & Rollen' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 4, name: 'Familienmitglieder' })).toBeInTheDocument();
     expect(getAccountCard().getByText('Gründerstatus')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 4, name: 'Konfiguration' })).not.toBeInTheDocument();
     expect(getInviteForm().queryByRole('combobox', { name: 'Familie fuer Einladung' })).not.toBeInTheDocument();
@@ -629,8 +629,8 @@ describe('App auth flow', () => {
     render(<App />);
 
     await screen.findByText('E-Mail bestätigt. Du bist jetzt erfolgreich angemeldet.');
-    expect(getAccountCard().getByText('Familie Erfolg')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Familie & Rollen' })).toBeInTheDocument();
+    expect(getAccountCard().getByText('Familie: Familie Erfolg')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Einstellungen' })).toBeInTheDocument();
   });
 
   it('shows family management only as an admin-only navigation module', async () => {
@@ -706,9 +706,9 @@ describe('App auth flow', () => {
 
     await expectPlannerShellHeading();
 
-    await user.click(screen.getByRole('button', { name: 'Familie & Rollen' }));
+    await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
 
-    expect(screen.getByRole('heading', { level: 4, name: 'Mitglieder & Rollen' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 4, name: 'Familienmitglieder' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Einladung senden' })).toBeInTheDocument();
     expect(getInviteForm().getByRole('combobox', { name: 'Familie fuer Einladung' })).toBeInTheDocument();
     expect(screen.queryByText('Keine offenen Einladungen')).not.toBeInTheDocument();
@@ -774,7 +774,7 @@ describe('App auth flow', () => {
     render(<App />);
 
     await expectPlannerShellHeading();
-    await user.click(screen.getByRole('button', { name: 'Familie & Rollen' }));
+    await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
 
     const configCard = getConfigCard();
     const toggle = configCard.getByRole('checkbox', { name: 'Freie Registrierung erlauben' });
@@ -786,7 +786,7 @@ describe('App auth flow', () => {
 
     expect(updateFamilyRegistrationSetting).toHaveBeenNthCalledWith(1, 'family-config', false);
     await waitFor(() => expect(toggle).not.toBeChecked());
-    expect(configCard.getByText('Neue Nutzer koennen sich aktuell nur per Einladung registrieren.')).toBeInTheDocument();
+    expect(configCard.queryByText('Neue Nutzer koennen sich aktuell nur per Einladung registrieren.')).not.toBeInTheDocument();
 
     await user.click(toggle);
 
@@ -828,9 +828,13 @@ describe('App auth flow', () => {
 
     await expectPlannerShellHeading();
 
-    await user.click(getAccountCard().getByRole('button', { name: 'Account löschen' }));
+    await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
+    await user.click(screen.getByRole('button', { name: 'Account löschen' }));
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    const deleteDialog = screen.getByRole('dialog');
+
+    expect(deleteDialog).toBeInTheDocument();
+    expect(within(deleteDialog).queryByText('Account löschen')).not.toBeInTheDocument();
     expect(screen.getByText('Bist du sicher?')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
@@ -838,7 +842,7 @@ describe('App auth flow', () => {
     expect(deleteCurrentAccount).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-    await user.click(getAccountCard().getByRole('button', { name: 'Account löschen' }));
+    await user.click(screen.getByRole('button', { name: 'Account löschen' }));
     await user.click(screen.getByRole('button', { name: 'Ja, Account löschen' }));
 
     expect(deleteCurrentAccount).toHaveBeenCalledTimes(1);
@@ -925,7 +929,7 @@ describe('App auth flow', () => {
     render(<App />);
 
     await expectPlannerShellHeading();
-    await user.click(screen.getByRole('button', { name: 'Familie & Rollen' }));
+    await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
 
     const inviteForm = getInviteForm();
 
@@ -989,7 +993,7 @@ describe('App auth flow', () => {
     render(<App />);
 
     await expectPlannerShellHeading();
-    await user.click(screen.getByRole('button', { name: 'Familie & Rollen' }));
+    await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
     await user.click(screen.getByRole('button', { name: 'Einladung für open@example.com zurückziehen' }));
 
     expect(removeFamilyInvite).toHaveBeenCalledWith('invite-open');
@@ -1046,9 +1050,9 @@ describe('App auth flow', () => {
     expect(deleteDocument).toHaveBeenCalledWith('document-1', undefined);
     expect(screen.getByText('Dokument wurde gelöscht.')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Familie & Rollen' }));
+    await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
 
-    expect(screen.getByRole('heading', { level: 4, name: 'Mitglieder & Rollen' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 4, name: 'Familienmitglieder' })).toBeInTheDocument();
     expect(screen.queryByText('Dokument wurde gelöscht.')).not.toBeInTheDocument();
   });
 });

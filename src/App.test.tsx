@@ -81,7 +81,7 @@ describe('App', () => {
     expect(demoModeBadges).toHaveLength(2);
     expect(brandImages).toHaveLength(2);
     expect(brandImages.every((image) => image.getAttribute('src') === '/freyLogo.svg')).toBe(true);
-    expect(screen.queryByRole('button', { name: 'Familie & Rollen' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Einstellungen' })).not.toBeInTheDocument();
     expect(overviewSection).not.toBeNull();
     expect(within(overviewSection as HTMLElement).getByRole('heading', { level: 3, name: 'To-dos' })).toBeInTheDocument();
     expect(within(overviewSection as HTMLElement).getByRole('heading', { level: 3, name: 'Kalender' })).toBeInTheDocument();
