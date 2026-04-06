@@ -244,6 +244,17 @@ describe('App auth flow', () => {
     expect(screen.queryByText(/can't access property "reset"/i)).not.toBeInTheDocument();
   });
 
+  it('shows a branded loading overlay while the auth session is hydrating', () => {
+    getCurrentSession.mockImplementation(() => new Promise(() => undefined));
+
+    const { container } = render(<App />);
+
+    expect(screen.getByRole('status', { name: 'Lädt deine Familiendaten' })).toBeInTheDocument();
+    expect(container.querySelector('.brand-mark-loader .brand-mark-image')).not.toBeNull();
+    expect(container.querySelector('.auth-loader-ring-outer')).not.toBeNull();
+    expect(container.querySelector('.auth-loader-ring-inner')).not.toBeNull();
+  });
+
   it('blocks sign-up when registration is restricted to invitations', async () => {
     const user = userEvent.setup();
 

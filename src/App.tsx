@@ -613,6 +613,23 @@ function OnboardingScreen({
   );
 }
 
+function AuthLoadingScreen() {
+  return (
+    <div className="auth-shell auth-shell-loading">
+      <section className="auth-loader-stage" role="status" aria-live="polite" aria-label="Lädt deine Familiendaten">
+        <span className="auth-loader-voiceover">Lädt deine Familiendaten</span>
+        <div className="auth-loader-orbit" aria-hidden="true">
+          <span className="auth-loader-ring auth-loader-ring-outer" />
+          <span className="auth-loader-ring auth-loader-ring-inner" />
+          <span className="brand-mark brand-mark-loader">
+            <img src="/freyLogo.svg" alt="" className="brand-mark-image" />
+          </span>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function PlannerShell({
   activeTab,
   setActiveTab,
@@ -3028,15 +3045,7 @@ export default function App() {
   };
 
   if (authState.stage === 'loading') {
-    return (
-      <div className="auth-shell">
-        <section className="auth-card auth-card-compact">
-          <p className="eyebrow">Wird geladen</p>
-          <h1>Supabase Session wird geprüft</h1>
-          <p>Die App lädt Profil, Rolle und Familienzuordnung.</p>
-        </section>
-      </div>
-    );
+    return <AuthLoadingScreen />;
   }
 
   if (authState.stage === 'signed-out') {
