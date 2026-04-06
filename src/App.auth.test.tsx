@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   acceptPendingFamilyInvite,
   createFamilyInvite,
+  deleteDocument,
+  deleteCurrentAccount,
   emitAuthChange,
   ensureProfile,
   fetchCalendarEntries,
@@ -29,6 +31,8 @@ const {
   return {
     acceptPendingFamilyInvite: vi.fn(),
     createFamilyInvite: vi.fn(),
+    deleteDocument: vi.fn(),
+    deleteCurrentAccount: vi.fn(),
     emitAuthChange: (session: unknown) => authChangeListener?.(session),
     ensureProfile: vi.fn(),
     fetchCalendarEntries: vi.fn(),
@@ -64,6 +68,8 @@ vi.mock('./lib/supabase', async () => {
     supabaseConfigured: true,
     acceptPendingFamilyInvite,
     createFamilyInvite,
+    deleteDocument,
+    deleteCurrentAccount,
     ensureProfile,
     fetchCalendarEntries,
     fetchDocuments,
@@ -87,14 +93,21 @@ vi.mock('./lib/supabase', async () => {
 import App from './App';
 
 function getAccountCard() {
-  const accountEyebrow = screen.getByText('Konto');
-  const accountCard = accountEyebrow.closest('.account-card');
+  const accountCard = document.querySelector('.sidebar .account-card') ?? document.querySelector('.mobile-account-card');
 
   if (!accountCard) {
     throw new Error('Konto-Card wurde nicht gefunden.');
   }
 
   return within(accountCard as HTMLElement);
+}
+
+async function expectPlannerShellHeading() {
+  const headings = await screen.findAllByRole('heading', { level: 1, name: 'Frey Frey' });
+
+  expect(headings.length).toBeGreaterThan(0);
+
+  return headings;
 }
 
 function getInviteForm() {
@@ -113,6 +126,7 @@ describe('App auth flow', () => {
     window.history.replaceState({}, '', '/');
     acceptPendingFamilyInvite.mockReset();
     createFamilyInvite.mockReset();
+    deleteDocument.mockReset();
     ensureProfile.mockReset();
     fetchCalendarEntries.mockReset();
     fetchDocuments.mockReset();
@@ -126,6 +140,7 @@ describe('App auth flow', () => {
     getCurrentSession.mockReset();
     removeFamilyInvite.mockReset();
     resetPasswordForEmail.mockReset();
+    deleteCurrentAccount.mockReset();
     signInWithPassword.mockReset();
     signUpWithPassword.mockReset();
     updatePassword.mockReset();
@@ -150,6 +165,8 @@ describe('App auth flow', () => {
       },
       emailSent: true,
     });
+    deleteDocument.mockResolvedValue(undefined);
+    deleteCurrentAccount.mockResolvedValue(undefined);
     removeFamilyInvite.mockResolvedValue(undefined);
     resetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
     signInWithPassword.mockResolvedValue({ data: {}, error: null });
@@ -163,12 +180,17 @@ describe('App auth flow', () => {
       error: null,
     });
 
-    render(<App />);
+    const { container } = render(<App />);
 
     await screen.findByRole('heading', {
       level: 1,
-      name: 'Familienplaner mit echten Benutzerkonten',
+      name: 'Frey Frey mit echten Benutzerkonten',
     });
+
+    const brandImage = container.querySelector('.brand-lockup-auth .brand-mark-image');
+
+    expect(brandImage).not.toBeNull();
+    expect(brandImage?.getAttribute('src')).toBe('/freyLogo.svg');
 
     await user.click(screen.getByRole('button', { name: 'Registrieren' }));
     await user.type(screen.getByPlaceholderText('Anzeigename'), 'Alex');
@@ -191,7 +213,7 @@ describe('App auth flow', () => {
 
     await screen.findByRole('heading', {
       level: 1,
-      name: 'Familienplaner mit echten Benutzerkonten',
+      name: 'Frey Frey mit echten Benutzerkonten',
     });
 
     await user.type(screen.getByPlaceholderText('E-Mail'), 'alex@example.com');
@@ -220,10 +242,10 @@ describe('App auth flow', () => {
 
     await screen.findByRole('heading', {
       level: 1,
-      name: 'Familienplaner mit echten Benutzerkonten',
+      name: 'Frey Frey mit echten Benutzerkonten',
     });
 
-    expect(screen.queryByRole('heading', { level: 1, name: 'Familienplaner' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1, name: 'Frey Frey' })).not.toBeInTheDocument();
 
     await user.type(screen.getByPlaceholderText('Neues Passwort'), 'supersecret2');
     await user.type(screen.getByPlaceholderText('Passwort wiederholen'), 'supersecret2');
@@ -280,7 +302,7 @@ describe('App auth flow', () => {
 
     await screen.findByRole('heading', {
       level: 1,
-      name: 'Familienplaner mit echten Benutzerkonten',
+      name: 'Frey Frey mit echten Benutzerkonten',
     });
 
     await user.type(screen.getByPlaceholderText('Neues Passwort'), 'supersecret2');
@@ -294,7 +316,7 @@ describe('App auth flow', () => {
     await user.click(screen.getByRole('button', { name: 'Jetzt anmelden' }));
 
     expect(signInWithPassword).toHaveBeenCalledWith('alex@example.com', 'supersecret2');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Familienplaner' })).toBeInTheDocument();
+    expect(await expectPlannerShellHeading()).toHaveLength(2);
   });
 
   it('accepts a pending invitation during session hydration', async () => {
@@ -330,7 +352,7 @@ describe('App auth flow', () => {
 
     render(<App />);
 
-    await screen.findByRole('heading', { level: 1, name: 'Familienplaner' });
+    await expectPlannerShellHeading();
 
     expect(acceptPendingFamilyInvite).toHaveBeenCalledWith('user-1', 'mia@example.com');
     expect(getAccountCard().getByText('Familie Test')).toBeInTheDocument();
@@ -405,12 +427,67 @@ describe('App auth flow', () => {
 
     render(<App />);
 
-    await screen.findByRole('heading', { level: 1, name: 'Familienplaner' });
+    await expectPlannerShellHeading();
 
     await user.click(screen.getByRole('button', { name: 'Familie & Rollen' }));
 
-    expect(screen.getByRole('heading', { level: 3, name: 'Familie & Rollen' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 4, name: 'Mitglieder & Rollen' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Einladung senden' })).toBeInTheDocument();
+  });
+
+  it('asks for confirmation before deleting the account and returns to sign-in afterwards', async () => {
+    const user = userEvent.setup();
+
+    getCurrentSession.mockResolvedValue({
+      user: {
+        id: 'user-3',
+        email: 'admin@example.com',
+        user_metadata: {},
+      },
+    });
+    ensureProfile.mockResolvedValue({
+      id: 'user-3',
+      display_name: 'Admin',
+      email: 'admin@example.com',
+      role: 'admin',
+    });
+    fetchFamilyContext.mockResolvedValue({
+      familyId: 'family-3',
+      familyName: 'Familie Admin',
+      role: 'admin',
+    });
+    fetchFamilyMembers.mockResolvedValue([
+      {
+        id: 'user-3',
+        name: 'Admin',
+        email: 'admin@example.com',
+        role: 'admin',
+      },
+    ]);
+
+    render(<App />);
+
+    await expectPlannerShellHeading();
+
+    await user.click(getAccountCard().getByRole('button', { name: 'Account löschen' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Bist du sicher?')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+    expect(deleteCurrentAccount).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await user.click(getAccountCard().getByRole('button', { name: 'Account löschen' }));
+    await user.click(screen.getByRole('button', { name: 'Ja, Account löschen' }));
+
+    expect(deleteCurrentAccount).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('heading', {
+      level: 1,
+      name: 'Frey Frey mit echten Benutzerkonten',
+    })).toBeInTheDocument();
+    expect(screen.getByText('Dein Konto wurde gelöscht.')).toBeInTheDocument();
   });
 
   it('sends an invitation email for admins and shows the success message', async () => {
@@ -456,7 +533,7 @@ describe('App auth flow', () => {
 
     render(<App />);
 
-    await screen.findByRole('heading', { level: 1, name: 'Familienplaner' });
+    await expectPlannerShellHeading();
     await user.click(screen.getByRole('button', { name: 'Familie & Rollen' }));
 
     const inviteForm = getInviteForm();
@@ -517,12 +594,67 @@ describe('App auth flow', () => {
 
     render(<App />);
 
-    await screen.findByRole('heading', { level: 1, name: 'Familienplaner' });
+    await expectPlannerShellHeading();
     await user.click(screen.getByRole('button', { name: 'Familie & Rollen' }));
     await user.click(screen.getByRole('button', { name: 'Einladung für open@example.com zurückziehen' }));
 
     expect(removeFamilyInvite).toHaveBeenCalledWith('invite-open');
     expect(await screen.findByText('Einladung wurde zurückgezogen.')).toBeInTheDocument();
     expect(screen.queryByText('open@example.com')).not.toBeInTheDocument();
+  });
+
+  it('keeps document deletion feedback inside the documents module', async () => {
+    const user = userEvent.setup();
+
+    getCurrentSession.mockResolvedValue({
+      user: {
+        id: 'user-6',
+        email: 'admin@example.com',
+        user_metadata: {},
+      },
+    });
+    ensureProfile.mockResolvedValue({
+      id: 'user-6',
+      display_name: 'Admin',
+      email: 'admin@example.com',
+      role: 'admin',
+    });
+    fetchFamilyContext.mockResolvedValue({
+      familyId: 'family-6',
+      familyName: 'Familie Dokumente',
+      role: 'admin',
+    });
+    fetchFamilyMembers.mockResolvedValue([
+      {
+        id: 'user-6',
+        name: 'Admin',
+        email: 'admin@example.com',
+        role: 'admin',
+      },
+    ]);
+    fetchDocuments.mockResolvedValue([
+      {
+        id: 'document-1',
+        name: 'Arztbrief',
+        category: 'Gesundheit',
+        status: 'Aktuell',
+        linkUrl: 'https://example.com/arztbrief.pdf',
+        filePath: '',
+      },
+    ]);
+
+    render(<App />);
+
+    await expectPlannerShellHeading();
+    await user.click(screen.getByRole('button', { name: 'Dokumente' }));
+    await user.click(screen.getByRole('button', { name: 'Dokument Arztbrief löschen' }));
+
+    expect(deleteDocument).toHaveBeenCalledWith('document-1', undefined);
+    expect(screen.getByText('Dokument wurde gelöscht.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Familie & Rollen' }));
+
+    expect(screen.getByRole('heading', { level: 4, name: 'Mitglieder & Rollen' })).toBeInTheDocument();
+    expect(screen.queryByText('Dokument wurde gelöscht.')).not.toBeInTheDocument();
   });
 });

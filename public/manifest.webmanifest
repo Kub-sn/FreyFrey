@@ -1,6 +1,6 @@
 {
-  "name": "Familienplaner",
-  "short_name": "Planer",
+  "name": "Frey Frey",
+  "short_name": "Frey Frey",
   "description": "Alltagsorganisation fuer Familien mit Listen, Kalender, Essensplan und Dokumenten.",
   "start_url": "/",
   "display": "standalone",
@@ -9,7 +9,7 @@
   "lang": "de",
   "icons": [
     {
-      "src": "/family-icon.svg",
+      "src": "/freyLogo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

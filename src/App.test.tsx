@@ -73,12 +73,14 @@ describe('App', () => {
     const { container } = render(<App />);
 
     const overviewSection = container.querySelector('.overview-stack');
+    const plannerHeadings = screen.getAllByRole('heading', { level: 1, name: 'Frey Frey' });
+    const demoModeBadges = screen.getAllByText('Demo-Modus');
+    const brandImages = Array.from(container.querySelectorAll('.brand-mark-image'));
 
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Familienplaner' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Family OS')).toBeInTheDocument();
-    expect(screen.getByText('Demo-Modus ohne Supabase-Synchronisierung.')).toBeInTheDocument();
+    expect(plannerHeadings).toHaveLength(2);
+    expect(demoModeBadges).toHaveLength(2);
+    expect(brandImages).toHaveLength(2);
+    expect(brandImages.every((image) => image.getAttribute('src') === '/freyLogo.svg')).toBe(true);
     expect(screen.queryByRole('button', { name: 'Familie & Rollen' })).not.toBeInTheDocument();
     expect(overviewSection).not.toBeNull();
     expect(within(overviewSection as HTMLElement).getByRole('heading', { level: 3, name: 'To-dos' })).toBeInTheDocument();
@@ -94,7 +96,7 @@ describe('App', () => {
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Einkauf' }));
 
-    expect(screen.getByRole('heading', { level: 3, name: 'Einkaufsliste' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 4, name: 'Neuen Artikel hinzufügen' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Artikel speichern' })).toBeInTheDocument();
     expect(screen.queryByText('Milch')).not.toBeInTheDocument();
   });
@@ -107,7 +109,7 @@ describe('App', () => {
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Notizen' }));
 
-    expect(screen.getByRole('heading', { level: 3, name: 'Notizen' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 4, name: 'Neue Notiz' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Notiz speichern' })).toBeInTheDocument();
   });
 
@@ -119,7 +121,7 @@ describe('App', () => {
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Essensplan' }));
 
-    expect(screen.getByRole('heading', { level: 3, name: 'Essensplan' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 4, name: 'Gericht eintragen' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Gericht speichern' })).toBeInTheDocument();
   });
 
@@ -209,6 +211,32 @@ describe('App', () => {
     expect(screen.getByText('zwei.docx')).toBeInTheDocument();
     expect(screen.getByText('1 Datei(en) ausgewählt')).toBeInTheDocument();
   });
+
+  it(
+    'hides the document deletion feedback after five seconds',
+    async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      await openDocumentsModule(user);
+
+      await addLocalDocument(user, {
+        name: 'Löschprobe',
+        category: 'Ablage',
+        status: 'Aktuell',
+        linkUrl: 'https://example.com/loeschprobe.pdf',
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Dokument Löschprobe löschen' }));
+
+      expect(screen.getByText('Dokument wurde gelöscht.')).toBeInTheDocument();
+
+      await new Promise((resolve) => window.setTimeout(resolve, 5200));
+
+      expect(screen.queryByText('Dokument wurde gelöscht.')).not.toBeInTheDocument();
+    },
+    10000,
+  );
 
   it('filters and sorts documents in the documents module', async () => {
     const user = userEvent.setup();

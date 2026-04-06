@@ -40,6 +40,7 @@ import {
   acceptPendingFamilyInvite,
   createCalendarEntry,
   createDocument,
+  deleteCurrentAccount,
   createFamilyInvite,
   createMeal,
   createNote,
@@ -106,7 +107,11 @@ type AuthState = {
 type CloudSyncState = {
   phase: 'idle' | 'loading' | 'ready' | 'error';
   message: string | null;
+  scope: TabId | 'global' | null;
 };
+
+type CloudSyncUpdate = CloudSyncState | Omit<CloudSyncState, 'scope'>;
+type CloudSyncSetterValue = CloudSyncUpdate | ((current: CloudSyncState) => CloudSyncUpdate);
 
 type DocumentSortOption = 'recent' | 'name' | 'category' | 'status' | 'kind';
 type DocumentFilterKind = 'all' | 'image' | 'pdf' | 'word' | 'link' | 'file';
@@ -235,31 +240,6 @@ function getCalendarMetaParts(entry: { time: string; place: string }) {
   return [entry.time.trim(), entry.place.trim()].filter(Boolean).join(' · ');
 }
 
-function getFooterSyncMessage(params: {
-  authDriven: boolean;
-  supabaseConfigured: boolean;
-  storageMode: PlannerState['storageMode'];
-  cloudSyncPhase: CloudSyncState['phase'];
-}) {
-  if (!params.supabaseConfigured) {
-    return 'Demo-Modus ohne Supabase-Synchronisierung.';
-  }
-
-  if (!params.authDriven || params.storageMode !== 'supabase-ready') {
-    return 'Lokal aktiv. Für Synchronisierung bitte mit Supabase anmelden.';
-  }
-
-  if (params.cloudSyncPhase === 'loading') {
-    return 'Synchronisierung mit Supabase läuft.';
-  }
-
-  if (params.cloudSyncPhase === 'error') {
-    return 'Synchronisierung mit Supabase fehlgeschlagen.';
-  }
-
-  return 'Synchronisiert mit Supabase.';
-}
-
 function syncPlannerWithAuth(
   current: PlannerState,
   profile: SupabaseProfile,
@@ -319,6 +299,23 @@ function syncPlannerWithAuth(
   };
 }
 
+function BrandHeading({
+  text,
+  className,
+}: {
+  text: string;
+  className?: string;
+}) {
+  return (
+    <div className={className ? `brand-lockup ${className}` : 'brand-lockup'}>
+      <span className="brand-mark" aria-hidden="true">
+        <img src="/freyLogo.svg" alt="" className="brand-mark-image" />
+      </span>
+      <h1>{text}</h1>
+    </div>
+  );
+}
+
 function AuthScreen({
   mode,
   busy,
@@ -341,9 +338,9 @@ function AuthScreen({
   return (
     <div className="auth-shell">
       <section className="auth-card auth-card-wide">
-        <div className="auth-copy">
+        <div className="auth-copy auth-copy-editorial">
           <p className="eyebrow">Supabase Auth</p>
-          <h1>Familienplaner mit echten Benutzerkonten</h1>
+          <BrandHeading text="Frey Frey mit echten Benutzerkonten" className="brand-lockup-auth" />
           <p>
             {mode === 'forgot-password'
               ? 'Fordere einen sicheren Link an, um dein Passwort zurückzusetzen.'
@@ -351,14 +348,14 @@ function AuthScreen({
                 ? 'Lege jetzt ein neues Passwort für dein Konto fest.'
                 : 'Melde dich an oder registriere dich. Danach legst du deine Familie an und nutzt die App als `admin` oder `familyuser`.'}
           </p>
-          <div className="auth-benefits">
+          <div className="auth-benefits auth-benefits-editorial">
             <span>Gemeinsame Familienfreigabe</span>
             <span>Rollen mit `admin` und `familyuser`</span>
             <span>Vorbereitung für Cloud-Sync und Android</span>
           </div>
         </div>
 
-        <form className="auth-panel" autoComplete="off" onSubmit={(event) => void onSubmit(event)}>
+        <form className="auth-panel auth-panel-editorial" autoComplete="off" onSubmit={(event) => void onSubmit(event)}>
           {mode === 'sign-in' || mode === 'sign-up' ? (
             <div className="mode-switch auth-mode-switch">
               <button
@@ -475,7 +472,7 @@ function OnboardingScreen({
   return (
     <div className="auth-shell">
       <section className="auth-card">
-        <div className="auth-copy">
+        <div className="auth-copy auth-copy-editorial">
           <p className="eyebrow">Familie anlegen</p>
           <h1>Willkommen, {profile.display_name}</h1>
           <p>
@@ -488,7 +485,7 @@ function OnboardingScreen({
           </div>
         </div>
 
-        <form className="auth-panel" onSubmit={(event) => void onSubmit(event)}>
+        <form className="auth-panel auth-panel-editorial" onSubmit={(event) => void onSubmit(event)}>
           <input name="familyName" placeholder="Name deiner Familie" autoComplete="organization" />
           {error ? <p className="auth-feedback auth-error">{error}</p> : null}
           {message ? <p className="auth-feedback auth-message">{message}</p> : null}
@@ -513,8 +510,9 @@ function PlannerShell({
   setFamilyInvites,
   authState,
   cloudSync,
-  setCloudSync,
+  setCloudSync: setCloudSyncState,
   onSignOut,
+  onDeleteAccount,
 }: {
   activeTab: TabId;
   setActiveTab: (tab: TabId) => void;
@@ -526,6 +524,7 @@ function PlannerShell({
   cloudSync: CloudSyncState;
   setCloudSync: React.Dispatch<React.SetStateAction<CloudSyncState>>;
   onSignOut: () => Promise<void>;
+  onDeleteAccount: () => Promise<void>;
 }) {
   const [selectedDocumentFiles, setSelectedDocumentFiles] = useState<File[]>([]);
   const [documentSelectionErrors, setDocumentSelectionErrors] = useState<string[]>([]);
@@ -542,6 +541,8 @@ function PlannerShell({
     currentName: string;
   } | null>(null);
   const [pendingInviteActionId, setPendingInviteActionId] = useState<string | null>(null);
+  const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
+  const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState(() => getMonthStart(new Date()));
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => toCalendarDateKey(new Date()));
 
@@ -655,12 +656,51 @@ function PlannerShell({
       scheduledCalendarEntries.filter((entry) => getCalendarEntryDateKey(entry) === selectedCalendarDate),
     [scheduledCalendarEntries, selectedCalendarDate],
   );
+  const documentSelectionSummary = documentSelectionErrors.join(' · ');
+  const activeCloudSyncMessage =
+    cloudSync.scope === activeTab &&
+    cloudSync.message !== 'Alle Planer-Module sind mit Supabase synchronisiert.'
+      ? cloudSync.message
+      : null;
+
+  const setCloudSync = (value: CloudSyncSetterValue) => {
+    setCloudSyncState((current) => {
+      const nextValue =
+        typeof value === 'function'
+          ? (value as (current: CloudSyncState) => CloudSyncUpdate)(current)
+          : value;
+
+      return 'scope' in nextValue ? nextValue : { ...nextValue, scope: activeTab };
+    });
+  };
 
   useEffect(() => {
     if (!canManageFamily && activeTab === 'family') {
       setActiveTab('overview');
     }
   }, [activeTab, canManageFamily, setActiveTab]);
+
+  useEffect(() => {
+    if (!cloudSync.message || cloudSync.phase === 'loading') {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCloudSyncState((current) =>
+        current.message === cloudSync.message &&
+        current.phase === cloudSync.phase &&
+        current.scope === cloudSync.scope
+          ? {
+              phase: 'idle',
+              message: null,
+              scope: null,
+            }
+          : current,
+      );
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [cloudSync.message, cloudSync.phase, cloudSync.scope, setCloudSyncState]);
 
   const updateState = (updater: (current: PlannerState) => PlannerState) => {
     setPlannerState((current) => updater(current));
@@ -686,26 +726,16 @@ function PlannerShell({
     }
 
     setCloudSync((current) =>
-      current.phase === 'error'
+      current.phase === 'error' && current.scope === activeTab
         ? {
             phase: 'idle',
             message: null,
+            scope: null,
           }
         : current,
     );
     setSelectedDocumentFiles(nextFiles);
     setIsDocumentDropActive(false);
-        {cloudSync.message ? (
-          <p
-            className={
-              cloudSync.phase === 'error'
-                ? 'auth-feedback auth-error module-feedback'
-                : 'auth-feedback auth-message module-feedback'
-            }
-          >
-            {cloudSync.message}
-          </p>
-        ) : null}
   };
 
   const handleDocumentInputChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -927,6 +957,22 @@ function PlannerShell({
       });
     } finally {
       setPendingInviteActionId((current) => (current === inviteId ? null : current));
+    }
+  };
+
+  const handleConfirmAccountDeletion = async () => {
+    setDeleteAccountBusy(true);
+
+    try {
+      await onDeleteAccount();
+      setIsDeleteAccountDialogOpen(false);
+    } catch (error) {
+      setCloudSync({
+        phase: 'error',
+        message: humanizeAuthError(error),
+      });
+    } finally {
+      setDeleteAccountBusy(false);
     }
   };
 
@@ -1372,22 +1418,11 @@ function PlannerShell({
   };
 
   const authDriven = authState.stage === 'authenticated';
-  const footerSyncMessage = getFooterSyncMessage({
-    authDriven,
-    supabaseConfigured,
-    storageMode: plannerState.storageMode,
-    cloudSyncPhase: cloudSync.phase,
-  });
-
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div>
-          <p className="eyebrow">Family OS</p>
-          <h1>Familienplaner</h1>
-          <p className="sidebar-copy">
-            Ein gemeinsamer Ort für Erledigungen, Termine, Essen und wichtige Unterlagen.
-          </p>
+        <div className="sidebar-brand">
+          <BrandHeading text="Frey Frey" className="brand-lockup-sidebar" />
         </div>
 
         <div className="status-card">
@@ -1422,9 +1457,18 @@ function PlannerShell({
             <div className="account-identity">
               <strong>{authState.profile.display_name}</strong>
               <small>{authState.profile.email}</small>
-              <button type="button" className="secondary-action" onClick={() => void onSignOut()}>
-                Abmelden
-              </button>
+              <div className="account-actions">
+                <button type="button" className="secondary-action" onClick={() => void onSignOut()}>
+                  Abmelden
+                </button>
+                <button
+                  type="button"
+                  className="secondary-action danger-action"
+                  onClick={() => setIsDeleteAccountDialogOpen(true)}
+                >
+                  Account löschen
+                </button>
+              </div>
             </div>
           ) : (
             <div className="account-identity">
@@ -1456,8 +1500,40 @@ function PlannerShell({
       </aside>
 
       <main className="content">
+        <div className="mobile-topbar">
+          <div className="mobile-topbar-brand">
+            <BrandHeading text="Frey Frey" className="brand-lockup-mobile" />
+          </div>
+          <div className="mobile-module-switch">
+            <label htmlFor="mobile-module-select">Bereich wechseln</label>
+            <select
+              id="mobile-module-select"
+              aria-label="Bereich wechseln"
+              value={activeTab}
+              onChange={(event) => setActiveTab(event.currentTarget.value as TabId)}
+            >
+              {visibleTabs.map((tab) => (
+                <option key={tab.id} value={tab.id}>
+                  {tab.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {authState.message ? <p className="auth-feedback auth-message planner-feedback">{authState.message}</p> : null}
         {authState.error ? <p className="auth-feedback auth-error planner-feedback">{authState.error}</p> : null}
+        {activeCloudSyncMessage ? (
+          <p
+            className={
+              cloudSync.phase === 'error'
+                ? 'auth-feedback auth-error module-feedback'
+                : 'auth-feedback auth-message module-feedback'
+            }
+          >
+            {activeCloudSyncMessage}
+          </p>
+        ) : null}
 
         <section className={activeTab === 'overview' ? 'overview-stack is-visible' : 'overview-stack'}>
           <article className="panel overview-row-panel">
@@ -1521,10 +1597,6 @@ function PlannerShell({
         </section>
 
         <section className={activeTab === 'shopping' ? 'module is-visible' : 'module'}>
-          <div className="section-header">
-            <h3>Einkaufsliste</h3>
-            <p>Praktisch für den Wocheneinkauf oder spontane Besorgungen.</p>
-          </div>
           <div className="module-layout">
             <form className="panel form-panel" onSubmit={(event) => void handleAddShopping(event)}>
               <h4>Neuen Artikel hinzufügen</h4>
@@ -1556,10 +1628,6 @@ function PlannerShell({
         </section>
 
         <section className={activeTab === 'tasks' ? 'module is-visible' : 'module'}>
-          <div className="section-header">
-            <h3>To-do-Listen</h3>
-            <p>Aufgaben lassen sich der Familie zuweisen und schnell abhaken.</p>
-          </div>
           <div className="module-layout">
             <form className="panel form-panel" onSubmit={(event) => void handleAddTask(event)}>
               <h4>Neue Aufgabe</h4>
@@ -1597,10 +1665,6 @@ function PlannerShell({
         </section>
 
         <section className={activeTab === 'notes' ? 'module is-visible' : 'module'}>
-          <div className="section-header">
-            <h3>Notizen</h3>
-            <p>Für spontane Ideen, Absprachen und Familieninfos.</p>
-          </div>
           <div className="module-layout">
             <form className="panel form-panel" onSubmit={(event) => void handleAddNote(event)}>
               <h4>Neue Notiz</h4>
@@ -1624,10 +1688,6 @@ function PlannerShell({
         </section>
 
         <section className={activeTab === 'calendar' ? 'module is-visible' : 'module'}>
-          <div className="section-header">
-            <h3>Kalender</h3>
-            <p>Wichtige Termine für Schule, Freizeit und Familie.</p>
-          </div>
           <div className="module-layout calendar-module-layout">
             <form className="panel form-panel" onSubmit={(event) => void handleAddCalendar(event)}>
               <h4>Termin anlegen</h4>
@@ -1764,10 +1824,6 @@ function PlannerShell({
         </section>
 
         <section className={activeTab === 'meals' ? 'module is-visible' : 'module'}>
-          <div className="section-header">
-            <h3>Essensplan</h3>
-            <p>Plant Mahlzeiten für die Woche und haltet den Überblick über Vorbereitungen.</p>
-          </div>
           <div className="module-layout">
             <form className="panel form-panel" onSubmit={(event) => void handleAddMeal(event)}>
               <h4>Gericht eintragen</h4>
@@ -1798,25 +1854,14 @@ function PlannerShell({
         </section>
 
         <section className={activeTab === 'documents' ? 'module is-visible' : 'module'}>
-          {cloudSync.phase === 'error' && cloudSync.message ? (
-            <p
-              className={
-                cloudSync.phase === 'error'
-                  ? 'auth-feedback auth-error module-feedback'
-                  : 'auth-feedback auth-message module-feedback'
-              }
-            >
-              {cloudSync.message}
-            </p>
-          ) : null}
           {documentSelectionErrors.length > 0 ? (
-            <div className="auth-feedback auth-error module-feedback" aria-live="polite">
+            <div
+              className="auth-feedback auth-error module-feedback module-feedback-compact"
+              aria-live="polite"
+              title={documentSelectionSummary}
+            >
               <strong>Dateiauswahl prüfen</strong>
-              <ul className="document-error-list">
-                {documentSelectionErrors.map((errorMessage) => (
-                  <li key={errorMessage}>{errorMessage}</li>
-                ))}
-              </ul>
+              <p className="document-error-preview">{documentSelectionSummary}</p>
             </div>
           ) : null}
           <div className="module-layout document-module-layout">
@@ -2140,20 +2185,6 @@ function PlannerShell({
         ) : null}
 
         <section className={activeTab === 'family' && canManageFamily ? 'module is-visible' : 'module'}>
-          {cloudSync.message && cloudSync.message !== 'Alle Planer-Module sind mit Supabase synchronisiert.' ? (
-            <p
-              className={
-                cloudSync.phase === 'error'
-                  ? 'auth-feedback auth-error module-feedback'
-                  : 'auth-feedback auth-message module-feedback'
-              }
-            >
-              {cloudSync.message}
-            </p>
-          ) : null}
-          <div className="section-header">
-            <h3>Familie & Rollen</h3>
-          </div>
           <div className="module-layout role-layout">
             <article className="panel list-panel">
               <div className="panel-heading">
@@ -2237,6 +2268,36 @@ function PlannerShell({
           </div>
         </section>
 
+        {isDeleteAccountDialogOpen ? (
+          <div className="modal-backdrop" role="presentation">
+            <section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
+              <p className="eyebrow">Account löschen</p>
+              <h3 id="delete-account-title">Bist du sicher?</h3>
+              <p className="modal-note danger-note">
+                Dein Konto wird dauerhaft gelöscht. Wenn dieses Konto eine Familie besitzt, können auch zugehörige Familiendaten entfernt werden.
+              </p>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="secondary-action"
+                  disabled={deleteAccountBusy}
+                  onClick={() => setIsDeleteAccountDialogOpen(false)}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="button"
+                  className="secondary-action danger-action"
+                  disabled={deleteAccountBusy}
+                  onClick={() => void handleConfirmAccountDeletion()}
+                >
+                  {deleteAccountBusy ? 'Wird gelöscht…' : 'Ja, Account löschen'}
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
+
         {!authDriven ? <section className="module reset-panel is-visible">
           <button
             type="button"
@@ -2247,9 +2308,60 @@ function PlannerShell({
           </button>
         </section> : null}
 
-        <footer className="planner-footer-status" aria-live="polite">
-          <small>{footerSyncMessage}</small>
-        </footer>
+        <div className="account-card mobile-account-card">
+          <p className="eyebrow">Konto</p>
+          <div className="account-family-summary">
+            <strong>{authState.family?.familyName ?? plannerState.familyName}</strong>
+            <div className="account-meta-row">
+              <span className="chip">{adminCount} Admin</span>
+              {authState.profile ? <span className="chip alt">{authState.profile.role}</span> : null}
+            </div>
+          </div>
+          {authState.profile ? (
+            <div className="account-identity">
+              <strong>{authState.profile.display_name}</strong>
+              <small>{authState.profile.email}</small>
+              <div className="account-actions">
+                <button type="button" className="secondary-action" onClick={() => void onSignOut()}>
+                  Abmelden
+                </button>
+                <button
+                  type="button"
+                  className="secondary-action danger-action"
+                  onClick={() => setIsDeleteAccountDialogOpen(true)}
+                >
+                  Account löschen
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="account-identity">
+              <strong>Demo-Modus</strong>
+              <small>Supabase ist noch nicht verbunden. Die Daten bleiben lokal im Browser.</small>
+            </div>
+          )}
+          {!authDriven && plannerState.members.length > 0 ? (
+            <div className="member-switcher">
+              {plannerState.members.map((member) => {
+                const locked = authDriven && member.id !== authState.profile?.id;
+
+                return (
+                  <button
+                    key={member.id}
+                    type="button"
+                    disabled={locked}
+                    className={plannerState.activeUserId === member.id ? 'member-pill active' : 'member-pill'}
+                    onClick={() => updateState((current) => ({ ...current, activeUserId: member.id }))}
+                  >
+                    <strong>{member.name}</strong>
+                    <span>{member.role}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+
       </main>
     </div>
   );
@@ -2283,6 +2395,7 @@ export default function App() {
   const [cloudSync, setCloudSync] = useState<CloudSyncState>({
     phase: 'idle',
     message: null,
+    scope: null,
   });
 
   useEffect(() => {
@@ -2311,6 +2424,7 @@ export default function App() {
       setCloudSync({
         phase: 'idle',
         message: null,
+        scope: null,
       });
       return;
     }
@@ -2321,6 +2435,7 @@ export default function App() {
       setCloudSync({
         phase: 'loading',
         message: 'Alle Planer-Module werden aus Supabase geladen.',
+        scope: 'global',
       });
 
       try {
@@ -2359,6 +2474,7 @@ export default function App() {
         setCloudSync({
           phase: 'ready',
           message: 'Alle Planer-Module sind mit Supabase synchronisiert.',
+          scope: 'global',
         });
       } catch (error) {
         if (cancelled) {
@@ -2368,6 +2484,7 @@ export default function App() {
         setCloudSync({
           phase: 'error',
           message: humanizeAuthError(error),
+          scope: 'global',
         });
       }
     };
@@ -2665,6 +2782,32 @@ export default function App() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setAuthBusy(true);
+
+    try {
+      await deleteCurrentAccount();
+
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, document.title, clearAuthRedirectState(window.location.href));
+      }
+
+      blocksSessionHydrationAfterRecovery.current = false;
+      setAuthMode('sign-in');
+      setAuthDraft(EMPTY_AUTH_DRAFT);
+      setAuthState({
+        stage: 'signed-out',
+        session: null,
+        profile: null,
+        family: null,
+        error: null,
+        message: 'Dein Konto wurde gelöscht.',
+      });
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   const handleAuthModeChange = (mode: AuthMode) => {
     if (mode !== 'reset-password' && typeof window !== 'undefined' && authMode === 'reset-password') {
       window.history.replaceState({}, document.title, clearAuthRedirectState(window.location.href));
@@ -2738,6 +2881,7 @@ export default function App() {
       cloudSync={cloudSync}
       setCloudSync={setCloudSync}
       onSignOut={handleSignOut}
+      onDeleteAccount={handleDeleteAccount}
     />
   );
 }
