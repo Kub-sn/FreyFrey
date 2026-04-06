@@ -483,6 +483,101 @@ describe('bootstrapFamilyForUser', () => {
   });
 });
 
+describe('fetchAdminFamilyDirectory', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'publishable-key');
+  });
+
+  it('groups admin family directory rows into sorted family entries', async () => {
+    const rpcMock = vi.fn().mockResolvedValue({
+      data: [
+        {
+          family_id: 'family-2',
+          family_name: 'Familie Beta',
+          allow_open_registration: false,
+          owner_user_id: 'owner-2',
+          member_user_id: 'owner-2',
+          member_display_name: 'Lea',
+          member_email: 'lea@example.com',
+          member_role: 'familyuser',
+        },
+        {
+          family_id: 'family-1',
+          family_name: 'Familie Alpha',
+          allow_open_registration: true,
+          owner_user_id: 'owner-1',
+          member_user_id: 'owner-1',
+          member_display_name: 'Kubi',
+          member_email: 'kubi@example.com',
+          member_role: 'admin',
+        },
+        {
+          family_id: 'family-1',
+          family_name: 'Familie Alpha',
+          allow_open_registration: true,
+          owner_user_id: 'owner-1',
+          member_user_id: 'member-1',
+          member_display_name: 'Mia',
+          member_email: 'mia@example.com',
+          member_role: 'familyuser',
+        },
+      ],
+      error: null,
+    });
+
+    createClientMock.mockReturnValue({
+      rpc: rpcMock,
+    });
+
+    const { fetchAdminFamilyDirectory } = await import('./supabase');
+    const result = await fetchAdminFamilyDirectory();
+
+    expect(rpcMock).toHaveBeenCalledWith('get_admin_family_directory');
+    expect(result).toEqual([
+      {
+        familyId: 'family-1',
+        familyName: 'Familie Alpha',
+        allowOpenRegistration: true,
+        ownerUserId: 'owner-1',
+        members: [
+          {
+            id: 'owner-1',
+            name: 'Kubi',
+            email: 'kubi@example.com',
+            role: 'admin',
+            isOwner: true,
+          },
+          {
+            id: 'member-1',
+            name: 'Mia',
+            email: 'mia@example.com',
+            role: 'familyuser',
+            isOwner: false,
+          },
+        ],
+      },
+      {
+        familyId: 'family-2',
+        familyName: 'Familie Beta',
+        allowOpenRegistration: false,
+        ownerUserId: 'owner-2',
+        members: [
+          {
+            id: 'owner-2',
+            name: 'Lea',
+            email: 'lea@example.com',
+            role: 'familyuser',
+            isOwner: true,
+          },
+        ],
+      },
+    ]);
+  });
+});
+
 describe('removeFamilyInvite', () => {
   beforeEach(() => {
     vi.resetModules();

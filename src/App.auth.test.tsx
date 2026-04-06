@@ -10,6 +10,7 @@ const {
   deleteCurrentAccount,
   emitAuthChange,
   ensureProfile,
+  fetchAdminFamilyDirectory,
   fetchCalendarEntries,
   fetchDocuments,
   fetchFamilyContext,
@@ -38,6 +39,7 @@ const {
     deleteCurrentAccount: vi.fn(),
     emitAuthChange: (session: unknown) => authChangeListener?.(session),
     ensureProfile: vi.fn(),
+    fetchAdminFamilyDirectory: vi.fn(),
     fetchCalendarEntries: vi.fn(),
     fetchDocuments: vi.fn(),
     fetchFamilyContext: vi.fn(),
@@ -76,6 +78,7 @@ vi.mock('./lib/supabase', async () => {
     deleteDocument,
     deleteCurrentAccount,
     ensureProfile,
+    fetchAdminFamilyDirectory,
     fetchCalendarEntries,
     fetchDocuments,
     fetchFamilyContext,
@@ -138,6 +141,17 @@ function getConfigCard() {
   return within(configCard as HTMLElement);
 }
 
+function getAdminDirectoryCard() {
+  const directoryHeading = screen.getByRole('heading', { level: 4, name: 'Familienübersicht' });
+  const directoryCard = directoryHeading.closest('article');
+
+  if (!directoryCard) {
+    throw new Error('Familienübersicht wurde nicht gefunden.');
+  }
+
+  return within(directoryCard as HTMLElement);
+}
+
 describe('App auth flow', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/');
@@ -146,6 +160,7 @@ describe('App auth flow', () => {
     createFamilyInvite.mockReset();
     deleteDocument.mockReset();
     ensureProfile.mockReset();
+    fetchAdminFamilyDirectory.mockReset();
     fetchCalendarEntries.mockReset();
     fetchDocuments.mockReset();
     fetchFamilyContext.mockReset();
@@ -171,6 +186,7 @@ describe('App auth flow', () => {
     fetchCalendarEntries.mockResolvedValue([]);
     fetchMeals.mockResolvedValue([]);
     fetchDocuments.mockResolvedValue([]);
+    fetchAdminFamilyDirectory.mockResolvedValue([]);
     fetchFamilyMembers.mockResolvedValue([]);
     fetchFamilyInvites.mockResolvedValue([]);
     createFamilyInvite.mockResolvedValue({
@@ -273,6 +289,9 @@ describe('App auth flow', () => {
     });
 
     await user.click(screen.getByRole('button', { name: 'Registrieren' }));
+    expect(
+      await screen.findByText('Registrierung aktuell deaktiviert. Der Admin hat neue Anmeldungen ausgeschaltet. Neue Konten sind nur per Einladung moeglich.'),
+    ).toBeInTheDocument();
     await user.type(screen.getByPlaceholderText('Anzeigename'), 'Alex');
     await user.type(screen.getByPlaceholderText('E-Mail'), 'alex@example.com');
     await user.type(screen.getByPlaceholderText('Passwort'), 'supersecret');
@@ -281,7 +300,7 @@ describe('App auth flow', () => {
     expect(fetchRegistrationGate).toHaveBeenCalledWith('alex@example.com');
     expect(signUpWithPassword).not.toHaveBeenCalled();
     expect(
-      await screen.findByText('Registrierung ist derzeit nur per Einladung moeglich. Bitte lass dir zuerst eine Einladung schicken.'),
+      await screen.findByText('Registrierung aktuell deaktiviert. Der Admin hat neue Anmeldungen ausgeschaltet. Bitte lass dir eine Einladung schicken.'),
     ).toBeInTheDocument();
   });
 
@@ -570,11 +589,6 @@ describe('App auth flow', () => {
     expect(getInviteForm().getByRole('button', { name: 'Einladung senden' })).toBeEnabled();
     expect(getInviteForm().queryByRole('option', { name: 'admin' })).not.toBeInTheDocument();
     expect(screen.getAllByText('Gründerstatus').length).toBeGreaterThan(0);
-    expect(screen.getByText('Familiengründer können Mitglieder einladen. Die Konfiguration und Admin-Rollen bleiben nur für Admins sichtbar.')).toBeInTheDocument();
-    expect(
-      screen.getAllByText('Du bist Familiengründer. Du kannst Mitglieder einladen, aber keine Konfiguration oder Admin-Rollen verwalten.').length,
-    ).toBeGreaterThan(0);
-    expect(screen.getByText('Als Familiengründer kannst du Mitglieder einladen, aber keine Admin-Rolle vergeben.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Einladung für open@example.com zurückziehen' }));
 
     expect(removeFamilyInvite).toHaveBeenCalledWith('invite-owner-1');
@@ -647,6 +661,45 @@ describe('App auth flow', () => {
         role: 'admin',
       },
     ]);
+    fetchAdminFamilyDirectory.mockResolvedValue([
+      {
+        familyId: 'family-3',
+        familyName: 'Familie Admin',
+        allowOpenRegistration: true,
+        ownerUserId: 'user-3',
+        members: [
+          {
+            id: 'user-3',
+            name: 'Admin',
+            email: 'admin@example.com',
+            role: 'admin',
+            isOwner: true,
+          },
+        ],
+      },
+      {
+        familyId: 'family-4',
+        familyName: 'Familie Zweig',
+        allowOpenRegistration: false,
+        ownerUserId: 'user-zweig-owner',
+        members: [
+          {
+            id: 'user-zweig-owner',
+            name: 'Lea Zweig',
+            email: 'lea@example.com',
+            role: 'familyuser',
+            isOwner: true,
+          },
+          {
+            id: 'user-zweig-member',
+            name: 'Tom Zweig',
+            email: 'tom@example.com',
+            role: 'familyuser',
+            isOwner: false,
+          },
+        ],
+      },
+    ]);
 
     render(<App />);
 
@@ -656,9 +709,20 @@ describe('App auth flow', () => {
 
     expect(screen.getByRole('heading', { level: 4, name: 'Mitglieder & Rollen' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Einladung senden' })).toBeInTheDocument();
-    expect(getAccountCard().getByText('Du bist Admin. Du verwaltest Einladungen, Admin-Rollen und die Familien-Konfiguration.')).toBeInTheDocument();
     expect(screen.queryByText('Keine offenen Einladungen')).not.toBeInTheDocument();
     expect(getConfigCard().getByRole('checkbox', { name: 'Freie Registrierung erlauben' })).toHaveClass('app-switch');
+
+    const directoryCard = getAdminDirectoryCard();
+
+    expect(directoryCard.getByRole('button', { name: /Familie Admin/i })).toBeInTheDocument();
+    expect(directoryCard.getByRole('button', { name: /Familie Zweig/i })).toBeInTheDocument();
+    expect(directoryCard.getByText('admin@example.com')).toBeInTheDocument();
+
+    await user.click(directoryCard.getByRole('button', { name: /Familie Zweig/i }));
+
+    expect(directoryCard.getByText('lea@example.com')).toBeInTheDocument();
+    expect(directoryCard.getByText('tom@example.com')).toBeInTheDocument();
+    expect(directoryCard.queryByText('admin@example.com')).not.toBeInTheDocument();
   });
 
   it('lets admins switch registration between open and invite-only in the configuration card', async () => {

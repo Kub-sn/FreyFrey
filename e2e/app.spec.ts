@@ -298,6 +298,46 @@ async function mockSupabaseRegistrationControls(page: Page) {
       return;
     }
 
+    if (path.endsWith('/rpc/get_admin_family_directory')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            family_id: 'family-2',
+            family_name: 'Familie Abendrot',
+            allow_open_registration: false,
+            owner_user_id: 'user-evening',
+            member_user_id: 'user-evening',
+            member_display_name: 'Lea Abendrot',
+            member_email: 'lea@example.com',
+            member_role: 'familyuser',
+          },
+          {
+            family_id: 'family-1',
+            family_name: 'Familie Test',
+            allow_open_registration: state.allowOpenRegistration,
+            owner_user_id: 'user-admin',
+            member_user_id: 'user-admin',
+            member_display_name: 'Admin',
+            member_email: 'admin@example.com',
+            member_role: 'admin',
+          },
+          {
+            family_id: 'family-1',
+            family_name: 'Familie Test',
+            allow_open_registration: state.allowOpenRegistration,
+            owner_user_id: 'user-admin',
+            member_user_id: 'user-member',
+            member_display_name: 'Mia Test',
+            member_email: 'mia@example.com',
+            member_role: 'familyuser',
+          },
+        ]),
+      });
+      return;
+    }
+
     const table = path.split('/').pop();
     let body: unknown = [];
 
@@ -536,9 +576,6 @@ test('lets a familyuser owner invite members but hides configuration controls', 
   await expect(page.getByRole('heading', { name: 'Mitglieder & Rollen' })).toBeVisible();
   await expect(page.getByText('Gründerstatus').first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Einladung senden' })).toBeEnabled();
-  await expect(page.getByText('Familiengründer können Mitglieder einladen. Die Konfiguration und Admin-Rollen bleiben nur für Admins sichtbar.')).toBeVisible();
-  await expect(page.getByText('Du bist Familiengründer. Du kannst Mitglieder einladen, aber keine Konfiguration oder Admin-Rollen verwalten.').first()).toBeVisible();
-  await expect(page.getByText('Als Familiengründer kannst du Mitglieder einladen, aber keine Admin-Rolle vergeben.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Einladung für open@example.com zurückziehen' })).toBeVisible();
   await page.getByRole('button', { name: 'Einladung für open@example.com zurückziehen' }).click();
   await expect(page.getByText('Einladung wurde zurückgezogen.')).toBeVisible();
@@ -559,6 +596,10 @@ test('lets admins switch registration to invite-only and back again', async ({ p
   await expect(page.getByText('Familie Test', { exact: true }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Familie & Rollen' }).click();
 
+  await expect(page.getByRole('heading', { name: 'Familienübersicht' })).toBeVisible();
+  await page.getByRole('button', { name: /Familie Abendrot/i }).click();
+  await expect(page.getByText('lea@example.com')).toBeVisible();
+
   const registrationToggle = page.getByRole('checkbox', { name: 'Freie Registrierung erlauben' });
 
   await expect(registrationToggle).toBeChecked();
@@ -570,13 +611,16 @@ test('lets admins switch registration to invite-only and back again', async ({ p
   await expect(page.getByRole('button', { name: 'Jetzt anmelden' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Registrieren' }).click();
+  await expect(
+    page.getByText('Registrierung aktuell deaktiviert. Der Admin hat neue Anmeldungen ausgeschaltet. Neue Konten sind nur per Einladung moeglich.'),
+  ).toBeVisible();
   await page.getByPlaceholder('Anzeigename').fill('Outsider');
   await page.getByPlaceholder('E-Mail').fill('outsider@example.com');
   await page.getByPlaceholder('Passwort').fill('supersecret');
   await page.getByRole('button', { name: 'Konto anlegen' }).click();
 
   await expect(
-    page.getByText('Registrierung ist derzeit nur per Einladung moeglich. Bitte lass dir zuerst eine Einladung schicken.'),
+    page.getByText('Registrierung aktuell deaktiviert. Der Admin hat neue Anmeldungen ausgeschaltet. Bitte lass dir eine Einladung schicken.'),
   ).toBeVisible();
 
   await page.getByRole('button', { name: 'Anmelden' }).click();

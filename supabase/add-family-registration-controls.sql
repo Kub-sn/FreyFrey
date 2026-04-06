@@ -47,12 +47,45 @@ begin
 end;
 $$;
 
+create or replace function public.enforce_registration_gate_on_auth_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  registration_gate record;
+begin
+  select *
+  into registration_gate
+  from public.get_registration_gate(new.email)
+  limit 1;
+
+  if registration_gate is null then
+    raise exception 'Der Registrierungsstatus konnte nicht geladen werden.';
+  end if;
+
+  if registration_gate.registration_allowed then
+    return new;
+  end if;
+
+  raise exception 'Registrierung aktuell deaktiviert. Der Admin hat neue Anmeldungen ausgeschaltet. Bitte lass dir eine Einladung schicken.';
+end;
+$$;
+
 grant execute on function public.get_registration_gate(text) to anon, authenticated;
 
+drop trigger if exists enforce_registration_gate_on_auth_user on auth.users;
+create trigger enforce_registration_gate_on_auth_user
+before insert on auth.users
+for each row
+execute function public.enforce_registration_gate_on_auth_user();
+
 drop policy if exists "owners and admins can update own family" on public.families;
+drop policy if exists "admins can update own family" on public.families;
 drop policy if exists "owners can update own family" on public.families;
-create policy "owners and admins can update own family"
+create policy "admins can update own family"
 on public.families
 for update
-using (owner_user_id = auth.uid() or public.is_family_admin(id))
-with check (owner_user_id = auth.uid() or public.is_family_admin(id));
+using (public.is_family_admin(id))
+with check (public.is_family_admin(id));

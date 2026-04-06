@@ -38,6 +38,7 @@ import {
 import { loadPlannerState, savePlannerState } from './lib/storage';
 import {
   acceptPendingFamilyInvite,
+  fetchAdminFamilyDirectory,
   createCalendarEntry,
   fetchRegistrationGate,
   createDocument,
@@ -74,8 +75,10 @@ import {
   updateMealPrepared,
   updateShoppingItemChecked,
   updateTaskDone,
+  type AdminFamilyDirectoryFamily,
   type SupabaseFamilyInvite,
   type SupabaseFamilyContext,
+  type SupabaseRegistrationGate,
   type SupabaseProfile,
 } from './lib/supabase';
 import { applyCloudCollections } from './lib/cloud-sync';
@@ -96,6 +99,12 @@ const EMPTY_AUTH_DRAFT: AuthDraft = {
   password: '',
   confirmPassword: '',
 };
+
+const INVITE_ONLY_REGISTRATION_BANNER =
+  'Registrierung aktuell deaktiviert. Der Admin hat neue Anmeldungen ausgeschaltet. Neue Konten sind nur per Einladung moeglich.';
+
+const INVITE_ONLY_REGISTRATION_ERROR =
+  'Registrierung aktuell deaktiviert. Der Admin hat neue Anmeldungen ausgeschaltet. Bitte lass dir eine Einladung schicken.';
 
 type AuthState = {
   stage: AuthStage;
@@ -453,11 +462,21 @@ function PasswordField({
   );
 }
 
+function isRegistrationDisabledByAdmin(registrationGate: SupabaseRegistrationGate | null) {
+  return Boolean(
+    registrationGate
+    && registrationGate.hasExistingFamilies
+    && !registrationGate.hasOpenRegistration
+    && !registrationGate.hasPendingInvite,
+  );
+}
+
 function AuthScreen({
   mode,
   busy,
   error,
   message,
+  registrationBlockedNotice,
   authDraft,
   onDraftChange,
   onSubmit,
@@ -467,6 +486,7 @@ function AuthScreen({
   busy: boolean;
   error: string | null;
   message: string | null;
+  registrationBlockedNotice: string | null;
   authDraft: AuthDraft;
   onDraftChange: (field: keyof AuthDraft, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
@@ -477,120 +497,129 @@ function AuthScreen({
 
   return (
     <div className="auth-shell">
-      <section className="auth-card auth-card-wide">
-        <div className="auth-copy auth-copy-editorial">
-          <BrandHeading text="Frey Frey" className="brand-lockup-auth" />
-          {mode === 'forgot-password' ? (
-            <p>Fordere einen sicheren Link an, um dein Passwort zurückzusetzen.</p>
-          ) : null}
-          {mode === 'reset-password' ? (
-            <p>Lege jetzt ein neues Passwort für dein Konto fest.</p>
-          ) : null}
-        </div>
+      <div className="auth-stage">
+        {registrationBlockedNotice ? (
+          <aside className="auth-status-banner auth-status-banner-warning" role="status" aria-live="polite">
+            <strong>Registrierung gesperrt</strong>
+            <span>{registrationBlockedNotice}</span>
+          </aside>
+        ) : null}
 
-        <form className="auth-panel auth-panel-editorial" autoComplete={authFormAutocomplete} onSubmit={(event) => void onSubmit(event)}>
-          <div className="auth-autofill-decoys" aria-hidden="true">
-            <input tabIndex={-1} autoComplete="username" defaultValue="" />
-            <input tabIndex={-1} type="password" autoComplete="current-password" defaultValue="" />
+        <section className="auth-card auth-card-wide">
+          <div className="auth-copy auth-copy-editorial">
+            <BrandHeading text="Frey Frey" className="brand-lockup-auth" />
+            {mode === 'forgot-password' ? (
+              <p>Fordere einen sicheren Link an, um dein Passwort zurückzusetzen.</p>
+            ) : null}
+            {mode === 'reset-password' ? (
+              <p>Lege jetzt ein neues Passwort für dein Konto fest.</p>
+            ) : null}
           </div>
 
-          {mode === 'sign-in' || mode === 'sign-up' ? (
-            <div className="mode-switch auth-mode-switch">
+          <form className="auth-panel auth-panel-editorial" autoComplete={authFormAutocomplete} onSubmit={(event) => void onSubmit(event)}>
+            <div className="auth-autofill-decoys" aria-hidden="true">
+              <input tabIndex={-1} autoComplete="username" defaultValue="" />
+              <input tabIndex={-1} type="password" autoComplete="current-password" defaultValue="" />
+            </div>
+
+            {mode === 'sign-in' || mode === 'sign-up' ? (
+              <div className="mode-switch auth-mode-switch">
+                <button
+                  type="button"
+                  className={mode === 'sign-in' ? 'mode-button active' : 'mode-button'}
+                  onClick={() => onModeChange('sign-in')}
+                >
+                  Anmelden
+                </button>
+                <button
+                  type="button"
+                  className={mode === 'sign-up' ? 'mode-button active' : 'mode-button'}
+                  onClick={() => onModeChange('sign-up')}
+                >
+                  Registrieren
+                </button>
+              </div>
+            ) : null}
+
+            {mode === 'sign-up' ? (
+              <AuthInput
+                field="displayName"
+                inputName="frey-profile-name"
+                placeholder="Anzeigename"
+                autoComplete="off"
+                value={authDraft.displayName}
+                onChange={(value) => onDraftChange('displayName', value)}
+              />
+            ) : null}
+            {mode !== 'reset-password' ? (
+              <AuthInput
+                field="email"
+                inputName="email"
+                type="email"
+                placeholder="E-Mail"
+                autoComplete={emailAutocomplete}
+                value={authDraft.email}
+                onChange={(value) => onDraftChange('email', value)}
+                allowStoredValues
+              />
+            ) : null}
+            {mode !== 'forgot-password' ? (
+              <PasswordField
+                field="password"
+                inputName="frey-secret-key"
+                placeholder={mode === 'reset-password' ? 'Neues Passwort' : 'Passwort'}
+                autoComplete="new-password"
+                value={authDraft.password}
+                onChange={(value) => onDraftChange('password', value)}
+              />
+            ) : null}
+            {mode === 'reset-password' ? (
+              <PasswordField
+                field="confirmPassword"
+                inputName="frey-secret-key-confirmation"
+                placeholder="Passwort wiederholen"
+                autoComplete="new-password"
+                value={authDraft.confirmPassword}
+                onChange={(value) => onDraftChange('confirmPassword', value)}
+              />
+            ) : null}
+
+            {error ? <p className="auth-feedback auth-error">{error}</p> : null}
+            {message ? <p className="auth-feedback auth-message">{message}</p> : null}
+
+            <button type="submit" className="auth-submit" disabled={busy}>
+              {busy
+                ? 'Bitte warten…'
+                : mode === 'sign-in'
+                  ? 'Jetzt anmelden'
+                  : mode === 'sign-up'
+                    ? 'Konto anlegen'
+                    : mode === 'forgot-password'
+                      ? 'Reset-Link senden'
+                      : 'Passwort speichern'}
+            </button>
+
+            {mode === 'sign-in' ? (
               <button
                 type="button"
-                className={mode === 'sign-in' ? 'mode-button active' : 'mode-button'}
+                className="secondary-action"
+                onClick={() => onModeChange('forgot-password')}
+              >
+                Passwort vergessen?
+              </button>
+            ) : null}
+            {mode === 'forgot-password' || mode === 'reset-password' ? (
+              <button
+                type="button"
+                className="secondary-action"
                 onClick={() => onModeChange('sign-in')}
               >
-                Anmelden
+                Zurück zur Anmeldung
               </button>
-              <button
-                type="button"
-                className={mode === 'sign-up' ? 'mode-button active' : 'mode-button'}
-                onClick={() => onModeChange('sign-up')}
-              >
-                Registrieren
-              </button>
-            </div>
-          ) : null}
-
-          {mode === 'sign-up' ? (
-            <AuthInput
-              field="displayName"
-              inputName="frey-profile-name"
-              placeholder="Anzeigename"
-              autoComplete="off"
-              value={authDraft.displayName}
-              onChange={(value) => onDraftChange('displayName', value)}
-            />
-          ) : null}
-          {mode !== 'reset-password' ? (
-            <AuthInput
-              field="email"
-              inputName="email"
-              type="email"
-              placeholder="E-Mail"
-              autoComplete={emailAutocomplete}
-              value={authDraft.email}
-              onChange={(value) => onDraftChange('email', value)}
-              allowStoredValues
-            />
-          ) : null}
-          {mode !== 'forgot-password' ? (
-            <PasswordField
-              field="password"
-              inputName="frey-secret-key"
-              placeholder={mode === 'reset-password' ? 'Neues Passwort' : 'Passwort'}
-              autoComplete="new-password"
-              value={authDraft.password}
-              onChange={(value) => onDraftChange('password', value)}
-            />
-          ) : null}
-          {mode === 'reset-password' ? (
-            <PasswordField
-              field="confirmPassword"
-              inputName="frey-secret-key-confirmation"
-              placeholder="Passwort wiederholen"
-              autoComplete="new-password"
-              value={authDraft.confirmPassword}
-              onChange={(value) => onDraftChange('confirmPassword', value)}
-            />
-          ) : null}
-
-          {error ? <p className="auth-feedback auth-error">{error}</p> : null}
-          {message ? <p className="auth-feedback auth-message">{message}</p> : null}
-
-          <button type="submit" className="auth-submit" disabled={busy}>
-            {busy
-              ? 'Bitte warten…'
-              : mode === 'sign-in'
-                ? 'Jetzt anmelden'
-                : mode === 'sign-up'
-                  ? 'Konto anlegen'
-                  : mode === 'forgot-password'
-                    ? 'Reset-Link senden'
-                    : 'Passwort speichern'}
-          </button>
-
-          {mode === 'sign-in' ? (
-            <button
-              type="button"
-              className="secondary-action"
-              onClick={() => onModeChange('forgot-password')}
-            >
-              Passwort vergessen?
-            </button>
-          ) : null}
-          {mode === 'forgot-password' || mode === 'reset-password' ? (
-            <button
-              type="button"
-              className="secondary-action"
-              onClick={() => onModeChange('sign-in')}
-            >
-              Zurück zur Anmeldung
-            </button>
-          ) : null}
-        </form>
-      </section>
+            ) : null}
+          </form>
+        </section>
+      </div>
     </div>
   );
 }
@@ -617,8 +646,8 @@ function OnboardingScreen({
           <p className="eyebrow">Familie anlegen</p>
           <h1>Willkommen, {profile.display_name}</h1>
           <p>
-            Dein Konto ist angelegt. Lege jetzt deine Familie an. Der erste Nutzer wird dabei
-            automatisch `admin`.
+            Dein Konto ist angelegt. Lege jetzt deine Familie an. Du startest dabei als
+            Familienmitglied mit Gründerstatus.
           </p>
           <div className="account-summary">
             <span>{profile.email}</span>
@@ -631,7 +660,7 @@ function OnboardingScreen({
           {error ? <p className="auth-feedback auth-error">{error}</p> : null}
           {message ? <p className="auth-feedback auth-message">{message}</p> : null}
           <button type="submit" className="auth-submit" disabled={busy}>
-            {busy ? 'Familie wird angelegt…' : 'Familie erstellen und als Admin starten'}
+            {busy ? 'Familie wird angelegt…' : 'Familie erstellen'}
           </button>
           <button type="button" className="secondary-action" onClick={() => void onSignOut()}>
             Abmelden
@@ -702,6 +731,10 @@ function PlannerShell({
   } | null>(null);
   const [pendingInviteActionId, setPendingInviteActionId] = useState<string | null>(null);
   const [registrationConfigBusy, setRegistrationConfigBusy] = useState(false);
+  const [adminFamilyDirectory, setAdminFamilyDirectory] = useState<AdminFamilyDirectoryFamily[]>([]);
+  const [adminFamilyDirectoryBusy, setAdminFamilyDirectoryBusy] = useState(false);
+  const [adminFamilyDirectoryError, setAdminFamilyDirectoryError] = useState<string | null>(null);
+  const [selectedAdminFamilyId, setSelectedAdminFamilyId] = useState<string | null>(null);
   const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
   const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState(() => getMonthStart(new Date()));
@@ -719,6 +752,13 @@ function PlannerShell({
   const canViewFamily = Boolean(authState.family);
   const canInviteFamilyMembers = canManageFamily || authState.family?.isOwner === true;
   const allowOpenRegistration = authState.family?.allowOpenRegistration ?? true;
+  const selectedAdminFamily = useMemo(
+    () =>
+      adminFamilyDirectory.find((family) => family.familyId === selectedAdminFamilyId) ??
+      adminFamilyDirectory[0] ??
+      null,
+    [adminFamilyDirectory, selectedAdminFamilyId],
+  );
   const openTasks = useMemo(
     () => plannerState.tasks.filter((task) => !task.done).length,
     [plannerState.tasks],
@@ -843,6 +883,59 @@ function PlannerShell({
       setActiveTab('overview');
     }
   }, [activeTab, canViewFamily, setActiveTab]);
+
+  useEffect(() => {
+    if (authState.stage !== 'authenticated' || authState.profile?.role !== 'admin') {
+      setAdminFamilyDirectory([]);
+      setAdminFamilyDirectoryBusy(false);
+      setAdminFamilyDirectoryError(null);
+      setSelectedAdminFamilyId(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadAdminFamilyDirectory = async () => {
+      setAdminFamilyDirectoryBusy(true);
+      setAdminFamilyDirectoryError(null);
+
+      try {
+        const families = await fetchAdminFamilyDirectory();
+
+        if (cancelled) {
+          return;
+        }
+
+        setAdminFamilyDirectory(families);
+        setSelectedAdminFamilyId((current) => {
+          if (current && families.some((family) => family.familyId === current)) {
+            return current;
+          }
+
+          const currentFamilyId = authState.family?.familyId;
+          return families.find((family) => family.familyId === currentFamilyId)?.familyId ?? families[0]?.familyId ?? null;
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setAdminFamilyDirectory([]);
+        setSelectedAdminFamilyId(null);
+        setAdminFamilyDirectoryError(humanizeAuthError(error));
+      } finally {
+        if (!cancelled) {
+          setAdminFamilyDirectoryBusy(false);
+        }
+      }
+    };
+
+    void loadAdminFamilyDirectory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authState.family?.familyId, authState.profile?.role, authState.stage]);
 
   useEffect(() => {
     if (!cloudSync.message || cloudSync.phase === 'loading') {
@@ -1643,17 +1736,6 @@ function PlannerShell({
                 })
               ) : null}
             </div>
-            {authState.profile ? (
-              <small className="family-permission-note">
-                {authState.family?.isOwner && authState.profile.role !== 'admin'
-                  ? 'Du bist Familiengründer. Du kannst Mitglieder einladen, aber keine Konfiguration oder Admin-Rollen verwalten.'
-                  : authState.profile.role === 'admin' && authState.family?.isOwner
-                    ? 'Du bist Familiengründer und Admin. Du verwaltest Einladungen, Admin-Rollen und die Familien-Konfiguration.'
-                    : authState.profile.role === 'admin'
-                      ? 'Du bist Admin. Du verwaltest Einladungen, Admin-Rollen und die Familien-Konfiguration.'
-                      : 'Du bist Familienmitglied ohne Verwaltungsrechte.'}
-              </small>
-            ) : null}
           </div>
           {authState.profile ? (
             <div className="account-identity">
@@ -2450,13 +2532,6 @@ function PlannerShell({
             <div className="family-management-stack">
               <form className="panel form-panel" onSubmit={(event) => void handleAddMember(event)}>
                 <h4>Familienmitglied einladen</h4>
-                <p className="family-management-note">
-                  {canManageFamily
-                    ? 'Admins verwalten Einladungen, Admin-Rollen und die Familien-Konfiguration.'
-                    : canInviteFamilyMembers
-                      ? 'Familiengründer können Mitglieder einladen. Die Konfiguration und Admin-Rollen bleiben nur für Admins sichtbar.'
-                      : 'Nur Familiengründer oder Admins können Einladungen für diese Familie verwalten.'}
-                </p>
                 <input name="email" placeholder="E-Mail" disabled={!canInviteFamilyMembers} />
                 <select name="role" defaultValue="familyuser" disabled={!canManageFamily}>
                   <option value="familyuser">familyuser</option>
@@ -2471,10 +2546,72 @@ function PlannerShell({
                   Die Einladung wird per E-Mail verschickt. Sobald sich der Nutzer mit derselben
                   E-Mail registriert oder anmeldet, wird die Familienzuordnung automatisch uebernommen.
                 </small>
-                {!canManageFamily && canInviteFamilyMembers ? (
-                  <small>Als Familiengründer kannst du Mitglieder einladen, aber keine Admin-Rolle vergeben.</small>
-                ) : null}
               </form>
+
+              {canManageFamily ? (
+                <article className="panel list-panel admin-directory-panel">
+                  <div className="panel-heading">
+                    <h4>Familienübersicht</h4>
+                    <span className="chip">{adminFamilyDirectory.length}</span>
+                  </div>
+                  {adminFamilyDirectoryBusy ? (
+                    <p className="family-management-note">Familienübersicht wird geladen…</p>
+                  ) : null}
+                  {adminFamilyDirectoryError ? (
+                    <p className="auth-feedback auth-error">{adminFamilyDirectoryError}</p>
+                  ) : null}
+                  {!adminFamilyDirectoryBusy && !adminFamilyDirectoryError && adminFamilyDirectory.length === 0 ? (
+                    <p className="family-management-note">Noch keine Familien für die Übersicht gefunden.</p>
+                  ) : null}
+                  {adminFamilyDirectory.length > 0 ? (
+                    <>
+                      <div className="family-directory-switcher" role="tablist" aria-label="Familienübersicht wechseln">
+                        {adminFamilyDirectory.map((family) => (
+                          <button
+                            key={family.familyId}
+                            type="button"
+                            className={selectedAdminFamily?.familyId === family.familyId ? 'family-directory-button active' : 'family-directory-button'}
+                            aria-pressed={selectedAdminFamily?.familyId === family.familyId}
+                            onClick={() => setSelectedAdminFamilyId(family.familyId)}
+                          >
+                            <strong>{family.familyName}</strong>
+                            <small>{family.members.length} Mitglieder</small>
+                          </button>
+                        ))}
+                      </div>
+
+                      {selectedAdminFamily ? (
+                        <div className="family-directory-detail">
+                          <div className="panel-heading panel-heading-tight family-directory-summary">
+                            <div>
+                              <strong>{selectedAdminFamily.familyName}</strong>
+                              <small>
+                                {selectedAdminFamily.members.filter((member) => member.role === 'admin').length} Admin · {selectedAdminFamily.members.length} Mitglieder
+                              </small>
+                            </div>
+                            <div className="family-status-badges">
+                              <span className={selectedAdminFamily.allowOpenRegistration ? 'chip' : 'chip alt'}>
+                                {selectedAdminFamily.allowOpenRegistration ? 'Offene Registrierung' : 'Nur Einladung'}
+                              </span>
+                            </div>
+                          </div>
+                          <ul className="document-list family-directory-members">
+                            {selectedAdminFamily.members.map((member) => (
+                              <li key={member.id}>
+                                <div className="family-entry-copy">
+                                  <strong>{member.name}</strong>
+                                  <small>{member.email}</small>
+                                </div>
+                                {renderFamilyStatusBadges({ role: member.role, isOwner: member.isOwner })}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
+                </article>
+              ) : null}
 
               {canManageFamily ? (
                 <article className="panel form-panel family-config-panel">
@@ -2644,6 +2781,7 @@ export default function App() {
   const [authDraft, setAuthDraft] = useState<AuthDraft>(EMPTY_AUTH_DRAFT);
   const [authMode, setAuthMode] = useState<AuthMode>(redirectAuthMode ?? 'sign-in');
   const [authBusy, setAuthBusy] = useState(false);
+  const [registrationGatePreview, setRegistrationGatePreview] = useState<SupabaseRegistrationGate | null>(null);
   const blocksSessionHydrationAfterRecovery = useRef(redirectAuthMode === 'reset-password');
   const [authState, setAuthState] = useState<AuthState>({
     stage: supabaseConfigured ? 'loading' : 'disabled',
@@ -2662,6 +2800,35 @@ export default function App() {
   useEffect(() => {
     savePlannerState(plannerState);
   }, [plannerState]);
+
+  useEffect(() => {
+    if (!supabaseConfigured || authState.stage !== 'signed-out' || authMode !== 'sign-up') {
+      setRegistrationGatePreview(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadRegistrationGatePreview = async () => {
+      try {
+        const gate = await fetchRegistrationGate(authDraft.email);
+
+        if (!cancelled) {
+          setRegistrationGatePreview(gate);
+        }
+      } catch {
+        if (!cancelled) {
+          setRegistrationGatePreview(null);
+        }
+      }
+    };
+
+    void loadRegistrationGatePreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authDraft.email, authMode, authState.stage]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !redirectAuthMessage) {
@@ -2913,7 +3080,11 @@ export default function App() {
         const registrationGate = await fetchRegistrationGate(email);
 
         if (!registrationGate.allowed) {
-          throw new Error('Registrierung ist derzeit nur per Einladung moeglich. Bitte lass dir zuerst eine Einladung schicken.');
+          throw new Error(
+            isRegistrationDisabledByAdmin(registrationGate)
+              ? INVITE_ONLY_REGISTRATION_ERROR
+              : 'Registrierung ist derzeit nur per Einladung moeglich. Bitte lass dir zuerst eine Einladung schicken.',
+          );
         }
 
         const { data, error } = await signUpWithPassword(email, password, displayName);
@@ -3125,6 +3296,11 @@ export default function App() {
         busy={authBusy}
         error={authState.error}
         message={authState.message}
+        registrationBlockedNotice={
+          authMode === 'sign-up' && isRegistrationDisabledByAdmin(registrationGatePreview)
+            ? INVITE_ONLY_REGISTRATION_BANNER
+            : null
+        }
         authDraft={authDraft}
         onDraftChange={(field, value) =>
           setAuthDraft((current) => ({

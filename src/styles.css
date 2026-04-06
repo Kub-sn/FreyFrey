@@ -49,6 +49,12 @@ button {
   padding: 2rem;
 }
 
+.auth-stage {
+  width: min(1080px, 100%);
+  display: grid;
+  gap: 1rem;
+}
+
 .auth-shell-loading {
   place-items: center;
 }
@@ -149,6 +155,10 @@ button {
 
 .auth-card-wide {
   width: min(1080px, 100%);
+}
+
+.auth-stage .auth-card-wide {
+  width: 100%;
 }
 
 .auth-copy,
@@ -292,6 +302,29 @@ button {
 .auth-message {
   background: rgba(24, 52, 47, 0.08);
   color: #18342f;
+}
+
+.auth-status-banner {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 1.15rem;
+  border-radius: 24px;
+  border: 1px solid rgba(143, 52, 21, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 239, 0.98), rgba(252, 240, 230, 0.92)),
+    rgba(255, 255, 255, 0.82);
+  box-shadow: 0 14px 34px rgba(143, 52, 21, 0.08);
+  color: #7c3118;
+}
+
+.auth-status-banner strong {
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.auth-status-banner span {
+  line-height: 1.55;
 }
 
 .planner-feedback {
@@ -766,6 +799,10 @@ button {
   align-self: start;
 }
 
+.admin-directory-panel {
+  gap: 1rem;
+}
+
 .form-panel,
 .list-panel,
 .masonry-panel {
@@ -810,6 +847,60 @@ button {
 .family-management-note {
   margin: -0.1rem 0 0;
   color: rgba(24, 52, 47, 0.72);
+}
+
+.family-directory-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.family-directory-button {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 10.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(24, 52, 47, 0.12);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 252, 248, 0.96), rgba(247, 240, 231, 0.76));
+  color: #18342f;
+  text-align: left;
+  box-shadow: 0 8px 18px rgba(35, 27, 17, 0.04);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.family-directory-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(24, 52, 47, 0.22);
+  box-shadow: 0 12px 22px rgba(35, 27, 17, 0.06);
+}
+
+.family-directory-button.active {
+  border-color: rgba(24, 52, 47, 0.26);
+  background: linear-gradient(180deg, rgba(232, 242, 238, 0.96), rgba(247, 240, 231, 0.82));
+  box-shadow: 0 14px 26px rgba(24, 52, 47, 0.08);
+}
+
+.family-directory-button strong,
+.family-directory-button small {
+  display: block;
+}
+
+.family-directory-detail {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.family-directory-summary {
+  margin-top: 0.1rem;
+}
+
+.family-directory-members {
+  gap: 0.8rem;
 }
 
 .app-switch {

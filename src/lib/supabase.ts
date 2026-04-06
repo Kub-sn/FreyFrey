@@ -53,6 +53,22 @@ export type CreateFamilyInviteResult = {
   emailSent: boolean;
 };
 
+export type AdminFamilyDirectoryMember = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  isOwner: boolean;
+};
+
+export type AdminFamilyDirectoryFamily = {
+  familyId: string;
+  familyName: string;
+  allowOpenRegistration: boolean;
+  ownerUserId: string;
+  members: AdminFamilyDirectoryMember[];
+};
+
 type ShoppingItemRow = {
   id: string;
   name: string;
@@ -127,6 +143,17 @@ type BootstrappedFamilyRow = {
   role: UserRole;
   allow_open_registration: boolean;
   is_owner?: boolean;
+};
+
+type AdminFamilyDirectoryRow = {
+  family_id: string;
+  family_name: string;
+  allow_open_registration: boolean;
+  owner_user_id: string;
+  member_user_id: string;
+  member_display_name: string | null;
+  member_email: string | null;
+  member_role: UserRole;
 };
 
 type EdgeFunctionErrorLike = Error & {
@@ -567,6 +594,60 @@ export async function fetchFamilyInvites(familyId: string): Promise<SupabaseFami
     createdAt: invite.created_at,
     acceptedAt: invite.accepted_at,
   }));
+}
+
+export async function fetchAdminFamilyDirectory(): Promise<AdminFamilyDirectoryFamily[]> {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('get_admin_family_directory');
+
+  if (error) {
+    throw error;
+  }
+
+  const rows = (data ?? []) as AdminFamilyDirectoryRow[];
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const familyMap = new Map<string, AdminFamilyDirectoryFamily>();
+
+  for (const row of rows) {
+    const familyId = String(row.family_id);
+    const currentFamily = familyMap.get(familyId) ?? {
+      familyId,
+      familyName: String(row.family_name),
+      allowOpenRegistration: row.allow_open_registration !== false,
+      ownerUserId: String(row.owner_user_id),
+      members: [],
+    };
+
+    currentFamily.members.push({
+      id: String(row.member_user_id),
+      name: String(row.member_display_name ?? 'Familienmitglied'),
+      email: String(row.member_email ?? ''),
+      role: row.member_role,
+      isOwner: String(row.member_user_id) === String(row.owner_user_id),
+    });
+
+    familyMap.set(familyId, currentFamily);
+  }
+
+  return [...familyMap.values()]
+    .map((family) => ({
+      ...family,
+      members: [...family.members].sort((left, right) => {
+        const leftWeight = left.isOwner ? 0 : left.role === 'admin' ? 1 : 2;
+        const rightWeight = right.isOwner ? 0 : right.role === 'admin' ? 1 : 2;
+
+        if (leftWeight !== rightWeight) {
+          return leftWeight - rightWeight;
+        }
+
+        return left.name.localeCompare(right.name, 'de', { sensitivity: 'base' });
+      }),
+    }))
+    .sort((left, right) => left.familyName.localeCompare(right.familyName, 'de', { sensitivity: 'base' }));
 }
 
 export async function removeFamilyInvite(inviteId: string) {
