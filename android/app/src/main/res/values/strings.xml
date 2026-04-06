@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Familienplaner</string>
-    <string name="title_activity_main">Familienplaner</string>
+    <string name="app_name">Frey Frey</string>
+    <string name="title_activity_main">Frey Frey</string>
     <string name="package_name">com.familyplanner.app</string>
     <string name="custom_url_scheme">com.familyplanner.app</string>
 </resources>

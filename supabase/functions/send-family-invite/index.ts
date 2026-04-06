@@ -55,11 +55,11 @@ function buildInviteEmail(params: {
   const safeRoleLabel = escapeHtml(roleLabel);
   const safeAppUrl = escapeHtml(params.appUrl);
 
-  const subject = `${params.familyName}: Einladung zum Familienplaner`;
+  const subject = `${params.familyName}: Einladung zu Frey Frey`;
   const text = [
     `Hallo,`,
     ``,
-    `${params.inviterName} hat dich zur Familie "${params.familyName}" im Familienplaner eingeladen.`,
+    `${params.inviterName} hat dich zur Familie "${params.familyName}" in Frey Frey eingeladen.`,
     `Deine Rolle: ${roleLabel}.`,
     ``,
     `Öffne die App unter ${params.appUrl} und registriere dich oder melde dich mit ${params.inviteeEmail} an.`,
@@ -70,7 +70,7 @@ function buildInviteEmail(params: {
 
   const html = `
     <div style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.6;">
-      <h2 style="margin-bottom: 16px;">Einladung zum Familienplaner</h2>
+      <h2 style="margin-bottom: 16px;">Einladung zu Frey Frey</h2>
       <p>Hallo,</p>
       <p><strong>${safeInviterName}</strong> hat dich zur Familie <strong>${safeFamilyName}</strong> eingeladen.</p>
       <p>Deine Rolle: <strong>${safeRoleLabel}</strong>.</p>
