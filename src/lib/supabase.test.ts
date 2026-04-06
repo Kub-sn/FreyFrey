@@ -189,8 +189,8 @@ describe('createFamilyInvite', () => {
       created_at: '2026-04-04T10:00:00.000Z',
       accepted_at: null,
     };
-    const familyInviteBuilder = buildInsertBuilder({
-      data: inviteRow,
+    const rpcMock = vi.fn().mockResolvedValue({
+      data: [inviteRow],
       error: null,
     });
     const refreshSessionMock = vi.fn().mockResolvedValue({
@@ -206,7 +206,7 @@ describe('createFamilyInvite', () => {
     const setAuthMock = vi.fn();
 
     createClientMock.mockReturnValue({
-      from: vi.fn().mockReturnValue(familyInviteBuilder),
+      rpc: rpcMock,
       auth: {
         refreshSession: refreshSessionMock,
         getSession: getSessionMock,
@@ -222,7 +222,6 @@ describe('createFamilyInvite', () => {
       'family-1',
       'New@example.com',
       'familyuser',
-      'user-1',
     );
 
     expect(result).toEqual({
@@ -235,6 +234,11 @@ describe('createFamilyInvite', () => {
         acceptedAt: null,
       },
       emailSent: true,
+    });
+    expect(rpcMock).toHaveBeenCalledWith('create_family_invite_for_current_user', {
+      target_family_id: 'family-1',
+      target_email: 'new@example.com',
+      target_role: 'familyuser',
     });
     expect(setAuthMock).toHaveBeenCalledWith('fresh-access-token-1');
     expect(invokeMock).toHaveBeenCalledWith('send-family-invite', {
@@ -249,30 +253,11 @@ describe('createFamilyInvite', () => {
     expect(getSessionMock).not.toHaveBeenCalled();
   });
 
-  it('reuses an existing pending invite when the email is already invited', async () => {
-    const duplicateError = {
-      code: '23505',
-      message: 'duplicate key value violates unique constraint',
-    };
-    const existingInvite = {
-      id: 'invite-existing',
-      family_id: 'family-1',
-      email: 'new@example.com',
-      role: 'familyuser',
-      created_at: '2026-04-04T09:00:00.000Z',
-      accepted_at: null,
-    };
-    const insertBuilder = buildInsertBuilder({
-      data: null,
-      error: duplicateError,
-    });
-    const existingInviteBuilder = buildExistingInviteBuilder({
-      data: existingInvite,
+  it('surfaces a clear error when the invite rpc returns no row', async () => {
+    const rpcMock = vi.fn().mockResolvedValue({
+      data: [],
       error: null,
     });
-    const fromMock = vi.fn()
-      .mockReturnValueOnce(insertBuilder)
-      .mockReturnValueOnce(existingInviteBuilder);
     const refreshSessionMock = vi.fn().mockResolvedValue({
       data: {
         session: {
@@ -286,7 +271,7 @@ describe('createFamilyInvite', () => {
     const setAuthMock = vi.fn();
 
     createClientMock.mockReturnValue({
-      from: fromMock,
+      rpc: rpcMock,
       auth: {
         refreshSession: refreshSessionMock,
         getSession: getSessionMock,
@@ -298,25 +283,13 @@ describe('createFamilyInvite', () => {
     });
 
     const { createFamilyInvite } = await import('./supabase');
-    const result = await createFamilyInvite(
-      'family-1',
-      'new@example.com',
-      'familyuser',
-      'user-1',
-    );
 
-    expect(result.invite.id).toBe('invite-existing');
-    expect(fromMock).toHaveBeenCalledTimes(2);
-    expect(setAuthMock).toHaveBeenCalledWith('fresh-access-token-2');
-    expect(invokeMock).toHaveBeenCalledWith('send-family-invite', {
-      body: {
-        inviteId: 'invite-existing',
-        appUrl: window.location.origin,
-      },
-      headers: {
-        Authorization: 'Bearer fresh-access-token-2',
-      },
-    });
+    await expect(
+      createFamilyInvite('family-1', 'new@example.com', 'familyuser'),
+    ).rejects.toThrow('Die Einladung konnte nicht gespeichert werden. Bitte versuche es erneut.');
+
+    expect(setAuthMock).not.toHaveBeenCalled();
+    expect(invokeMock).not.toHaveBeenCalled();
     expect(getSessionMock).not.toHaveBeenCalled();
   });
 
@@ -329,8 +302,8 @@ describe('createFamilyInvite', () => {
       created_at: '2026-04-04T10:00:00.000Z',
       accepted_at: null,
     };
-    const familyInviteBuilder = buildInsertBuilder({
-      data: inviteRow,
+    const rpcMock = vi.fn().mockResolvedValue({
+      data: [inviteRow],
       error: null,
     });
     const refreshSessionMock = vi.fn().mockResolvedValue({
@@ -349,7 +322,7 @@ describe('createFamilyInvite', () => {
     const setAuthMock = vi.fn();
 
     createClientMock.mockReturnValue({
-      from: vi.fn().mockReturnValue(familyInviteBuilder),
+      rpc: rpcMock,
       auth: {
         refreshSession: refreshSessionMock,
         getSession: getSessionMock,
@@ -363,7 +336,7 @@ describe('createFamilyInvite', () => {
     const { createFamilyInvite } = await import('./supabase');
 
     await expect(
-      createFamilyInvite('family-1', 'new@example.com', 'familyuser', 'user-1'),
+      createFamilyInvite('family-1', 'new@example.com', 'familyuser'),
     ).rejects.toThrow(
       'Die Einladungs-E-Mail konnte nicht gesendet werden, weil keine gueltige Anmeldung gefunden wurde. Bitte erneut anmelden und noch einmal versuchen.',
     );
@@ -381,8 +354,8 @@ describe('createFamilyInvite', () => {
       created_at: '2026-04-04T10:00:00.000Z',
       accepted_at: null,
     };
-    const familyInviteBuilder = buildInsertBuilder({
-      data: inviteRow,
+    const rpcMock = vi.fn().mockResolvedValue({
+      data: [inviteRow],
       error: null,
     });
     const refreshSessionMock = vi.fn().mockResolvedValue({
@@ -403,7 +376,7 @@ describe('createFamilyInvite', () => {
     const setAuthMock = vi.fn();
 
     createClientMock.mockReturnValue({
-      from: vi.fn().mockReturnValue(familyInviteBuilder),
+      rpc: rpcMock,
       auth: {
         refreshSession: refreshSessionMock,
         getSession: getSessionMock,
@@ -416,7 +389,7 @@ describe('createFamilyInvite', () => {
 
     const { createFamilyInvite } = await import('./supabase');
 
-    await createFamilyInvite('family-1', 'new@example.com', 'familyuser', 'user-1');
+    await createFamilyInvite('family-1', 'new@example.com', 'familyuser');
 
     expect(setAuthMock).toHaveBeenCalledWith('stored-access-token-3');
     expect(invokeMock).toHaveBeenCalledWith('send-family-invite', {

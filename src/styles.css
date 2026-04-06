@@ -818,6 +818,18 @@ button {
   gap: 1rem;
 }
 
+.invite-family-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.invite-family-field span {
+  font-size: 0.84rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(24, 52, 47, 0.78);
+}
+
 .family-config-toggle {
   display: flex;
   align-items: center;

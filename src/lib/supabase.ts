@@ -776,47 +776,28 @@ export async function createFamilyInvite(
   familyId: string,
   email: string,
   role: UserRole,
-  invitedByUserId: string,
 ): Promise<CreateFamilyInviteResult> {
   const client = requireSupabase();
   const normalizedEmail = email.trim().toLowerCase();
-  let invite: FamilyInviteRow | null = null;
 
   if (!normalizedEmail) {
     throw new Error('Bitte eine E-Mail-Adresse eingeben.');
   }
 
-  const { data, error } = await client
-    .from('family_invites')
-    .insert({
-      family_id: familyId,
-      email: normalizedEmail,
-      role,
-      invited_by_user_id: invitedByUserId,
-    })
-    .select('id, family_id, email, role, created_at, accepted_at')
-    .single();
+  const { data, error } = await client.rpc('create_family_invite_for_current_user', {
+    target_family_id: familyId,
+    target_email: normalizedEmail,
+    target_role: role,
+  });
 
   if (error) {
-    if (error.code !== '23505') {
-      throw error;
-    }
+    throw error;
+  }
 
-    const { data: existingInvite, error: existingInviteError } = await client
-      .from('family_invites')
-      .select('id, family_id, email, role, created_at, accepted_at')
-      .eq('family_id', familyId)
-      .eq('email', normalizedEmail)
-      .is('accepted_at', null)
-      .single();
+  const invite = (Array.isArray(data) ? data[0] : data) as FamilyInviteRow | null;
 
-    if (existingInviteError || !existingInvite) {
-      throw error;
-    }
-
-    invite = existingInvite as FamilyInviteRow;
-  } else {
-    invite = data as FamilyInviteRow;
+  if (!invite) {
+    throw new Error('Die Einladung konnte nicht gespeichert werden. Bitte versuche es erneut.');
   }
 
   await triggerFamilyInviteEmail(client, invite.id);

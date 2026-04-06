@@ -471,6 +471,11 @@ function isRegistrationDisabledByAdmin(registrationGate: SupabaseRegistrationGat
   );
 }
 
+type InviteTargetFamily = {
+  familyId: string;
+  familyName: string;
+};
+
 function AuthScreen({
   mode,
   busy,
@@ -735,6 +740,7 @@ function PlannerShell({
   const [adminFamilyDirectoryBusy, setAdminFamilyDirectoryBusy] = useState(false);
   const [adminFamilyDirectoryError, setAdminFamilyDirectoryError] = useState<string | null>(null);
   const [selectedAdminFamilyId, setSelectedAdminFamilyId] = useState<string | null>(null);
+  const [selectedInviteFamilyId, setSelectedInviteFamilyId] = useState<string | null>(null);
   const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
   const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState(() => getMonthStart(new Date()));
@@ -752,12 +758,42 @@ function PlannerShell({
   const canViewFamily = Boolean(authState.family);
   const canInviteFamilyMembers = canManageFamily || authState.family?.isOwner === true;
   const allowOpenRegistration = authState.family?.allowOpenRegistration ?? true;
+  const adminInviteFamilies = useMemo<InviteTargetFamily[]>(() => {
+    if (!canManageFamily) {
+      return [];
+    }
+
+    if (adminFamilyDirectory.length > 0) {
+      return adminFamilyDirectory.map((family) => ({
+        familyId: family.familyId,
+        familyName: family.familyName,
+      }));
+    }
+
+    if (!authState.family) {
+      return [];
+    }
+
+    return [
+      {
+        familyId: authState.family.familyId,
+        familyName: authState.family.familyName,
+      },
+    ];
+  }, [adminFamilyDirectory, authState.family, canManageFamily]);
   const selectedAdminFamily = useMemo(
     () =>
       adminFamilyDirectory.find((family) => family.familyId === selectedAdminFamilyId) ??
       adminFamilyDirectory[0] ??
       null,
     [adminFamilyDirectory, selectedAdminFamilyId],
+  );
+  const selectedInviteFamily = useMemo(
+    () =>
+      adminInviteFamilies.find((family) => family.familyId === selectedInviteFamilyId) ??
+      adminInviteFamilies[0] ??
+      null,
+    [adminInviteFamilies, selectedInviteFamilyId],
   );
   const openTasks = useMemo(
     () => plannerState.tasks.filter((task) => !task.done).length,
@@ -936,6 +972,24 @@ function PlannerShell({
       cancelled = true;
     };
   }, [authState.family?.familyId, authState.profile?.role, authState.stage]);
+
+  useEffect(() => {
+    if (!canManageFamily) {
+      setSelectedInviteFamilyId(null);
+      return;
+    }
+
+    setSelectedInviteFamilyId((current) => {
+      if (current && adminInviteFamilies.some((family) => family.familyId === current)) {
+        return current;
+      }
+
+      const currentFamilyId = authState.family?.familyId;
+      return adminInviteFamilies.find((family) => family.familyId === currentFamilyId)?.familyId
+        ?? adminInviteFamilies[0]?.familyId
+        ?? null;
+    });
+  }, [adminInviteFamilies, authState.family?.familyId, canManageFamily]);
 
   useEffect(() => {
     if (!cloudSync.message || cloudSync.phase === 'loading') {
@@ -1156,13 +1210,21 @@ function PlannerShell({
     const form = new FormData(formElement);
     const email = String(form.get('email') || '').trim();
     const role = String(form.get('role') || 'familyuser').trim() as UserRole;
+    const targetFamilyId = canManageFamily
+      ? String(form.get('familyId') || selectedInviteFamily?.familyId || '').trim()
+      : authState.family?.familyId ?? '';
+    const targetFamilyName = canManageFamily
+      ? selectedInviteFamily?.familyName ?? authState.family?.familyName ?? 'die gewaehlte Familie'
+      : authState.family?.familyName ?? 'deine Familie';
 
     if (
       !authState.family ||
       !authState.profile ||
       !canInviteFamilyMembers ||
       !email ||
-      (role !== 'admin' && role !== 'familyuser')
+      (role !== 'admin' && role !== 'familyuser') ||
+      !targetFamilyId ||
+      (canManageFamily && !adminInviteFamilies.some((family) => family.familyId === targetFamilyId))
     ) {
       return;
     }
@@ -1171,22 +1233,29 @@ function PlannerShell({
 
     try {
       const result = await createFamilyInvite(
-        authState.family.familyId,
+        targetFamilyId,
         email,
         inviteRole,
-        authState.profile.id,
       );
 
-      setFamilyInvites((current) => [
-        result.invite,
-        ...current.filter((entry) => entry.id !== result.invite.id),
-      ]);
+      if (result.invite.familyId === authState.family.familyId) {
+        setFamilyInvites((current) => [
+          result.invite,
+          ...current.filter((entry) => entry.id !== result.invite.id),
+        ]);
+      }
+
       formElement.reset();
       setCloudSync({
         phase: 'ready',
-        message: result.emailSent
-          ? 'Einladung wurde gespeichert und per E-Mail verschickt.'
-          : 'Einladung wurde gespeichert.',
+        message:
+          result.invite.familyId === authState.family.familyId
+            ? result.emailSent
+              ? 'Einladung wurde gespeichert und per E-Mail verschickt.'
+              : 'Einladung wurde gespeichert.'
+            : result.emailSent
+              ? `Einladung fuer ${targetFamilyName} wurde gespeichert und per E-Mail verschickt.`
+              : `Einladung fuer ${targetFamilyName} wurde gespeichert.`,
       });
     } catch (error) {
       setCloudSync({
@@ -2532,8 +2601,31 @@ function PlannerShell({
             <div className="family-management-stack">
               <form className="panel form-panel" onSubmit={(event) => void handleAddMember(event)}>
                 <h4>Familienmitglied einladen</h4>
+                {canManageFamily ? (
+                  <label className="invite-family-field">
+                    <span>Familie</span>
+                    <select
+                      name="familyId"
+                      aria-label="Familie fuer Einladung"
+                      value={selectedInviteFamily?.familyId ?? ''}
+                      disabled={!canInviteFamilyMembers || adminInviteFamilies.length === 0}
+                      onChange={(event) => setSelectedInviteFamilyId(event.currentTarget.value)}
+                    >
+                      {adminInviteFamilies.map((family) => (
+                        <option key={family.familyId} value={family.familyId}>
+                          {family.familyName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
                 <input name="email" placeholder="E-Mail" disabled={!canInviteFamilyMembers} />
-                <select name="role" defaultValue="familyuser" disabled={!canManageFamily}>
+                <select
+                  name="role"
+                  aria-label="Rolle fuer Einladung"
+                  defaultValue="familyuser"
+                  disabled={!canManageFamily}
+                >
                   <option value="familyuser">familyuser</option>
                   {canManageFamily ? <option value="admin">admin</option> : null}
                 </select>

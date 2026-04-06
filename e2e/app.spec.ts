@@ -184,6 +184,15 @@ async function mockSupabaseRegistrationControls(page: Page) {
   const state = {
     allowOpenRegistration: true,
     currentSession: null as typeof adminSession | null,
+    lastCreatedInvite: null as null | {
+      id: string;
+      family_id: string;
+      email: string;
+      role: 'admin' | 'familyuser';
+      created_at: string;
+      accepted_at: string | null;
+      invited_by_user_id: string;
+    },
   };
 
   const parseRequestJson = (route: Route) => {
@@ -338,6 +347,26 @@ async function mockSupabaseRegistrationControls(page: Page) {
       return;
     }
 
+    if (path.endsWith('/rpc/create_family_invite_for_current_user')) {
+      const payload = parseRequestJson(route);
+      state.lastCreatedInvite = {
+        id: 'invite-created',
+        family_id: String(payload.target_family_id || 'family-1'),
+        email: String(payload.target_email || '').toLowerCase(),
+        role: String(payload.target_role || 'familyuser') === 'admin' ? 'admin' : 'familyuser',
+        created_at: '2026-04-07T12:00:00.000Z',
+        accepted_at: null,
+        invited_by_user_id: 'user-admin',
+      };
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([state.lastCreatedInvite]),
+      });
+      return;
+    }
+
     const table = path.split('/').pop();
     let body: unknown = [];
 
@@ -398,6 +427,8 @@ async function mockSupabaseRegistrationControls(page: Page) {
       body: JSON.stringify({}),
     });
   });
+
+  return state;
 }
 
 test('shows the planner shell and lets the user open the shopping module', async ({ page }) => {
@@ -575,6 +606,7 @@ test('lets a familyuser owner invite members but hides configuration controls', 
 
   await expect(page.getByRole('heading', { name: 'Mitglieder & Rollen' })).toBeVisible();
   await expect(page.getByText('Gründerstatus').first()).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Familie fuer Einladung' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Einladung senden' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Einladung für open@example.com zurückziehen' })).toBeVisible();
   await page.getByRole('button', { name: 'Einladung für open@example.com zurückziehen' }).click();
@@ -584,7 +616,7 @@ test('lets a familyuser owner invite members but hides configuration controls', 
 });
 
 test('lets admins switch registration to invite-only and back again', async ({ page }) => {
-  await mockSupabaseRegistrationControls(page);
+  const registrationState = await mockSupabaseRegistrationControls(page);
 
   await page.goto('/');
 
@@ -599,6 +631,13 @@ test('lets admins switch registration to invite-only and back again', async ({ p
   await expect(page.getByRole('heading', { name: 'Familienübersicht' })).toBeVisible();
   await page.getByRole('button', { name: /Familie Abendrot/i }).click();
   await expect(page.getByText('lea@example.com')).toBeVisible();
+  await page.getByRole('combobox', { name: 'Familie fuer Einladung' }).selectOption('family-2');
+  await expect(page.getByRole('combobox', { name: 'Familie fuer Einladung' })).toHaveValue('family-2');
+  await page.getByPlaceholder('E-Mail').fill('branch@example.com');
+  await page.getByRole('combobox', { name: 'Rolle fuer Einladung' }).selectOption('familyuser');
+  await page.getByRole('button', { name: 'Einladung senden' }).click();
+  await expect.poll(() => registrationState.lastCreatedInvite?.family_id ?? null).toBe('family-2');
+  await expect(page.getByText('branch@example.com')).toHaveCount(0);
 
   const registrationToggle = page.getByRole('checkbox', { name: 'Freie Registrierung erlauben' });
 

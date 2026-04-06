@@ -586,6 +586,7 @@ describe('App auth flow', () => {
     expect(screen.getByRole('heading', { level: 4, name: 'Mitglieder & Rollen' })).toBeInTheDocument();
     expect(getAccountCard().getByText('Gründerstatus')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 4, name: 'Konfiguration' })).not.toBeInTheDocument();
+    expect(getInviteForm().queryByRole('combobox', { name: 'Familie fuer Einladung' })).not.toBeInTheDocument();
     expect(getInviteForm().getByRole('button', { name: 'Einladung senden' })).toBeEnabled();
     expect(getInviteForm().queryByRole('option', { name: 'admin' })).not.toBeInTheDocument();
     expect(screen.getAllByText('Gründerstatus').length).toBeGreaterThan(0);
@@ -709,6 +710,7 @@ describe('App auth flow', () => {
 
     expect(screen.getByRole('heading', { level: 4, name: 'Mitglieder & Rollen' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Einladung senden' })).toBeInTheDocument();
+    expect(getInviteForm().getByRole('combobox', { name: 'Familie fuer Einladung' })).toBeInTheDocument();
     expect(screen.queryByText('Keine offenen Einladungen')).not.toBeInTheDocument();
     expect(getConfigCard().getByRole('checkbox', { name: 'Freie Registrierung erlauben' })).toHaveClass('app-switch');
 
@@ -876,10 +878,42 @@ describe('App auth flow', () => {
         role: 'admin',
       },
     ]);
+    fetchAdminFamilyDirectory.mockResolvedValue([
+      {
+        familyId: 'family-4',
+        familyName: 'Familie Mail',
+        allowOpenRegistration: true,
+        ownerUserId: 'user-4',
+        members: [
+          {
+            id: 'user-4',
+            name: 'Admin',
+            email: 'admin@example.com',
+            role: 'admin',
+            isOwner: true,
+          },
+        ],
+      },
+      {
+        familyId: 'family-9',
+        familyName: 'Familie Nord',
+        allowOpenRegistration: false,
+        ownerUserId: 'user-9',
+        members: [
+          {
+            id: 'user-9',
+            name: 'Lea Nord',
+            email: 'lea.nord@example.com',
+            role: 'familyuser',
+            isOwner: true,
+          },
+        ],
+      },
+    ]);
     createFamilyInvite.mockResolvedValue({
       invite: {
         id: 'invite-42',
-        familyId: 'family-4',
+        familyId: 'family-9',
         email: 'new@example.com',
         role: 'familyuser',
         createdAt: '2026-04-04T10:00:00.000Z',
@@ -895,18 +929,21 @@ describe('App auth flow', () => {
 
     const inviteForm = getInviteForm();
 
+    await user.selectOptions(
+      inviteForm.getByRole('combobox', { name: 'Familie fuer Einladung' }),
+      'family-9',
+    );
     await user.type(inviteForm.getByPlaceholderText('E-Mail'), 'new@example.com');
-    await user.selectOptions(inviteForm.getByRole('combobox'), 'familyuser');
+    await user.selectOptions(inviteForm.getByRole('combobox', { name: 'Rolle fuer Einladung' }), 'familyuser');
     await user.click(inviteForm.getByRole('button', { name: 'Einladung senden' }));
 
     expect(createFamilyInvite).toHaveBeenCalledWith(
-      'family-4',
+      'family-9',
       'new@example.com',
       'familyuser',
-      'user-4',
     );
-    expect(await screen.findByText('new@example.com')).toBeInTheDocument();
-    expect(screen.getByText('Familienmitglied')).toBeInTheDocument();
+    expect(await screen.findByText('Einladung fuer Familie Nord wurde gespeichert und per E-Mail verschickt.')).toBeInTheDocument();
+    expect(screen.queryByText('new@example.com')).not.toBeInTheDocument();
   });
 
   it('allows admins to withdraw a pending invitation', async () => {

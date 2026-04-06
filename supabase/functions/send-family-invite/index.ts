@@ -99,10 +99,11 @@ Deno.serve(async (request) => {
   const authorization = request.headers.get('Authorization');
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
   const fromEmail = Deno.env.get('FAMILY_INVITE_FROM_EMAIL');
 
-  if (!authorization || !supabaseUrl || !supabaseAnonKey) {
+  if (!authorization || !supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
     return jsonResponse(500, { error: 'Supabase function configuration is incomplete.' });
   }
 
@@ -141,7 +142,14 @@ Deno.serve(async (request) => {
     return jsonResponse(401, { error: 'Unauthorized.' });
   }
 
-  const { data: invite, error: inviteError } = await supabase
+  const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  const { data: invite, error: inviteError } = await adminClient
     .from('family_invites')
     .select('id, email, role, family_id, created_at, invited_by_user_id')
     .eq('id', inviteId)
@@ -156,7 +164,7 @@ Deno.serve(async (request) => {
     return jsonResponse(403, { error: 'Only the inviter can trigger the invite email.' });
   }
 
-  const { data: family, error: familyError } = await supabase
+  const { data: family, error: familyError } = await adminClient
     .from('families')
     .select('id, name')
     .eq('id', invite.family_id)
@@ -166,7 +174,7 @@ Deno.serve(async (request) => {
     return jsonResponse(404, { error: 'Family for invitation was not found.' });
   }
 
-  const { data: inviterProfile, error: inviterError } = await supabase
+  const { data: inviterProfile, error: inviterError } = await adminClient
     .from('profiles')
     .select('display_name, email')
     .eq('id', user.id)
