@@ -434,6 +434,12 @@ button {
 
 .panel-heading-tight {
   align-items: center;
+  margin-top: 1rem;
+  padding-top: 0.2rem;
+}
+
+.panel-heading-tight .chip {
+  flex: 0 0 auto;
 }
 
 .member-switcher {
@@ -692,6 +698,25 @@ button {
   color: #a64722;
 }
 
+.role-chip {
+  border: 1px solid transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.role-chip-admin {
+  background: linear-gradient(135deg, rgba(24, 52, 47, 0.16), rgba(43, 108, 89, 0.22));
+  border-color: rgba(24, 52, 47, 0.16);
+  color: #18342f;
+}
+
+.role-chip-member {
+  background: linear-gradient(135deg, rgba(244, 111, 58, 0.12), rgba(251, 244, 236, 0.88));
+  border-color: rgba(244, 111, 58, 0.16);
+  color: #9a4b29;
+}
+
 .module-layout {
   display: grid;
   grid-template-columns: minmax(280px, 340px) 1fr;
@@ -758,16 +783,73 @@ button {
   line-height: 1.55;
 }
 
-.family-config-toggle input[type='checkbox'] {
+.app-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  flex: 0 0 auto;
   width: 3.2rem;
   height: 1.9rem;
   margin: 0;
-  accent-color: #18342f;
+  border: 1px solid rgba(165, 71, 34, 0.28);
+  border-radius: 999px;
+  background-color: #cf5d34;
+  background: linear-gradient(135deg, rgba(198, 84, 47, 0.86), rgba(232, 141, 101, 0.88));
+  accent-color: transparent;
+  box-shadow:
+    inset 0 1px 2px rgba(115, 42, 18, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.56);
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
   cursor: pointer;
 }
 
-.family-config-toggle input[type='checkbox']:disabled {
+.app-switch:not(:checked) {
+  border-color: rgba(165, 71, 34, 0.34);
+  background-color: #cf5d34;
+  background-image: linear-gradient(135deg, rgba(198, 84, 47, 0.92), rgba(232, 141, 101, 0.94));
+}
+
+.app-switch::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0.18rem;
+  width: 1.18rem;
+  height: 1.18rem;
+  border-radius: 999px;
+  background: #fbf4ec;
+  box-shadow: 0 4px 12px rgba(35, 27, 17, 0.16);
+  transition: transform 180ms ease, background-color 180ms ease;
+  transform: translateY(-50%);
+}
+
+.app-switch:checked {
+  border-color: rgba(24, 52, 47, 0.56);
+  background: linear-gradient(135deg, #18342f, #2b6c59);
+}
+
+.app-switch:checked::after {
+  transform: translate(1.28rem, -50%);
+  background: #fffdf9;
+}
+
+.app-switch:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 4px rgba(198, 84, 47, 0.18),
+    inset 0 1px 2px rgba(115, 42, 18, 0.18);
+}
+
+.app-switch:disabled {
   cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .family-config-note {
@@ -786,7 +868,7 @@ button {
   gap: 0.75rem;
 }
 
-.form-panel input,
+.form-panel input:not(.app-switch),
 .form-panel textarea,
 .form-panel select {
   width: 100%;
@@ -867,6 +949,14 @@ button {
   align-items: center;
   gap: 0.8rem;
   font-weight: 600;
+}
+
+.check-list .app-switch {
+  margin-top: 0.02rem;
+}
+
+.family-config-toggle .app-switch {
+  margin-left: auto;
 }
 
 .file-input-label {
@@ -1076,6 +1166,40 @@ button {
   justify-content: flex-end;
   align-items: center;
   gap: 0.6rem;
+}
+
+.invite-card-list {
+  gap: 0.85rem;
+  margin-top: 0.4rem;
+}
+
+.invite-card-list li.invite-card-item {
+  align-items: stretch;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(24, 52, 47, 0.09);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 252, 248, 0.92), rgba(247, 240, 231, 0.76));
+  box-shadow: 0 10px 22px rgba(35, 27, 17, 0.05);
+}
+
+.invite-card-copy {
+  align-content: start;
+  gap: 0.5rem;
+}
+
+.invite-card-copy .role-chip {
+  width: fit-content;
+}
+
+.invite-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.invite-card-actions .ghost-toggle {
+  align-self: center;
 }
 
 .family-entry-copy {

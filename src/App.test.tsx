@@ -96,9 +96,25 @@ describe('App', () => {
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Einkauf' }));
 
+    const heading = screen.getByRole('heading', { level: 4, name: 'Neuen Artikel hinzufügen' });
+    const form = heading.closest('form');
+
+    if (!form) {
+      throw new Error('Einkaufsformular wurde nicht gefunden.');
+    }
+
+    const shoppingForm = within(form);
+
     expect(screen.getByRole('heading', { level: 4, name: 'Neuen Artikel hinzufügen' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Artikel speichern' })).toBeInTheDocument();
     expect(screen.queryByText('Milch')).not.toBeInTheDocument();
+
+    await user.type(shoppingForm.getByPlaceholderText('Artikel'), 'Milch');
+    await user.type(shoppingForm.getByPlaceholderText('Menge'), '2');
+    await user.type(shoppingForm.getByPlaceholderText('Kategorie'), 'Kueche');
+    await user.click(shoppingForm.getByRole('button', { name: 'Artikel speichern' }));
+
+    expect(screen.getByRole('checkbox', { name: 'Milch' })).toHaveClass('app-switch');
   });
 
   it('allows switching to the notes module', async () => {

@@ -584,6 +584,8 @@ describe('App auth flow', () => {
 
     expect(screen.getByRole('heading', { level: 4, name: 'Mitglieder & Rollen' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Einladung senden' })).toBeInTheDocument();
+    expect(screen.queryByText('Keine offenen Einladungen')).not.toBeInTheDocument();
+    expect(getConfigCard().getByRole('checkbox', { name: 'Freie Registrierung erlauben' })).toHaveClass('app-switch');
   });
 
   it('lets admins switch registration between open and invite-only in the configuration card', async () => {
@@ -767,7 +769,7 @@ describe('App auth flow', () => {
       'user-4',
     );
     expect(await screen.findByText('new@example.com')).toBeInTheDocument();
-    expect(screen.getByText('Wartet auf Registrierung oder nächsten Login')).toBeInTheDocument();
+    expect(screen.getByText('Familienmitglied')).toBeInTheDocument();
   });
 
   it('allows admins to withdraw a pending invitation', async () => {

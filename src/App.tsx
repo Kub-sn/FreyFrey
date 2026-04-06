@@ -228,6 +228,16 @@ function getDocumentMetaParts(document: DocumentItem) {
   );
 }
 
+function getRoleLabel(role: UserRole) {
+  return role === 'admin' ? 'Admin' : 'Familienmitglied';
+}
+
+function getRoleChipClass(role: UserRole) {
+  return role === 'admin'
+    ? 'chip role-chip role-chip-admin'
+    : 'chip role-chip role-chip-member';
+}
+
 function canPreviewDocument(document: DocumentItem) {
   const kind = getDocumentKind(document);
 
@@ -1101,13 +1111,7 @@ function PlannerShell({
     setRegistrationConfigBusy(true);
 
     try {
-      const updatedFamily = await onUpdateFamilyRegistration(nextValue);
-      setCloudSync({
-        phase: 'ready',
-        message: updatedFamily.allowOpenRegistration
-          ? 'Freie Registrierung wurde aktiviert.'
-          : 'Registrierung per Einladung wurde aktiviert.',
-      });
+      await onUpdateFamilyRegistration(nextValue);
     } catch (error) {
       setCloudSync({
         phase: 'error',
@@ -1608,7 +1612,11 @@ function PlannerShell({
             <strong>{authState.family?.familyName ?? plannerState.familyName}</strong>
             <div className="account-meta-row">
               <span className="chip">{adminCount} Admin</span>
-              {authState.profile ? <span className="chip alt">{authState.profile.role}</span> : null}
+              {authState.profile ? (
+                <span className={getRoleChipClass(authState.profile.role)}>
+                  {getRoleLabel(authState.profile.role)}
+                </span>
+              ) : null}
             </div>
           </div>
           {authState.profile ? (
@@ -1770,6 +1778,7 @@ function PlannerShell({
                     <label>
                       <input
                         type="checkbox"
+                        className="app-switch"
                         checked={item.checked}
                         onChange={() => void handleToggleShopping(item.id, !item.checked)}
                       />
@@ -2347,7 +2356,6 @@ function PlannerShell({
             <article className="panel list-panel">
               <div className="panel-heading">
                 <h4>Mitglieder & Rollen</h4>
-                <span className="chip alt">{effectiveRole}</span>
               </div>
               <ul className="document-list">
                 {plannerState.members.length > 0 ? (
@@ -2357,12 +2365,12 @@ function PlannerShell({
                         <strong>{member.name}</strong>
                         <small>{member.email}</small>
                       </div>
-                      <span className="chip alt">{member.role}</span>
+                      <span className={getRoleChipClass(member.role)}>{getRoleLabel(member.role)}</span>
                     </li>
                   ))
                 ) : (
                   <li>
-                    <div>
+                    <div className="family-entry-copy">
                       <strong>Noch keine Mitglieder geladen</strong>
                       <small>Nach Login und Familienzuordnung werden echte Mitglieder aus Supabase angezeigt.</small>
                     </div>
@@ -2373,16 +2381,15 @@ function PlannerShell({
                 <h4>Offene Einladungen</h4>
                 <span className="chip">{familyInvites.length}</span>
               </div>
-              <ul className="document-list compact">
-                {familyInvites.length > 0 ? (
-                  familyInvites.map((invite) => (
-                    <li key={invite.id}>
-                      <div className="family-entry-copy">
+              {familyInvites.length > 0 ? (
+                <ul className="document-list compact invite-card-list">
+                  {familyInvites.map((invite) => (
+                    <li key={invite.id} className="invite-card-item">
+                      <div className="family-entry-copy invite-card-copy">
                         <strong>{invite.email}</strong>
-                        <small>Wartet auf Registrierung oder nächsten Login</small>
+                        <span className={getRoleChipClass(invite.role)}>{getRoleLabel(invite.role)}</span>
                       </div>
-                      <div className="invite-actions">
-                        <span className="chip alt">{invite.role}</span>
+                      <div className="invite-card-actions">
                         {canManageFamily ? (
                           <button
                             type="button"
@@ -2396,16 +2403,9 @@ function PlannerShell({
                         ) : null}
                       </div>
                     </li>
-                  ))
-                ) : (
-                  <li>
-                    <div>
-                      <strong>Keine offenen Einladungen</strong>
-                      <small>Neue Familienmitglieder erscheinen hier, bis sie die Einladung annehmen.</small>
-                    </div>
-                  </li>
-                )}
-              </ul>
+                  ))}
+                </ul>
+              ) : null}
             </article>
 
             <div className="family-management-stack">
@@ -2442,6 +2442,7 @@ function PlannerShell({
                   </div>
                   <input
                     type="checkbox"
+                    className="app-switch"
                     aria-label="Freie Registrierung erlauben"
                     name="allow-open-registration"
                     checked={allowOpenRegistration}
@@ -2505,7 +2506,11 @@ function PlannerShell({
             <strong>{authState.family?.familyName ?? plannerState.familyName}</strong>
             <div className="account-meta-row">
               <span className="chip">{adminCount} Admin</span>
-              {authState.profile ? <span className="chip alt">{authState.profile.role}</span> : null}
+              {authState.profile ? (
+                <span className={getRoleChipClass(authState.profile.role)}>
+                  {getRoleLabel(authState.profile.role)}
+                </span>
+              ) : null}
             </div>
           </div>
           {authState.profile ? (
