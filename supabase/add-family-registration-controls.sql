@@ -20,7 +20,7 @@ begin
   with family_state as (
     select
       count(*)::int as family_count,
-      coalesce(bool_or(f.allow_open_registration), false) as open_registration_available
+      coalesce(bool_and(f.allow_open_registration), false) as open_registration_available
     from public.families f
   ),
   invite_state as (

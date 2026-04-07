@@ -1330,6 +1330,12 @@ function PlannerShell({
 
     try {
       await onUpdateFamilyRegistration(nextValue);
+      setCloudSync({
+        phase: 'ready',
+        message: nextValue
+          ? 'Freie Registrierung wurde aktiviert.'
+          : 'Freie Registrierung wurde deaktiviert.',
+      });
     } catch (error) {
       setCloudSync({
         phase: 'error',
@@ -2991,8 +2997,12 @@ export default function App() {
       return;
     }
 
-    pushToast(cloudSync.message, cloudSync.phase === 'error' ? 'error' : 'info');
-  }, [cloudSync.message, cloudSync.phase, pushToast]);
+    if (cloudSync.scope === 'global' && cloudSync.phase === 'ready') {
+      return;
+    }
+
+    pushToast(cloudSync.message, cloudSync.phase === 'error' ? 'error' : 'success');
+  }, [cloudSync.message, cloudSync.phase, cloudSync.scope, pushToast]);
 
   useEffect(() => {
     const isBlocked = authState.stage === 'signed-out'

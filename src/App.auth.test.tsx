@@ -593,6 +593,41 @@ describe('App auth flow', () => {
     expect(screen.getByRole('button', { name: 'Einstellungen' })).toBeInTheDocument();
   });
 
+  it('does not show a generic sync success toast after family data has loaded', async () => {
+    getCurrentSession.mockResolvedValue({
+      user: {
+        id: 'user-sync',
+        email: 'alex@example.com',
+        user_metadata: {},
+      },
+    });
+    ensureProfile.mockResolvedValue({
+      id: 'user-sync',
+      display_name: 'Alex',
+      email: 'alex@example.com',
+      role: 'familyuser',
+    });
+    fetchFamilyContext.mockResolvedValue({
+      familyId: 'family-sync',
+      familyName: 'Familie Sync',
+      role: 'familyuser',
+    });
+    fetchFamilyMembers.mockResolvedValue([
+      {
+        id: 'user-sync',
+        name: 'Alex',
+        email: 'alex@example.com',
+        role: 'familyuser',
+      },
+    ]);
+
+    render(<App />);
+
+    await expectPlannerShellHeading();
+    await waitFor(() => expect(fetchFamilyInvites).toHaveBeenCalledWith('family-sync'));
+    expect(screen.queryByText('Alle Planer-Module sind mit Supabase synchronisiert.')).not.toBeInTheDocument();
+  });
+
   it('lets family owners invite members without seeing the configuration card', async () => {
     const user = userEvent.setup();
 
@@ -849,12 +884,14 @@ describe('App auth flow', () => {
 
     expect(updateFamilyRegistrationSetting).toHaveBeenNthCalledWith(1, 'family-config', false);
     await waitFor(() => expect(toggle).not.toBeChecked());
+    expect(await screen.findByText('Freie Registrierung wurde deaktiviert.')).toBeInTheDocument();
     expect(configCard.queryByText('Neue Nutzer koennen sich aktuell nur per Einladung registrieren.')).not.toBeInTheDocument();
 
     await user.click(toggle);
 
     expect(updateFamilyRegistrationSetting).toHaveBeenNthCalledWith(2, 'family-config', true);
     await waitFor(() => expect(toggle).toBeChecked());
+    expect(await screen.findByText('Freie Registrierung wurde aktiviert.')).toBeInTheDocument();
   });
 
   it('asks for confirmation before deleting the account and returns to sign-in afterwards', async () => {

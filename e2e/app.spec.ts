@@ -727,6 +727,7 @@ test('lets admins switch registration to invite-only and back again', async ({ p
   await expect(registrationToggle).toBeChecked();
   await registrationToggle.click();
   await expect(registrationToggle).not.toBeChecked();
+  await expect(page.getByText('Freie Registrierung wurde deaktiviert.')).toBeVisible();
   await expect(page.getByText('Neue Nutzer koennen sich aktuell nur per Einladung registrieren.')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Abmelden' }).click();
@@ -754,6 +755,7 @@ test('lets admins switch registration to invite-only and back again', async ({ p
   await page.getByRole('button', { name: 'Einstellungen' }).click();
   await registrationToggle.click();
   await expect(registrationToggle).toBeChecked();
+  await expect(page.getByText('Freie Registrierung wurde aktiviert.')).toBeVisible();
   await expect(page.getByText('Neue Nutzer koennen sich aktuell auch ohne Einladung registrieren.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Abmelden' }).click();
