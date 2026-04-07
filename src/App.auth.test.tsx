@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   acceptPendingFamilyInvite,
@@ -220,6 +220,10 @@ describe('App auth flow', () => {
     updatePassword.mockResolvedValue({ data: {}, error: null });
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('shows the confirmation message after sign-up without crashing on form reset', async () => {
     const user = userEvent.setup();
     signUpWithPassword.mockResolvedValue({
@@ -258,6 +262,65 @@ describe('App auth flow', () => {
 
     expect(signUpWithPassword).toHaveBeenCalledWith('alex@example.com', 'supersecret', 'Alex');
     expect(screen.queryByText(/can't access property "reset"/i)).not.toBeInTheDocument();
+  });
+
+  it(
+    'renders auth feedback as dismissible toasts and removes them after five seconds',
+    async () => {
+      const user = userEvent.setup();
+      signUpWithPassword.mockResolvedValue({
+        data: { session: null },
+        error: null,
+      });
+
+      render(<App />);
+
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Frey Frey',
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Registrieren' }));
+      await user.type(screen.getByPlaceholderText('Anzeigename'), 'Alex');
+      await user.type(screen.getByPlaceholderText('E-Mail'), 'alex@example.com');
+      await user.type(screen.getByPlaceholderText('Passwort'), 'supersecret');
+      await user.click(screen.getByRole('button', { name: 'Konto anlegen' }));
+
+      const toastMessage = 'Konto erstellt. Bitte bestätige jetzt die E-Mail und melde dich danach an.';
+      expect(await screen.findByText(toastMessage)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Hinweis schliessen' })).toBeInTheDocument();
+
+      await new Promise((resolve) => window.setTimeout(resolve, 5200));
+
+      await waitFor(() => {
+        expect(screen.queryByText(toastMessage)).not.toBeInTheDocument();
+      });
+    },
+    10000,
+  );
+
+  it('lets the user close a toast manually', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await screen.findByRole('heading', {
+      level: 1,
+      name: 'Frey Frey',
+    });
+
+    await user.type(screen.getByPlaceholderText('E-Mail'), 'alex@example.com');
+    await user.click(screen.getByRole('button', { name: 'Passwort vergessen?' }));
+    await user.click(screen.getByRole('button', { name: 'Reset-Link senden' }));
+
+    const toastMessage = 'Wenn ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen verschickt.';
+    expect(await screen.findByText(toastMessage)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Hinweis schliessen' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(toastMessage)).not.toBeInTheDocument();
+    });
   });
 
   it('shows a branded loading overlay while the auth session is hydrating', () => {
@@ -1001,7 +1064,7 @@ describe('App auth flow', () => {
     expect(screen.queryByText('open@example.com')).not.toBeInTheDocument();
   });
 
-  it('keeps document deletion feedback inside the documents module', async () => {
+  it('keeps document deletion feedback visible as a global toast across modules', async () => {
     const user = userEvent.setup();
 
     getCurrentSession.mockResolvedValue({
@@ -1053,6 +1116,6 @@ describe('App auth flow', () => {
     await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
 
     expect(screen.getByRole('heading', { level: 4, name: 'Familienmitglieder' })).toBeInTheDocument();
-    expect(screen.queryByText('Dokument wurde gelöscht.')).not.toBeInTheDocument();
+    expect(screen.getByText('Dokument wurde gelöscht.')).toBeInTheDocument();
   });
 });

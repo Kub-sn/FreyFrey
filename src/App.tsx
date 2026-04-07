@@ -1,4 +1,4 @@
-import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
   defaultPlannerState,
@@ -124,6 +124,14 @@ type CloudSyncState = {
 type CloudSyncUpdate = CloudSyncState | Omit<CloudSyncState, 'scope'>;
 type CloudSyncSetterValue = CloudSyncUpdate | ((current: CloudSyncState) => CloudSyncUpdate);
 
+type ToastTone = 'success' | 'error' | 'warning' | 'info';
+
+type ToastItem = {
+  id: string;
+  message: string;
+  tone: ToastTone;
+};
+
 type DocumentSortOption = 'recent' | 'name' | 'category' | 'status' | 'kind';
 type DocumentFilterKind = 'all' | 'image' | 'pdf' | 'word' | 'link' | 'file';
 
@@ -159,6 +167,8 @@ const DOCUMENT_KIND_FILTER_OPTIONS: Array<{ value: DocumentFilterKind; label: st
   { value: 'link', label: 'Links' },
   { value: 'file', label: 'Dateien' },
 ];
+
+const TOAST_LIFETIME_MS = 5000;
 
 const formatProgress = (done: number, total: number) => `${done}/${total}`;
 
@@ -479,9 +489,6 @@ type InviteTargetFamily = {
 function AuthScreen({
   mode,
   busy,
-  error,
-  message,
-  registrationBlockedNotice,
   authDraft,
   onDraftChange,
   onSubmit,
@@ -489,9 +496,6 @@ function AuthScreen({
 }: {
   mode: AuthMode;
   busy: boolean;
-  error: string | null;
-  message: string | null;
-  registrationBlockedNotice: string | null;
   authDraft: AuthDraft;
   onDraftChange: (field: keyof AuthDraft, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
@@ -503,13 +507,6 @@ function AuthScreen({
   return (
     <div className="auth-shell">
       <div className="auth-stage">
-        {registrationBlockedNotice ? (
-          <aside className="auth-status-banner auth-status-banner-warning" role="status" aria-live="polite">
-            <strong>Registrierung gesperrt</strong>
-            <span>{registrationBlockedNotice}</span>
-          </aside>
-        ) : null}
-
         <section className="auth-card auth-card-wide">
           <div className="auth-copy auth-copy-editorial">
             <BrandHeading text="Frey Frey" className="brand-lockup-auth" />
@@ -589,9 +586,6 @@ function AuthScreen({
               />
             ) : null}
 
-            {error ? <p className="auth-feedback auth-error">{error}</p> : null}
-            {message ? <p className="auth-feedback auth-message">{message}</p> : null}
-
             <button type="submit" className="auth-submit" disabled={busy}>
               {busy
                 ? 'Bitte warten…'
@@ -632,15 +626,11 @@ function AuthScreen({
 function OnboardingScreen({
   profile,
   busy,
-  error,
-  message,
   onSubmit,
   onSignOut,
 }: {
   profile: SupabaseProfile;
   busy: boolean;
-  error: string | null;
-  message: string | null;
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onSignOut: () => Promise<void>;
 }) {
@@ -662,8 +652,6 @@ function OnboardingScreen({
 
         <form className="auth-panel auth-panel-editorial" onSubmit={(event) => void onSubmit(event)}>
           <input name="familyName" placeholder="Name deiner Familie" autoComplete="organization" />
-          {error ? <p className="auth-feedback auth-error">{error}</p> : null}
-          {message ? <p className="auth-feedback auth-message">{message}</p> : null}
           <button type="submit" className="auth-submit" disabled={busy}>
             {busy ? 'Familie wird angelegt…' : 'Familie erstellen'}
           </button>
@@ -689,6 +677,59 @@ function AuthLoadingScreen() {
           </span>
         </div>
       </section>
+    </div>
+  );
+}
+
+function NotificationToast({
+  id,
+  message,
+  tone,
+  onDismiss,
+}: ToastItem & {
+  onDismiss: (id: string) => void;
+}) {
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      onDismiss(id);
+    }, TOAST_LIFETIME_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [id, onDismiss]);
+
+  return (
+    <li className={`toast toast-${tone}`} role={tone === 'error' ? 'alert' : 'status'} aria-live="polite">
+      <p>{message}</p>
+      <button
+        type="button"
+        className="toast-close"
+        aria-label="Hinweis schliessen"
+        onClick={() => onDismiss(id)}
+      >
+        X
+      </button>
+    </li>
+  );
+}
+
+function ToastViewport({
+  toasts,
+  onDismiss,
+}: {
+  toasts: ToastItem[];
+  onDismiss: (id: string) => void;
+}) {
+  if (toasts.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="toast-viewport" aria-live="polite" aria-atomic="false">
+      <ol className="toast-stack">
+        {toasts.map((toast) => (
+          <NotificationToast key={toast.id} {...toast} onDismiss={onDismiss} />
+        ))}
+      </ol>
     </div>
   );
 }
@@ -893,11 +934,6 @@ function PlannerShell({
     [scheduledCalendarEntries, selectedCalendarDate],
   );
   const documentSelectionSummary = documentSelectionErrors.join(' · ');
-  const activeCloudSyncMessage =
-    cloudSync.scope === activeTab &&
-    cloudSync.message !== 'Alle Planer-Module sind mit Supabase synchronisiert.'
-      ? cloudSync.message
-      : null;
 
   const setCloudSync = (value: CloudSyncSetterValue) => {
     setCloudSyncState((current) => {
@@ -1858,20 +1894,6 @@ function PlannerShell({
             </select>
           </div>
         </div>
-
-        {authState.message ? <p className="auth-feedback auth-message planner-feedback">{authState.message}</p> : null}
-        {authState.error ? <p className="auth-feedback auth-error planner-feedback">{authState.error}</p> : null}
-        {activeCloudSyncMessage ? (
-          <p
-            className={
-              cloudSync.phase === 'error'
-                ? 'auth-feedback auth-error module-feedback'
-                : 'auth-feedback auth-message module-feedback'
-            }
-          >
-            {activeCloudSyncMessage}
-          </p>
-        ) : null}
 
         <section className={activeTab === 'overview' ? 'overview-stack is-visible' : 'overview-stack'}>
           <article className="panel overview-row-panel">
@@ -2863,7 +2885,9 @@ export default function App() {
   const [authMode, setAuthMode] = useState<AuthMode>(redirectAuthMode ?? 'sign-in');
   const [authBusy, setAuthBusy] = useState(false);
   const [registrationGatePreview, setRegistrationGatePreview] = useState<SupabaseRegistrationGate | null>(null);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const blocksSessionHydrationAfterRecovery = useRef(redirectAuthMode === 'reset-password');
+  const registrationBlockedToastVisible = useRef(false);
   const [authState, setAuthState] = useState<AuthState>({
     stage: supabaseConfigured ? 'loading' : 'disabled',
     session: null,
@@ -2877,6 +2901,33 @@ export default function App() {
     message: null,
     scope: null,
   });
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
+
+  const pushToast = useCallback((message: string, tone: ToastTone) => {
+    const normalizedMessage = message.trim();
+
+    if (!normalizedMessage) {
+      return;
+    }
+
+    setToasts((current) => {
+      if (current.some((toast) => toast.message === normalizedMessage && toast.tone === tone)) {
+        return current;
+      }
+
+      return [
+        ...current,
+        {
+          id: nextStringId(),
+          message: normalizedMessage,
+          tone,
+        },
+      ];
+    });
+  }, []);
 
   useEffect(() => {
     savePlannerState(plannerState);
@@ -2918,6 +2969,42 @@ export default function App() {
 
     window.history.replaceState({}, document.title, clearAuthRedirectState(window.location.href));
   }, [redirectAuthMessage]);
+
+  useEffect(() => {
+    if (!authState.message) {
+      return;
+    }
+
+    pushToast(authState.message, 'success');
+  }, [authState.message, pushToast]);
+
+  useEffect(() => {
+    if (!authState.error) {
+      return;
+    }
+
+    pushToast(authState.error, 'error');
+  }, [authState.error, pushToast]);
+
+  useEffect(() => {
+    if (!cloudSync.message || cloudSync.phase === 'loading') {
+      return;
+    }
+
+    pushToast(cloudSync.message, cloudSync.phase === 'error' ? 'error' : 'info');
+  }, [cloudSync.message, cloudSync.phase, pushToast]);
+
+  useEffect(() => {
+    const isBlocked = authState.stage === 'signed-out'
+      && authMode === 'sign-up'
+      && isRegistrationDisabledByAdmin(registrationGatePreview);
+
+    if (isBlocked && !registrationBlockedToastVisible.current) {
+      pushToast(INVITE_ONLY_REGISTRATION_BANNER, 'warning');
+    }
+
+    registrationBlockedToastVisible.current = isBlocked;
+  }, [authMode, authState.stage, pushToast, registrationGatePreview]);
 
   useEffect(() => {
     if (!authState.profile) {
@@ -3367,61 +3454,66 @@ export default function App() {
   };
 
   if (authState.stage === 'loading') {
-    return <AuthLoadingScreen />;
+    return (
+      <>
+        <ToastViewport toasts={toasts} onDismiss={dismissToast} />
+        <AuthLoadingScreen />
+      </>
+    );
   }
 
   if (authState.stage === 'signed-out') {
     return (
-      <AuthScreen
-        mode={authMode}
-        busy={authBusy}
-        error={authState.error}
-        message={authState.message}
-        registrationBlockedNotice={
-          authMode === 'sign-up' && isRegistrationDisabledByAdmin(registrationGatePreview)
-            ? INVITE_ONLY_REGISTRATION_BANNER
-            : null
-        }
-        authDraft={authDraft}
-        onDraftChange={(field, value) =>
-          setAuthDraft((current) => ({
-            ...current,
-            [field]: value,
-          }))
-        }
-        onSubmit={handleAuthSubmit}
-        onModeChange={handleAuthModeChange}
-      />
+      <>
+        <ToastViewport toasts={toasts} onDismiss={dismissToast} />
+        <AuthScreen
+          mode={authMode}
+          busy={authBusy}
+          authDraft={authDraft}
+          onDraftChange={(field, value) =>
+            setAuthDraft((current) => ({
+              ...current,
+              [field]: value,
+            }))
+          }
+          onSubmit={handleAuthSubmit}
+          onModeChange={handleAuthModeChange}
+        />
+      </>
     );
   }
 
   if (authState.stage === 'onboarding' && authState.profile) {
     return (
-      <OnboardingScreen
-        profile={authState.profile}
-        busy={authBusy}
-        error={authState.error}
-        message={authState.message}
-        onSubmit={handleCreateFamily}
-        onSignOut={handleSignOut}
-      />
+      <>
+        <ToastViewport toasts={toasts} onDismiss={dismissToast} />
+        <OnboardingScreen
+          profile={authState.profile}
+          busy={authBusy}
+          onSubmit={handleCreateFamily}
+          onSignOut={handleSignOut}
+        />
+      </>
     );
   }
 
   return (
-    <PlannerShell
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
-      plannerState={plannerState}
-      setPlannerState={setPlannerState}
-      familyInvites={familyInvites}
-      setFamilyInvites={setFamilyInvites}
-      authState={authState}
-      cloudSync={cloudSync}
-      setCloudSync={setCloudSync}
-      onSignOut={handleSignOut}
-      onDeleteAccount={handleDeleteAccount}
-      onUpdateFamilyRegistration={handleUpdateFamilyRegistration}
-    />
+    <>
+      <ToastViewport toasts={toasts} onDismiss={dismissToast} />
+      <PlannerShell
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        plannerState={plannerState}
+        setPlannerState={setPlannerState}
+        familyInvites={familyInvites}
+        setFamilyInvites={setFamilyInvites}
+        authState={authState}
+        cloudSync={cloudSync}
+        setCloudSync={setCloudSync}
+        onSignOut={handleSignOut}
+        onDeleteAccount={handleDeleteAccount}
+        onUpdateFamilyRegistration={handleUpdateFamilyRegistration}
+      />
+    </>
   );
 }

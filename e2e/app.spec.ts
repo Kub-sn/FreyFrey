@@ -249,6 +249,19 @@ async function mockSupabaseRegistrationControls(page: Page) {
       const payload = parseRequestJson(route);
       const email = String(payload.email || '').toLowerCase();
 
+      if (!state.allowOpenRegistration && email !== 'invited@example.com') {
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: 400,
+            error_code: 'registration_blocked',
+            msg: 'Registrierung aktuell deaktiviert. Der Admin hat neue Anmeldungen ausgeschaltet. Bitte lass dir eine Einladung schicken.',
+          }),
+        });
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -496,9 +509,12 @@ test('lets the user request a password reset email from the sign-in screen', asy
 
   await page.getByRole('button', { name: 'Reset-Link senden' }).click();
 
-  await expect(
-    page.getByText('Wenn ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen verschickt.'),
-  ).toBeVisible();
+  const resetToast = page.getByText('Wenn ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen verschickt.');
+
+  await expect(resetToast).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Hinweis schliessen' })).toBeVisible();
+  await page.getByRole('button', { name: 'Hinweis schliessen' }).click();
+  await expect(resetToast).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Jetzt anmelden' })).toBeVisible();
 });
 
