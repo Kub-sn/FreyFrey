@@ -125,15 +125,15 @@ export function getFamilyPermissionNote(
   }
 
   if (family?.isOwner && profile.role !== 'admin') {
-    return 'Du bist Familiengründer. Du kannst Mitglieder einladen, aber keine Konfiguration oder Admin-Rollen verwalten.';
+    return 'Du bist Familiengründer. Du kannst Mitglieder einladen, aber keine Registrierungeinstellungen oder Admin-Rollen verwalten.';
   }
 
   if (profile.role === 'admin' && family?.isOwner) {
-    return 'Du bist Familiengründer und Admin. Du verwaltest Einladungen, Admin-Rollen und die Familien-Konfiguration.';
+    return 'Du bist Familiengründer und Admin. Du verwaltest Einladungen, Admin-Rollen und die Registrierungeinstellungen der Familie.';
   }
 
   if (profile.role === 'admin') {
-    return 'Du bist Admin. Du verwaltest Einladungen, Admin-Rollen und die Familien-Konfiguration.';
+    return 'Du bist Admin. Du verwaltest Einladungen, Admin-Rollen und die Registrierungeinstellungen der Familie.';
   }
 
   return 'Du bist Familienmitglied ohne Verwaltungsrechte.';

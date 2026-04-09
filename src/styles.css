@@ -662,6 +662,8 @@ button {
 .content {
   padding: 2rem;
   display: grid;
+  min-width: 0;
+  overflow-x: clip;
   gap: 1.5rem;
 }
 
@@ -771,6 +773,8 @@ button {
 
 .module.is-visible {
   display: grid;
+  min-width: 0;
+  overflow-x: clip;
   gap: 1rem;
   animation: rise-in 600ms ease;
 }
@@ -888,13 +892,40 @@ button {
   grid-template-columns: 1.1fr 0.9fr;
 }
 
+.family-settings-layout {
+  grid-template-columns: minmax(0, 1.02fr) minmax(320px, 0.98fr);
+  align-items: start;
+}
+
+.family-members-panel {
+  grid-column: 1;
+}
+
+.family-settings-layout > .family-invite-panel {
+  grid-column: 2;
+}
+
 .family-management-stack {
   display: grid;
   gap: 1rem;
   align-self: start;
 }
 
+.family-secondary-stack {
+  grid-column: 2;
+  display: grid;
+  gap: 1rem;
+  align-self: start;
+}
+
+.family-settings-layout > .family-account-panel {
+  grid-column: 2;
+}
+
 .admin-directory-panel {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow-x: clip;
   gap: 1rem;
 }
 
@@ -916,6 +947,7 @@ button {
 .account-management-panel {
   display: grid;
   gap: 0.9rem;
+  min-width: 0;
 }
 
 .account-management-panel .danger-action {
@@ -1005,15 +1037,19 @@ button {
 .family-directory-button strong,
 .family-directory-button small {
   display: block;
+  overflow-wrap: anywhere;
 }
 
 .family-directory-detail {
   display: grid;
+  min-width: 0;
+  overflow-x: clip;
   gap: 0.75rem;
 }
 
 .family-directory-summary-copy {
   display: grid;
+  min-width: 0;
   gap: 0.18rem;
 }
 
@@ -1024,6 +1060,7 @@ button {
 
 .family-directory-summary {
   margin-top: 0.1rem;
+  min-width: 0;
 }
 
 .family-directory-summary-actions {
@@ -1031,11 +1068,26 @@ button {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
   gap: 0.65rem;
 }
 
 .family-directory-members {
+  display: grid;
+  min-width: 0;
   gap: 0.8rem;
+}
+
+.family-directory-member-card {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(24, 52, 47, 0.09);
+  border-bottom: none;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 252, 248, 0.92), rgba(247, 240, 231, 0.76));
+  box-shadow: 0 10px 22px rgba(35, 27, 17, 0.05);
 }
 
 .family-directory-member-actions {
@@ -1043,8 +1095,34 @@ button {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
   gap: 0.65rem;
   margin-left: auto;
+}
+
+.family-directory-summary-actions .danger-action,
+.family-directory-member-actions .ghost-toggle {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.family-entry-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  gap: 0.85rem;
+}
+
+.family-directory-member-copy {
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.family-directory-member-copy .family-status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .app-switch {
@@ -1469,6 +1547,7 @@ button {
 .family-entry-copy {
   display: grid;
   gap: 0.2rem;
+  min-width: 0;
 }
 
 .role-layout .document-list > li {
@@ -1679,7 +1758,6 @@ button {
 .calendar-day-cell {
   display: grid;
   gap: 0.55rem;
-  min-height: 8.6rem;
   padding: 0.75rem;
   border: 1px solid rgba(24, 52, 47, 0.08);
   border-radius: 22px;
@@ -1883,6 +1961,14 @@ small {
 
   .document-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .family-members-panel,
+  .family-invite-panel,
+  .admin-directory-panel,
+  .family-account-panel,
+  .family-secondary-stack {
+    grid-column: auto;
   }
 }
 
@@ -3466,13 +3552,11 @@ body::after,
   .mobile-topbar {
     position: sticky;
     top: 0.75rem;
-    z-index: 15;
     display: grid;
     gap: 0.5rem;
     padding: 0.85rem;
     margin-bottom: 0.15rem;
     border: 1px solid var(--line-soft);
-    border-radius: 14px;
     background: rgba(251, 244, 236, 0.96);
     box-shadow: 0 8px 22px rgba(56, 46, 37, 0.08);
     backdrop-filter: blur(10px);
@@ -3684,9 +3768,23 @@ body::after,
   .module-layout,
   .document-module-layout,
   .calendar-module-layout,
+  .family-settings-layout,
   .role-layout,
   .calendar-detail-grid {
     gap: 0.7rem;
+  }
+
+  .module-layout.role-layout.family-settings-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .module-layout.role-layout.family-settings-layout > .family-members-panel,
+  .module-layout.role-layout.family-settings-layout > .family-invite-panel,
+  .module-layout.role-layout.family-settings-layout > .admin-directory-panel,
+  .module-layout.role-layout.family-settings-layout > .family-account-panel,
+  .module-layout.role-layout.family-settings-layout > .family-secondary-stack {
+    grid-column: 1;
+    width: 100%;
   }
 
   .family-directory-summary {
@@ -3732,16 +3830,26 @@ body::after,
 
   .family-directory-switcher {
     display: grid;
-    grid-template-columns: 1fr;
+    justify-content: flex-start;
     gap: 0.55rem;
   }
 
   .family-directory-button {
-    width: 100%;
-    min-width: 0;
+    width: auto;
+    min-width: min(10.5rem, 100%);
   }
 
   .family-directory-summary .family-status-badges {
+    width: 100%;
+  }
+
+  .family-directory-member-copy .family-entry-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+  }
+
+  .family-directory-member-copy .family-status-badges {
     width: 100%;
   }
 
@@ -3780,7 +3888,6 @@ body::after,
 
   .brand-mark-loader {
     width: 4rem;
-    height: 4rem;
     padding: 0.44rem;
     border-radius: 1rem;
   }

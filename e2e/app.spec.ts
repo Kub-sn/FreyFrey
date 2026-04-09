@@ -754,7 +754,8 @@ test('keeps family settings cards usable on mobile widths', async ({ page }) => 
     (firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).y +
       (firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).height - 2,
   );
-  expect((firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).width).toBeGreaterThan(widths.clientWidth * 0.7);
+  expect((firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).width).toBeLessThan(widths.clientWidth * 0.7);
+  expect((firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).width).toBeGreaterThan(120);
   expect(Math.abs((openInvitesChipBox as NonNullable<typeof openInvitesChipBox>).y - (openInvitesHeadingBox as NonNullable<typeof openInvitesHeadingBox>).y)).toBeLessThanOrEqual(8);
   expect(Math.abs((allFamiliesChipBox as NonNullable<typeof allFamiliesChipBox>).y - (allFamiliesHeadingBox as NonNullable<typeof allFamiliesHeadingBox>).y)).toBeLessThanOrEqual(8);
 });

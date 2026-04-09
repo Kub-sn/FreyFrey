@@ -56,11 +56,64 @@ export function FamilyModule({
   onSetPendingMemberDeletion: (value: PendingMemberDeletionState) => void;
 }) {
   const canViewFamily = Boolean(authFamily);
+  const accountPanelClassName = canManageFamily
+    ? 'panel list-panel account-management-panel'
+    : 'panel list-panel account-management-panel family-account-panel';
+  const invitePanel = (
+    <form className="panel form-panel family-invite-panel" onSubmit={(event) => void onAddMember(event)}>
+      <h4>Familienmitglied einladen</h4>
+      {canManageFamily ? (
+        <label className="invite-family-field">
+          <span>Familie</span>
+          <select
+            name="familyId"
+            aria-label="Familie fuer Einladung"
+            value={selectedInviteFamilyId ?? ''}
+            disabled={!canInviteFamilyMembers || adminInviteFamilies.length === 0}
+            onChange={(event) => onSelectInviteFamily(event.currentTarget.value)}
+          >
+            {adminInviteFamilies.map((family) => (
+              <option key={family.familyId} value={family.familyId}>
+                {family.familyName}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <input name="email" placeholder="E-Mail" disabled={!canInviteFamilyMembers} />
+      <select name="role" aria-label="Rolle fuer Einladung" defaultValue="familyuser" disabled={!canManageFamily}>
+        <option value="familyuser">familyuser</option>
+        {canManageFamily ? <option value="admin">admin</option> : null}
+      </select>
+      <button type="submit" disabled={!canInviteFamilyMembers}>
+        {canInviteFamilyMembers
+          ? 'Einladung senden'
+          : 'Nur Familiengruender oder Admin kann Einladungen senden'}
+      </button>
+      <small>
+        Die Einladung wird per E-Mail verschickt. Sobald sich der Nutzer mit derselben
+        E-Mail registriert oder anmeldet, wird die Familienzuordnung automatisch uebernommen.
+      </small>
+    </form>
+  );
+  const accountPanel = authProfile ? (
+    <article className={accountPanelClassName}>
+      <div className="panel-heading">
+        <h4>Konto</h4>
+      </div>
+      <p className="family-management-note">
+        Wenn du dein Konto löschst, wird der Zugang dauerhaft entfernt.
+      </p>
+      <button type="button" className="secondary-action danger-action" onClick={onOpenDeleteAccount}>
+        Account löschen
+      </button>
+    </article>
+  ) : null;
 
   return (
     <section className={activeTab === 'family' && canViewFamily ? 'module is-visible' : 'module'}>
-      <div className="module-layout role-layout">
-        <article className="panel list-panel">
+      <div className="module-layout role-layout family-settings-layout">
+        <article className="panel list-panel family-members-panel">
           <div className="panel-heading">
             <h4>Familienmitglieder</h4>
           </div>
@@ -115,45 +168,10 @@ export function FamilyModule({
           ) : null}
         </article>
 
-        <div className="family-management-stack">
-          <form className="panel form-panel" onSubmit={(event) => void onAddMember(event)}>
-            <h4>Familienmitglied einladen</h4>
-            {canManageFamily ? (
-              <label className="invite-family-field">
-                <span>Familie</span>
-                <select
-                  name="familyId"
-                  aria-label="Familie fuer Einladung"
-                  value={selectedInviteFamilyId ?? ''}
-                  disabled={!canInviteFamilyMembers || adminInviteFamilies.length === 0}
-                  onChange={(event) => onSelectInviteFamily(event.currentTarget.value)}
-                >
-                  {adminInviteFamilies.map((family) => (
-                    <option key={family.familyId} value={family.familyId}>
-                      {family.familyName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            <input name="email" placeholder="E-Mail" disabled={!canInviteFamilyMembers} />
-            <select name="role" aria-label="Rolle fuer Einladung" defaultValue="familyuser" disabled={!canManageFamily}>
-              <option value="familyuser">familyuser</option>
-              {canManageFamily ? <option value="admin">admin</option> : null}
-            </select>
-            <button type="submit" disabled={!canInviteFamilyMembers}>
-              {canInviteFamilyMembers
-                ? 'Einladung senden'
-                : 'Nur Familiengruender oder Admin kann Einladungen senden'}
-            </button>
-            <small>
-              Die Einladung wird per E-Mail verschickt. Sobald sich der Nutzer mit derselben
-              E-Mail registriert oder anmeldet, wird die Familienzuordnung automatisch uebernommen.
-            </small>
-          </form>
+        {canManageFamily ? invitePanel : <div className="family-secondary-stack">{invitePanel}{accountPanel}</div>}
 
-          {canManageFamily ? (
-            <article className="panel list-panel admin-directory-panel">
+        {canManageFamily ? (
+          <article className="panel list-panel admin-directory-panel">
               <div className="panel-heading family-inline-heading">
                 <h4>Alle Familien</h4>
                 <span className="chip">{adminFamilyDirectory.length}</span>
@@ -192,9 +210,6 @@ export function FamilyModule({
                           </small>
                         </div>
                         <div className="family-directory-summary-actions">
-                          <span className={selectedAdminFamily.allowOpenRegistration ? 'chip' : 'chip alt'}>
-                            {selectedAdminFamily.allowOpenRegistration ? 'Offene Registrierung' : 'Nur Einladung'}
-                          </span>
                           <button
                             type="button"
                             className="secondary-action danger-action"
@@ -214,13 +229,15 @@ export function FamilyModule({
                       </div>
                       <ul className="document-list family-directory-members">
                         {selectedAdminFamily.members.map((member) => (
-                          <li key={member.id}>
-                            <div className="family-entry-copy">
-                              <strong>{member.name}</strong>
+                          <li key={member.id} className="family-directory-member-card">
+                            <div className="family-entry-copy family-directory-member-copy">
+                              <div className="family-entry-heading">
+                                <strong>{member.name}</strong>
+                                <FamilyStatusBadges role={member.role as UserRole} isOwner={member.isOwner} />
+                              </div>
                               <small>{member.email}</small>
                             </div>
                             <div className="family-directory-member-actions">
-                              <FamilyStatusBadges role={member.role as UserRole} isOwner={member.isOwner} />
                               {!member.isOwner && member.id !== authProfile?.id ? (
                                 <button
                                   type="button"
@@ -247,55 +264,42 @@ export function FamilyModule({
                   ) : null}
                 </>
               ) : null}
-            </article>
-          ) : null}
+          </article>
+        ) : null}
 
-          {canManageFamily && authFamily ? (
-            <article className="panel form-panel family-config-panel">
-              <div className="panel-heading">
-                <h4>Konfiguration</h4>
-                <span className={allowOpenRegistration ? 'chip' : 'chip alt'}>
-                  {allowOpenRegistration ? 'Offen' : 'Nur Einladung'}
-                </span>
+        {canManageFamily && authFamily ? (
+          <article className="panel form-panel family-config-panel">
+            <div className="panel-heading">
+              <h4>Registrierungeinstellung</h4>
+              <span className={allowOpenRegistration ? 'chip' : 'chip alt'}>
+                {allowOpenRegistration ? 'Offen' : 'Nur Einladung'}
+              </span>
+            </div>
+            <label className="family-config-toggle">
+              <div className="family-config-toggle-copy">
+                <strong>Freie Registrierung erlauben</strong>
+                <small>
+                  Wenn du das deaktivierst, koennen neue Konten nur noch mit einer offenen
+                  Einladung erstellt werden.
+                </small>
               </div>
-              <label className="family-config-toggle">
-                <div className="family-config-toggle-copy">
-                  <strong>Freie Registrierung erlauben</strong>
-                  <small>
-                    Wenn du das deaktivierst, koennen neue Konten nur noch mit einer offenen
-                    Einladung erstellt werden.
-                  </small>
-                </div>
-                <input
-                  type="checkbox"
-                  className="app-switch"
-                  aria-label="Freie Registrierung erlauben"
-                  name="allow-open-registration"
-                  checked={allowOpenRegistration}
-                  disabled={registrationConfigBusy}
-                  onChange={(event) => void onRegistrationAccessChange(event.currentTarget.checked)}
-                />
-              </label>
-              <p className="family-config-note">
-                {allowOpenRegistration ? 'Neue Nutzer koennen sich aktuell auch ohne Einladung registrieren.' : null}
-              </p>
-            </article>
-          ) : null}
+              <input
+                type="checkbox"
+                className="app-switch"
+                aria-label="Freie Registrierung erlauben"
+                name="allow-open-registration"
+                checked={allowOpenRegistration}
+                disabled={registrationConfigBusy}
+                onChange={(event) => void onRegistrationAccessChange(event.currentTarget.checked)}
+              />
+            </label>
+            <p className="family-config-note">
+              {allowOpenRegistration ? 'Neue Nutzer koennen sich aktuell auch ohne Einladung registrieren.' : null}
+            </p>
+          </article>
+        ) : null}
 
-          {authProfile ? (
-            <article className="panel list-panel account-management-panel">
-              <div className="panel-heading">
-                <h4>Konto</h4>
-              </div>
-              <p className="family-management-note">
-                Wenn du dein Konto löschst, wird der Zugang dauerhaft entfernt.
-              </p>
-              <button type="button" className="secondary-action danger-action" onClick={onOpenDeleteAccount}>
-                Account löschen
-              </button>
-            </article>
-          ) : null}
-        </div>
+        {canManageFamily ? accountPanel : null}
       </div>
     </section>
   );

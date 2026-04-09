@@ -136,15 +136,21 @@ function getInviteForm() {
   return within(inviteForm as HTMLElement);
 }
 
-function getConfigCard() {
-  const configHeading = screen.getByRole('heading', { level: 4, name: 'Konfiguration' });
+function getConfigCardElement() {
+  const configHeading = screen.getByRole('heading', { level: 4, name: 'Registrierungeinstellung' });
   const configCard = configHeading.closest('article');
 
   if (!configCard) {
-    throw new Error('Konfigurationskarte wurde nicht gefunden.');
+    throw new Error('Die Karte Registrierungeinstellung wurde nicht gefunden.');
   }
 
-  return within(configCard as HTMLElement);
+  return configCard as HTMLElement;
+}
+
+function getConfigCard() {
+  const configCard = getConfigCardElement();
+
+  return within(configCard);
 }
 
 function getAdminDirectoryCard() {
@@ -693,7 +699,7 @@ describe('App auth flow', () => {
 
     expect(screen.getByRole('heading', { level: 4, name: 'Familienmitglieder' })).toBeInTheDocument();
     expect(getAccountCard().getByText('Gründerstatus')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 4, name: 'Konfiguration' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 4, name: 'Registrierungeinstellung' })).not.toBeInTheDocument();
     expect(getInviteForm().queryByRole('combobox', { name: 'Familie fuer Einladung' })).not.toBeInTheDocument();
     expect(getInviteForm().getByRole('button', { name: 'Einladung senden' })).toBeEnabled();
     expect(getInviteForm().queryByRole('option', { name: 'admin' })).not.toBeInTheDocument();
@@ -821,6 +827,14 @@ describe('App auth flow', () => {
     expect(getInviteForm().getByRole('combobox', { name: 'Familie fuer Einladung' })).toBeInTheDocument();
     expect(screen.queryByText('Keine offenen Einladungen')).not.toBeInTheDocument();
     expect(getConfigCard().getByRole('checkbox', { name: 'Freie Registrierung erlauben' })).toHaveClass('app-switch');
+
+    const settingsLayout = screen.getByRole('heading', { level: 4, name: 'Familienmitglieder' }).closest('.family-settings-layout');
+    const inviteForm = screen.getByRole('heading', { level: 4, name: 'Familienmitglied einladen' }).closest('form');
+    const configCard = getConfigCardElement();
+
+    expect(settingsLayout).not.toBeNull();
+    expect(inviteForm?.parentElement).toBe(settingsLayout);
+    expect(configCard.parentElement).toBe(settingsLayout);
 
     const directoryCard = getAdminDirectoryCard();
     const familySwitcherButtons = directoryCard
