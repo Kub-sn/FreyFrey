@@ -44,6 +44,11 @@ describe('DocumentsModule', () => {
       />,
     );
 
+    expect(screen.getByText('Datei hochladen')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Dokument')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Kategorie')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Status')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Link zum Dokument (optional)')).not.toBeInTheDocument();
     expect(screen.getByText('Versicherung PDF')).toBeInTheDocument();
     await user.type(screen.getByLabelText('Dokumente suchen'), 'Versicherung');
     await user.click(screen.getByRole('button', { name: /Vorschau öffnen/i }));

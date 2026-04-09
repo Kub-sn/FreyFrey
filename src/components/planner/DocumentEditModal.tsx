@@ -40,9 +40,7 @@ export function DocumentEditModal({
             value={documentEditState.status}
             onChange={(event) => onFieldChange('status', event.currentTarget.value)}
           />
-          {documentEditState.filePath ? (
-            <p className="modal-note">Datei-Uploads behalten ihren Storage-Link. Nur die Metadaten werden geändert.</p>
-          ) : (
+          {documentEditState.filePath ? null : (
             <input
               aria-label="Dokumentlink bearbeiten"
               type="url"

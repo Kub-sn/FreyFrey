@@ -28,4 +28,32 @@ describe('DocumentEditModal', () => {
     expect(onSave).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('omits the storage-link note for uploaded files and keeps the dialog editable', async () => {
+    const user = userEvent.setup();
+    const onFieldChange = vi.fn();
+
+    render(
+      <DocumentEditModal
+        documentEditState={{
+          ...documentEditFixture,
+          filePath: 'documents/certificate.pdf',
+          linkUrl: 'https://storage.example.com/certificate.pdf',
+          name: 'certificate_of_completion_react_certificate_of_completion_react',
+        }}
+        onClose={vi.fn()}
+        onFieldChange={onFieldChange}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+
+    expect(
+      screen.queryByText('Datei-Uploads behalten ihren Storage-Link. Nur die Metadaten werden geändert.'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Dokumentlink bearbeiten')).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Dokumentname bearbeiten'), ' X');
+
+    expect(onFieldChange).toHaveBeenCalled();
+  });
 });

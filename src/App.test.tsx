@@ -40,6 +40,10 @@ function getDocumentForm() {
   return within(form);
 }
 
+function createDocumentFile(name: string, type: string, content = 'datei-inhalt') {
+  return new File([content], name, { type });
+}
+
 function getCalendarForm() {
   const heading = screen.getByRole('heading', { level: 4, name: 'Termin anlegen' });
   const form = heading.closest('form');
@@ -51,21 +55,22 @@ function getCalendarForm() {
   return within(form);
 }
 
-async function addLocalDocument(
-  user: ReturnType<typeof userEvent.setup>,
-  input: { name: string; category: string; status: string; linkUrl: string },
-) {
-  const form = getDocumentForm();
+async function addLocalDocument(user: ReturnType<typeof userEvent.setup>, file: File) {
+  const heading = screen.getByRole('heading', { level: 4, name: 'Dokument erfassen' });
+  const form = heading.closest('form');
 
-  await user.clear(form.getByPlaceholderText('Dokument'));
-  await user.type(form.getByPlaceholderText('Dokument'), input.name);
-  await user.clear(form.getByPlaceholderText('Kategorie'));
-  await user.type(form.getByPlaceholderText('Kategorie'), input.category);
-  await user.clear(form.getByPlaceholderText('Status'));
-  await user.type(form.getByPlaceholderText('Status'), input.status);
-  await user.clear(form.getByPlaceholderText('Link zum Dokument (optional)'));
-  await user.type(form.getByPlaceholderText('Link zum Dokument (optional)'), input.linkUrl);
-  await user.click(form.getByRole('button', { name: 'Dokument speichern' }));
+  if (!form) {
+    throw new Error('Dokumentformular wurde nicht gefunden.');
+  }
+
+  const fileInput = form.querySelector<HTMLInputElement>('input[type="file"][name="file"]');
+
+  if (!fileInput) {
+    throw new Error('Datei-Input wurde nicht gefunden.');
+  }
+
+  await user.upload(fileInput, file);
+  await user.click(within(form).getByRole('button', { name: 'Dokument speichern' }));
 }
 
 describe('App', () => {
@@ -167,16 +172,21 @@ describe('App', () => {
     expect(screen.getByText('Schulhof')).toBeInTheDocument();
   });
 
-  it('shows the optional document link field in the documents module', async () => {
+  it('shows an upload-only document form in the documents module', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await openDocumentsModule(user);
 
+    const form = getDocumentForm();
+
     expect(screen.getByRole('heading', { level: 4, name: 'Dokument erfassen' })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Link zum Dokument (optional)')).toBeInTheDocument();
-    expect(screen.getByText('Datei hochladen (optional)')).toBeInTheDocument();
+    expect(screen.getByText('Datei hochladen')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Dokument speichern' })).toBeInTheDocument();
+    expect(form.queryByPlaceholderText('Dokument')).not.toBeInTheDocument();
+    expect(form.queryByPlaceholderText('Kategorie')).not.toBeInTheDocument();
+    expect(form.queryByPlaceholderText('Status')).not.toBeInTheDocument();
+    expect(form.queryByPlaceholderText('Link zum Dokument (optional)')).not.toBeInTheDocument();
     expect(screen.getByText(/Word-Dateien oder mehrere Dateien hier hineinziehen/i)).toBeInTheDocument();
     expect(screen.getByText(/Maximal erlaubt sind 15 MB pro Datei/i)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 3, name: 'Dokumente' })).not.toBeInTheDocument();
@@ -236,12 +246,7 @@ describe('App', () => {
 
       await openDocumentsModule(user);
 
-      await addLocalDocument(user, {
-        name: 'Löschprobe',
-        category: 'Ablage',
-        status: 'Aktuell',
-        linkUrl: 'https://example.com/loeschprobe.pdf',
-      });
+      await addLocalDocument(user, createDocumentFile('Löschprobe.pdf', 'application/pdf'));
 
       await user.click(screen.getByRole('button', { name: 'Dokument Löschprobe löschen' }));
 
@@ -260,24 +265,15 @@ describe('App', () => {
 
     await openDocumentsModule(user);
 
-    await addLocalDocument(user, {
-      name: 'Zebra Vertrag',
-      category: 'Finanzen',
-      status: 'Offen',
-      linkUrl: 'https://example.com/zebra.pdf',
-    });
-    await addLocalDocument(user, {
-      name: 'Alpha Foto',
-      category: 'Reise',
-      status: 'Aktuell',
-      linkUrl: 'https://example.com/alpha.jpg',
-    });
-    await addLocalDocument(user, {
-      name: 'Schulportal',
-      category: 'Schule',
-      status: 'Erledigt',
-      linkUrl: 'https://example.com/portal.docx',
-    });
+    await addLocalDocument(user, createDocumentFile('Zebra Vertrag.pdf', 'application/pdf'));
+    await addLocalDocument(user, createDocumentFile('Alpha Foto.jpg', 'image/jpeg'));
+    await addLocalDocument(
+      user,
+      createDocumentFile(
+        'Schulportal.docx',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ),
+    );
 
     await user.selectOptions(screen.getByLabelText('Dokumenttyp filtern'), 'pdf');
 
@@ -301,12 +297,7 @@ describe('App', () => {
 
     await openDocumentsModule(user);
 
-    await addLocalDocument(user, {
-      name: 'Arztbrief',
-      category: 'Gesundheit',
-      status: 'Offen',
-      linkUrl: 'https://example.com/arztbrief.pdf',
-    });
+    await addLocalDocument(user, createDocumentFile('Arztbrief.pdf', 'application/pdf'));
 
     await user.click(screen.getByRole('button', { name: 'Dokument Arztbrief bearbeiten' }));
 
@@ -334,21 +325,13 @@ describe('App', () => {
 
     await openDocumentsModule(user);
 
-    await addLocalDocument(user, {
-      name: 'Reisepass Scan',
-      category: 'Reise',
-      status: 'Aktuell',
-      linkUrl: 'https://example.com/reisepass.pdf',
-    });
+    await addLocalDocument(user, createDocumentFile('Reisepass Scan.pdf', 'application/pdf'));
 
     await user.click(screen.getByRole('button', { name: 'Dokument Reisepass Scan in Vorschau öffnen' }));
 
     expect(screen.getByRole('dialog', { name: 'Reisepass Scan' })).toBeInTheDocument();
     expect(screen.getByTitle('PDF-Vorschau für Reisepass Scan')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'In neuem Tab öffnen' })).toHaveAttribute(
-      'href',
-      'https://example.com/reisepass.pdf',
-    );
+    expect(screen.getByRole('link', { name: 'In neuem Tab öffnen' })).toBeInTheDocument();
   });
 
   it('hides the generic Dokument label in the document meta line', async () => {
@@ -357,12 +340,7 @@ describe('App', () => {
 
     await openDocumentsModule(user);
 
-    await addLocalDocument(user, {
-      name: 'Versicherung PDF',
-      category: 'Dokument',
-      status: 'Aktuell',
-      linkUrl: 'https://example.com/versicherung.pdf',
-    });
+    await addLocalDocument(user, createDocumentFile('Versicherung PDF.pdf', 'application/pdf'));
 
     const documentCard = screen
       .getByRole('button', { name: 'Dokument Versicherung PDF bearbeiten' })
@@ -371,7 +349,7 @@ describe('App', () => {
     expect(documentCard).not.toBeNull();
     expect(
       (documentCard as HTMLLIElement).querySelector('.document-meta-line')?.textContent?.trim(),
-    ).toBe('PDF · Aktuell');
+    ).toBe('PDF · Neu');
     expect(within(documentCard as HTMLLIElement).queryByText('Dokument · PDF')).not.toBeInTheDocument();
   });
 
@@ -381,12 +359,7 @@ describe('App', () => {
 
     await openDocumentsModule(user);
 
-    await addLocalDocument(user, {
-      name: 'Urlaub Foto',
-      category: 'Reise',
-      status: 'Aktuell',
-      linkUrl: 'https://example.com/urlaub.jpg',
-    });
+    await addLocalDocument(user, createDocumentFile('Urlaub Foto.jpg', 'image/jpeg'));
 
     const documentCard = screen
       .getByRole('button', { name: 'Dokument Urlaub Foto bearbeiten' })
@@ -398,6 +371,6 @@ describe('App', () => {
       (documentCard as HTMLLIElement).querySelectorAll('.document-actions a, .document-actions button'),
     ).map((element) => element.textContent?.trim());
 
-    expect(actionLabels).toEqual(['Link öffnen', 'Vorschau', 'Bearbeiten', 'Löschen']);
+    expect(actionLabels).toEqual(['Datei öffnen', 'Vorschau', 'Bearbeiten', 'Löschen']);
   });
 });

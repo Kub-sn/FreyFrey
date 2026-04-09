@@ -98,6 +98,25 @@ type InviteTargetFamily = {
   familyName: string;
 };
 
+function createLocalDocumentLink(file: File) {
+  if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    return URL.createObjectURL(file);
+  }
+
+  return file.name;
+}
+
+function revokeLocalDocumentLink(document: DocumentItem) {
+  if (
+    document.filePath
+    && document.linkUrl.startsWith('blob:')
+    && typeof URL !== 'undefined'
+    && typeof URL.revokeObjectURL === 'function'
+  ) {
+    URL.revokeObjectURL(document.linkUrl);
+  }
+}
+
 export default function PlannerShell({
   activeTab,
   setActiveTab,
@@ -574,6 +593,8 @@ export default function PlannerShell({
     try {
       if (authState.family) {
         await deleteDocument(document.id, document.filePath || undefined);
+      } else {
+        revokeLocalDocumentLink(document);
       }
 
       updateState((current) => ({
@@ -1100,10 +1121,6 @@ export default function PlannerShell({
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    const name = String(form.get('name') || '').trim();
-    const category = String(form.get('category') || '').trim();
-    const status = String(form.get('status') || '').trim();
-    const linkUrl = String(form.get('linkUrl') || '').trim();
     const fileInput = form.get('file');
     const selectedFiles =
       selectedDocumentFiles.length > 0
@@ -1112,23 +1129,15 @@ export default function PlannerShell({
           ? [fileInput]
           : [];
 
-    if (!name && !linkUrl && selectedFiles.length === 0) {
+    if (selectedFiles.length === 0) {
       setCloudSync({
         phase: 'error',
-        message: 'Bitte einen Dokumentnamen, einen Link oder mindestens eine Datei angeben.',
+        message: 'Bitte mindestens eine Datei angeben.',
       });
       return;
     }
 
-    if (linkUrl && selectedFiles.length > 0) {
-      setCloudSync({
-        phase: 'error',
-        message: 'Bitte entweder einen Link oder eine Datei angeben, nicht beides gleichzeitig.',
-      });
-      return;
-    }
-
-    if (selectedFiles.length > 0 && !authState.family) {
+    if (selectedFiles.length > 0 && !authState.family && plannerState.storageMode !== 'local') {
       setCloudSync({
         phase: 'error',
         message: 'Datei-Uploads sind nur verfügbar, wenn du angemeldet bist und zu einer Familie gehörst.',
@@ -1154,9 +1163,9 @@ export default function PlannerShell({
 
             const uploadedFile = await uploadDocumentFile(authState.family.familyId, file);
             const metadata = resolveDocumentMetadata({
-              name: selectedFiles.length === 1 ? name : '',
-              category,
-              status,
+              name: '',
+              category: '',
+              status: '',
               file,
             });
             const createdDocument = await createDocument(authState.family.familyId, {
@@ -1174,24 +1183,6 @@ export default function PlannerShell({
             ...current,
             documents: [...createdDocuments.reverse(), ...current.documents],
           }));
-        } else {
-          const metadata = resolveDocumentMetadata({
-            name,
-            category,
-            status,
-          });
-          const createdDocument = await createDocument(authState.family.familyId, {
-            name: metadata.name,
-            category: metadata.category,
-            status: metadata.status,
-            linkUrl,
-            filePath: '',
-          });
-
-          updateState((current) => ({
-            ...current,
-            documents: [createdDocument, ...current.documents],
-          }));
         }
 
         setCloudSync({
@@ -1202,24 +1193,27 @@ export default function PlannerShell({
               : 'Dokument wurde gespeichert.',
         });
       } else {
-        const metadata = resolveDocumentMetadata({
-          name,
-          category,
-          status,
+        const createdDocuments = selectedFiles.map((file) => {
+          const metadata = resolveDocumentMetadata({
+            name: '',
+            category: '',
+            status: '',
+            file,
+          });
+
+          return {
+            id: nextStringId(),
+            name: metadata.name,
+            category: metadata.category,
+            status: metadata.status,
+            linkUrl: createLocalDocumentLink(file),
+            filePath: file.name,
+          } satisfies DocumentItem;
         });
+
         updateState((current) => ({
           ...current,
-          documents: [
-            {
-              id: nextStringId(),
-              name: metadata.name,
-              category: metadata.category,
-              status: metadata.status,
-              linkUrl,
-              filePath: '',
-            },
-            ...current.documents,
-          ],
+          documents: [...createdDocuments.reverse(), ...current.documents],
         }));
       }
 

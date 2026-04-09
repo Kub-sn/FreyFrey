@@ -83,19 +83,13 @@ export function DocumentsModule({
       <div className="module-layout document-module-layout">
         <form className="panel form-panel document-form-panel" onSubmit={(event) => void onSubmit(event)}>
           <h4>Dokument erfassen</h4>
-          <div className="document-form-grid">
-            <input name="name" placeholder="Dokument" />
-            <input name="category" placeholder="Kategorie" />
-            <input name="status" placeholder="Status" />
-            <input name="linkUrl" type="url" placeholder="Link zum Dokument (optional)" />
-          </div>
           <label
             className={isDocumentDropActive ? 'file-input-label is-drag-active' : 'file-input-label'}
             onDrop={onDocumentDrop}
             onDragOver={onDocumentDragOver}
             onDragLeave={onDocumentDragLeave}
           >
-            <span>Datei hochladen (optional)</span>
+            <span>Datei hochladen</span>
             <small>
               PDF, Bilder, Word-Dateien oder mehrere Dateien hier hineinziehen. Maximal
               erlaubt sind 15 MB pro Datei.

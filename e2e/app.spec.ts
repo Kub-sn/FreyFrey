@@ -530,6 +530,62 @@ test('shows the planner shell and lets the user open the shopping module', async
   await expect(page.getByRole('button', { name: 'Gericht speichern' })).toBeVisible();
 });
 
+test('shows the upload-only documents module in a vertical stack', async ({ page }) => {
+  await page.goto('/');
+
+  if (await page.getByRole('button', { name: 'Jetzt anmelden' }).isVisible()) {
+    return;
+  }
+
+  await page.getByRole('button', { name: 'Dokumente' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Dokument erfassen' })).toBeVisible();
+  await expect(page.getByText('Datei hochladen')).toBeVisible();
+  await expect(page.getByPlaceholder('Dokument')).toHaveCount(0);
+  await expect(page.getByPlaceholder('Kategorie')).toHaveCount(0);
+  await expect(page.getByPlaceholder('Status')).toHaveCount(0);
+  await expect(page.getByPlaceholder('Link zum Dokument (optional)')).toHaveCount(0);
+
+  const uploadCardBox = await page.locator('form.document-form-panel').boundingBox();
+  const visibleDocumentsCardBox = await page.locator('.document-module-layout > .panel').nth(1).boundingBox();
+
+  expect(uploadCardBox).not.toBeNull();
+  expect(visibleDocumentsCardBox).not.toBeNull();
+  expect(uploadCardBox!.height).toBeLessThanOrEqual(260);
+  expect(visibleDocumentsCardBox!.y - (uploadCardBox!.y + uploadCardBox!.height)).toBeLessThanOrEqual(4);
+});
+
+test('keeps the document edit dialog free of horizontal scrolling for long names', async ({ page }) => {
+  await page.goto('/');
+
+  if (await page.getByRole('button', { name: 'Jetzt anmelden' }).isVisible()) {
+    return;
+  }
+
+  await page.getByRole('button', { name: 'Dokumente' }).click();
+  await page.locator('input[type="file"][name="file"]').setInputFiles({
+    name: 'zertifikat.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('pdf-content'),
+  });
+  await page.getByRole('button', { name: 'Dokument speichern' }).click();
+  await page.getByRole('button', { name: 'Dokument zertifikat bearbeiten' }).click();
+
+  const longName = 'certificate_of_completion_react_certificate_of_completion_react';
+
+  await page.getByLabel('Dokumentname bearbeiten').fill(longName);
+  await expect(page.getByRole('heading', { name: longName })).toBeVisible();
+  await expect(
+    page.getByText('Datei-Uploads behalten ihren Storage-Link. Nur die Metadaten werden geändert.'),
+  ).toHaveCount(0);
+
+  const dialogHasHorizontalOverflow = await page.locator('.modal-card').evaluate((element) => {
+    return element.scrollWidth > element.clientWidth;
+  });
+
+  expect(dialogHasHorizontalOverflow).toBe(false);
+});
+
 test('lets the user complete the password reset flow and sign in afterwards', async ({ page }) => {
   await mockSupabaseAuth(page);
 
@@ -706,9 +762,22 @@ test('keeps family settings cards usable on mobile widths', async ({ page }) => 
   await page.getByRole('button', { name: 'Jetzt anmelden' }).click();
 
   const mobileModuleSwitch = page.getByRole('combobox', { name: 'Bereich wechseln' });
+  const mobileTopbar = page.locator('.mobile-topbar');
 
   await expect(mobileModuleSwitch).toBeVisible();
+  await expect(mobileTopbar).toBeVisible();
+
+  const topbarStart = await mobileTopbar.boundingBox();
+
+  expect(topbarStart).not.toBeNull();
   await mobileModuleSwitch.selectOption('family');
+
+  await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
+
+  const topbarAfterScroll = await mobileTopbar.boundingBox();
+
+  expect(topbarAfterScroll).not.toBeNull();
+  expect(Math.abs((topbarAfterScroll?.y ?? 0) - (topbarStart?.y ?? 0))).toBeLessThanOrEqual(8);
 
   await expect(page.getByRole('heading', { name: 'Familienmitglieder' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Alle Familien' })).toBeVisible();

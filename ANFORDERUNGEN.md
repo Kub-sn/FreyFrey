@@ -1,15 +1,15 @@
 # Anforderungen
 
 - [ ] bei dokumente erfassen: 
-  - [ ] die inputs komplett löschen
+  - [x] die inputs komplett löschen
   - [ ] status, dokument kategorie linkzumdoku komplett aus db löschen
   - [ ] bei bearbeiten nur name, alles andere entfernen
   - [ ] bei filter status auch entfernen
   - [ ] status a-z im filter auch entfernen als auswahlmöglichkeit
-  - [ ] optional bei datei hochladen entfernen
+  - [x] optional bei datei hochladen entfernen
   - [ ] 1 dokumente zu 1 dokument machen
 
-- [ ] weitere rolle: familien admin, da bei neuanmeldung und neue familie der user die rolle admin bekommt.
+- [x] weitere rolle: familien admin, da bei neuanmeldung und neue familie der user die rolle admin bekommt.
 
 - [ ] google calendar einbinden
   - [ ] Google Cloud Projekt: Du musst ein Projekt in der Google Cloud Console erstellen und die API dort aktivieren.
