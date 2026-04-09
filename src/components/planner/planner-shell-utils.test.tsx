@@ -22,7 +22,7 @@ describe('planner-shell-utils', () => {
   it('renders family status badges and permission notes', () => {
     render(<FamilyStatusBadges role="admin" isOwner />);
 
-    expect(screen.getByText('Gründerstatus')).toBeInTheDocument();
+    expect(screen.getByText('Familiengründer')).toBeInTheDocument();
     expect(getFamilyPermissionNote(authFixture.profile, authFixture.family)).toContain('Familiengründer');
   });
 

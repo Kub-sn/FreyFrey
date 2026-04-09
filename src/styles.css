@@ -1011,7 +1011,7 @@ button {
   padding: 0.85rem 1rem;
   border: 1px solid rgba(24, 52, 47, 0.12);
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255, 252, 248, 0.96), rgba(247, 240, 231, 0.76));
+  background: rgba(255, 252, 248, 0.96);
   color: #18342f;
   text-align: left;
   box-shadow: 0 8px 18px rgba(35, 27, 17, 0.04);
@@ -1030,7 +1030,7 @@ button {
 
 .family-directory-button.active {
   border-color: rgba(24, 52, 47, 0.26);
-  background: linear-gradient(180deg, rgba(232, 242, 238, 0.96), rgba(247, 240, 231, 0.82));
+  background: rgba(232, 242, 238, 0.96);
   box-shadow: 0 14px 26px rgba(24, 52, 47, 0.08);
 }
 
@@ -1083,11 +1083,11 @@ button {
   min-width: 0;
   overflow: hidden;
   padding: 1rem 1.05rem;
-  border: 1px solid rgba(24, 52, 47, 0.09);
+  border: 1px solid rgba(24, 52, 47, 0.26);
   border-bottom: none;
   border-radius: 20px;
-  background: linear-gradient(180deg, rgba(255, 252, 248, 0.92), rgba(247, 240, 231, 0.76));
-  box-shadow: 0 10px 22px rgba(35, 27, 17, 0.05);
+  background: rgba(232, 242, 238, 0.96);
+  box-shadow: 0 14px 26px rgba(24, 52, 47, 0.08);
 }
 
 .family-directory-member-actions {

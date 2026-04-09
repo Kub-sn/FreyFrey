@@ -265,7 +265,7 @@ export function OnboardingScreen({
           <h1>Willkommen, {profile.display_name}</h1>
           <p>
             Dein Konto ist angelegt. Lege jetzt deine Familie an. Du startest dabei als
-            Familienmitglied mit Gründerstatus.
+            Familienmitglied und Familiengründer.
           </p>
           <div className="account-summary">
             <span>{profile.email}</span>

@@ -110,7 +110,7 @@ export function FamilyStatusBadges({
 }) {
   return (
     <div className="family-status-badges">
-      {isOwner ? <span className="chip owner-status-badge">Gründerstatus</span> : null}
+      {isOwner ? <span className="chip owner-status-badge">Familiengründer</span> : null}
       <span className={getRoleChipClass(role)}>{getRoleLabel(role)}</span>
     </div>
   );

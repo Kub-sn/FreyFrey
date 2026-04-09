@@ -698,12 +698,12 @@ describe('App auth flow', () => {
     await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
 
     expect(screen.getByRole('heading', { level: 4, name: 'Familienmitglieder' })).toBeInTheDocument();
-    expect(getAccountCard().getByText('Gründerstatus')).toBeInTheDocument();
+    expect(getAccountCard().getByText('Familiengründer')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 4, name: 'Registrierungeinstellung' })).not.toBeInTheDocument();
     expect(getInviteForm().queryByRole('combobox', { name: 'Familie fuer Einladung' })).not.toBeInTheDocument();
     expect(getInviteForm().getByRole('button', { name: 'Einladung senden' })).toBeEnabled();
     expect(getInviteForm().queryByRole('option', { name: 'admin' })).not.toBeInTheDocument();
-    expect(screen.getAllByText('Gründerstatus').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Familiengründer').length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: 'Einladung für open@example.com zurückziehen' }));
 
     expect(removeFamilyInvite).toHaveBeenCalledWith('invite-owner-1');

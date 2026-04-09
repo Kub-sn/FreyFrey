@@ -684,7 +684,7 @@ test('lets a familyuser owner invite members but hides configuration controls', 
   await page.getByRole('button', { name: 'Einstellungen' }).click();
 
   await expect(page.getByRole('heading', { name: 'Familienmitglieder' })).toBeVisible();
-  await expect(page.getByText('Gründerstatus').first()).toBeVisible();
+  await expect(page.getByText('Familiengründer').first()).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Familie fuer Einladung' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Einladung senden' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Einladung für open@example.com zurückziehen' })).toBeVisible();
