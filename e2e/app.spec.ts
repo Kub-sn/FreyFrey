@@ -526,6 +526,10 @@ test('shows the planner shell and lets the user open the shopping module', async
   await expect(page.getByRole('heading', { name: 'Neue Notiz' })).toBeVisible();
   await expect(page.getByPlaceholder('Kategorie')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Notiz speichern' })).toBeVisible();
+  await page.getByRole('button', { name: 'Notiz Hinweis öffnen' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByText('Nicht vergessen.')).toBeVisible();
+  await page.getByRole('button', { name: 'Abbrechen' }).click();
   await page.getByRole('button', { name: 'Essensplan' }).click();
   await expect(page.getByRole('heading', { name: 'Gericht eintragen' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Gericht speichern' })).toBeVisible();

@@ -4,6 +4,7 @@
 - Only write new tests or adjust existing tests after the review.
 - Every functional change needs appropriate unit tests or a conscious justification for why none are meaningful.
 - Every relevant user flow change needs appropriate E2E tests or a conscious justification for why none are meaningful.
+- When adding or refactoring dialogs/modals, prefer reusing `src/components/planner/ModalDialog.tsx` whenever practical instead of creating bespoke dialog shells.
 - After changes, always run `npm run test:unit` and `npm run test:e2e`.
 - If tests fail, fix the root cause in the code first instead of watering down the tests.
 - Then rerun the previously failing tests until they are green.

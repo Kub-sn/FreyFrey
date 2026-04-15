@@ -22,7 +22,7 @@ describe('DocumentEditModal', () => {
 
     await user.type(screen.getByLabelText('Dokumentname bearbeiten'), ' X');
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
-    await user.click(screen.getByRole('button', { name: 'Schließen' }));
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
 
     expect(onFieldChange).toHaveBeenCalled();
     expect(onSave).toHaveBeenCalled();

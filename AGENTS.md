@@ -10,6 +10,7 @@
 
 - Every behavioral change requires unit tests or updated existing unit tests.
 - Every relevant user flow change requires E2E tests or updated existing E2E tests.
+- When adding or refactoring dialogs/modals, prefer reusing `src/components/planner/ModalDialog.tsx` whenever practical instead of creating bespoke dialog shells.
 - Standard tools:
   - Unit: Vitest + Testing Library
   - E2E: Playwright

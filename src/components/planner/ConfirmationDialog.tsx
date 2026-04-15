@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ModalDialog } from './ModalDialog';
 
 export function ConfirmationDialog({
   actions,
@@ -12,12 +13,8 @@ export function ConfirmationDialog({
   id: string;
 }) {
   return (
-    <div className="modal-backdrop" role="presentation">
-      <section className="modal-card" role="dialog" aria-modal="true" aria-labelledby={id}>
-        <h3 id={id}>{heading}</h3>
-        {children}
-        <div className="modal-actions">{actions}</div>
-      </section>
-    </div>
+    <ModalDialog id={id} title={heading} actions={actions}>
+      {children}
+    </ModalDialog>
   );
 }

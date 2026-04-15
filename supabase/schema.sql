@@ -636,6 +636,12 @@ on public.notes
 for insert
 with check (public.is_family_member(family_id));
 
+create policy "family members can update notes"
+on public.notes
+for update
+using (public.is_family_member(family_id))
+with check (public.is_family_member(family_id));
+
 create policy "family members can read calendar events"
 on public.calendar_events
 for select

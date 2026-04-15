@@ -5,10 +5,12 @@ export function NotesModule({
   activeTab,
   notes,
   onAddNote,
+  onOpenNote,
 }: {
   activeTab: string;
   notes: PlannerState['notes'];
   onAddNote: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  onOpenNote: (noteId: string) => void;
 }) {
   return (
     <section className={activeTab === 'notes' ? 'module is-visible' : 'module'}>
@@ -22,10 +24,16 @@ export function NotesModule({
         <article className="panel masonry-panel">
           <div className="notes-grid">
             {notes.map((note) => (
-              <article key={note.id} className="note-card">
+              <button
+                key={note.id}
+                type="button"
+                className="note-card note-card-button"
+                onClick={() => onOpenNote(note.id)}
+                aria-label={`Notiz ${note.title} öffnen`}
+              >
                 <h4>{note.title}</h4>
                 <p>{note.text}</p>
-              </article>
+              </button>
             ))}
           </div>
         </article>

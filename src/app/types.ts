@@ -74,6 +74,13 @@ export type DocumentPreviewState = {
   kind: 'image' | 'pdf';
 };
 
+export type NoteDialogState = {
+  id: string;
+  title: string;
+  text: string;
+  isEditing: boolean;
+};
+
 export type PendingMemberDeletionState = {
   familyId: string;
   familyName: string;

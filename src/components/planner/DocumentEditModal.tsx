@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react';
 import type { DocumentEditState } from '../../app/types';
+import { ModalDialog } from './ModalDialog';
 
 export function DocumentEditModal({
   documentEditState,
@@ -13,18 +14,22 @@ export function DocumentEditModal({
   onSave: (event: FormEvent<HTMLFormElement>) => Promise<void>;
 }) {
   return (
-    <div className="modal-backdrop" role="presentation">
-      <section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="document-edit-title">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">Dokument bearbeiten</p>
-            <h3 id="document-edit-title">{documentEditState.name}</h3>
-          </div>
+    <ModalDialog
+      id="document-edit-title"
+      title={documentEditState.name}
+      eyebrow="Dokument bearbeiten"
+      actions={(
+        <>
           <button type="button" className="secondary-action" onClick={onClose}>
-            Schließen
+            Abbrechen
           </button>
-        </div>
-        <form className="modal-form" onSubmit={(event) => void onSave(event)}>
+          <button type="submit" form="document-edit-form">
+            Änderungen speichern
+          </button>
+        </>
+      )}
+    >
+      <form id="document-edit-form" className="modal-form" onSubmit={(event) => void onSave(event)}>
           <input
             aria-label="Dokumentname bearbeiten"
             value={documentEditState.name}
@@ -49,14 +54,7 @@ export function DocumentEditModal({
               onChange={(event) => onFieldChange('linkUrl', event.currentTarget.value)}
             />
           )}
-          <div className="modal-actions">
-            <button type="button" className="secondary-action" onClick={onClose}>
-              Abbrechen
-            </button>
-            <button type="submit">Änderungen speichern</button>
-          </div>
-        </form>
-      </section>
-    </div>
+      </form>
+    </ModalDialog>
   );
 }

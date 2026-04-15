@@ -37,6 +37,7 @@ import {
   removeFamilyInvite,
   updateDocument,
   updateMealPrepared,
+  updateNote,
   updateShoppingItemChecked,
   updateTaskDone,
   uploadDocumentFile,
@@ -52,6 +53,7 @@ import type {
   DocumentFilterKind,
   DocumentPreviewState,
   DocumentSortOption,
+  NoteDialogState,
   PendingFamilyDeletionState,
   PendingMemberDeletionState,
 } from '../../app/types';
@@ -63,6 +65,7 @@ import { DocumentPreviewModal } from './DocumentPreviewModal';
 import { DocumentsModule } from './DocumentsModule';
 import { FamilyModule } from './FamilyModule';
 import { MealsModule } from './MealsModule';
+import { NoteDialog } from './NoteDialog';
 import { NotesModule } from './NotesModule';
 import { PlannerOverview } from './PlannerOverview';
 import { PlannerSidebar } from './PlannerSidebar';
@@ -142,6 +145,7 @@ export default function PlannerShell({
   const [documentSort, setDocumentSort] = useState<DocumentSortOption>('recent');
   const [documentEditState, setDocumentEditState] = useState<DocumentEditState | null>(null);
   const [documentPreviewState, setDocumentPreviewState] = useState<DocumentPreviewState | null>(null);
+  const [noteDialogState, setNoteDialogState] = useState<NoteDialogState | null>(null);
   const [documentUploadProgress, setDocumentUploadProgress] = useState<{
     completed: number;
     total: number;
@@ -989,6 +993,68 @@ export default function PlannerShell({
     }
   };
 
+  const handleOpenNote = (noteId: string) => {
+    const note = plannerState.notes.find((entry) => entry.id === noteId);
+
+    if (!note) {
+      return;
+    }
+
+    setNoteDialogState({
+      ...note,
+      isEditing: false,
+    });
+  };
+
+  const handleNoteDialogFieldChange = (field: 'title' | 'text', value: string) => {
+    setNoteDialogState((current) => (current ? { ...current, [field]: value } : current));
+  };
+
+  const handleSaveNote = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!noteDialogState) {
+      return;
+    }
+
+    const title = noteDialogState.title.trim();
+    const text = noteDialogState.text.trim();
+
+    if (!title || !text) {
+      return;
+    }
+
+    try {
+      let savedNote = {
+        id: noteDialogState.id,
+        title,
+        text,
+      };
+
+      if (authState.family) {
+        savedNote = await updateNote(noteDialogState.id, {
+          title,
+          text,
+        });
+        setCloudSync({
+          phase: 'ready',
+          message: 'Notiz wurde aktualisiert.',
+        });
+      }
+
+      updateState((current) => ({
+        ...current,
+        notes: current.notes.map((note) => (note.id === savedNote.id ? savedNote : note)),
+      }));
+      setNoteDialogState(null);
+    } catch (error) {
+      setCloudSync({
+        phase: 'error',
+        message: humanizeAuthError(error),
+      });
+    }
+  };
+
   const handleAddCalendar = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formElement = event.currentTarget;
@@ -1271,7 +1337,22 @@ export default function PlannerShell({
           onToggleTask={handleToggleTask}
         />
 
-        <NotesModule activeTab={activeTab} notes={plannerState.notes} onAddNote={handleAddNote} />
+        <NotesModule
+          activeTab={activeTab}
+          notes={plannerState.notes}
+          onAddNote={handleAddNote}
+          onOpenNote={handleOpenNote}
+        />
+
+        {noteDialogState ? (
+          <NoteDialog
+            note={noteDialogState}
+            onClose={() => setNoteDialogState(null)}
+            onEdit={() => setNoteDialogState((current) => (current ? { ...current, isEditing: true } : current))}
+            onFieldChange={handleNoteDialogFieldChange}
+            onSave={handleSaveNote}
+          />
+        ) : null}
 
         <CalendarModule
           activeTab={activeTab}

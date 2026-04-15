@@ -17,4 +17,15 @@ describe('humanizeAuthError', () => {
       'relation "profiles" does not exist The table public.profiles is missing. Hinweis: Run the SQL schema.',
     );
   });
+
+  it('maps the postgrest single-row note update error to a clear message', () => {
+    expect(
+      humanizeAuthError({
+        message: 'Cannot coerce the result to a single JSON object',
+        details: 'The result contains 0 rows',
+      }),
+    ).toBe(
+      'Die Notiz konnte nicht gespeichert werden. Prüfe bitte, ob die Datenbank-Migration für Notiz-Bearbeitung bereits ausgeführt wurde.',
+    );
+  });
 });

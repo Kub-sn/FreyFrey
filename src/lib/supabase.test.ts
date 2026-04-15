@@ -42,6 +42,15 @@ function buildFamilyUpdateBuilder(result: { data: unknown; error: unknown }) {
   };
 }
 
+function buildNoteUpdateBuilder(result: { data: unknown; error: unknown }) {
+  return {
+    update: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue(result),
+  };
+}
+
 describe('auth email normalization', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -734,6 +743,40 @@ describe('registration controls', () => {
       familyName: 'Familie Test',
       role: 'admin',
       allowOpenRegistration: false,
+    });
+  });
+});
+
+describe('note persistence', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'publishable-key');
+  });
+
+  it('updates a note and returns the normalized record', async () => {
+    const noteUpdateBuilder = buildNoteUpdateBuilder({
+      data: {
+        id: 'note-1',
+        title: 'Ferienplanung',
+        text: 'Kompletter bearbeiteter Text',
+      },
+      error: null,
+    });
+
+    createClientMock.mockReturnValue({
+      from: vi.fn().mockReturnValue(noteUpdateBuilder),
+    });
+
+    const { updateNote } = await import('./supabase');
+
+    await expect(
+      updateNote('note-1', { title: 'Ferienplanung', text: 'Kompletter bearbeiteter Text' }),
+    ).resolves.toEqual({
+      id: 'note-1',
+      title: 'Ferienplanung',
+      text: 'Kompletter bearbeiteter Text',
     });
   });
 });

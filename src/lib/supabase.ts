@@ -1055,6 +1055,34 @@ export async function createNote(
   };
 }
 
+export async function updateNote(
+  noteId: string,
+  payload: Omit<NoteItem, 'id'>,
+): Promise<NoteItem> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('notes')
+    .update({
+      title: payload.title,
+      text: payload.text,
+    })
+    .eq('id', noteId)
+    .select('id, title, text')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const note = data as NoteRow;
+
+  return {
+    id: note.id,
+    title: note.title,
+    text: note.text,
+  };
+}
+
 export async function fetchCalendarEntries(familyId: string): Promise<CalendarItem[]> {
   const client = requireSupabase();
   const { data, error } = await client
