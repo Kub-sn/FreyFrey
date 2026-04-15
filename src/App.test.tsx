@@ -130,7 +130,12 @@ describe('App', () => {
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Notizen' }));
 
-    expect(screen.getByRole('heading', { level: 4, name: 'Neue Notiz' })).toBeInTheDocument();
+    const notesHeading = screen.getByRole('heading', { level: 4, name: 'Neue Notiz' });
+    const notesModule = notesHeading.closest('section');
+
+    expect(notesHeading).toBeInTheDocument();
+    expect(notesModule).not.toBeNull();
+    expect(within(notesModule as HTMLElement).queryByPlaceholderText('Kategorie')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Notiz speichern' })).toBeInTheDocument();
   });
 

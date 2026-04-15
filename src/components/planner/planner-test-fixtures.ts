@@ -16,7 +16,7 @@ export const plannerFixture: PlannerState = {
     { id: 'task-1', title: 'Schultasche packen', owner: 'Alex', due: 'Heute', done: false },
   ],
   notes: [
-    { id: 'note-1', title: 'Hinweis', tag: 'Familie', text: 'Nicht vergessen.' },
+    { id: 'note-1', title: 'Hinweis', text: 'Nicht vergessen.' },
   ],
   calendar: [
     { id: 'calendar-1', title: 'Laternenfest', date: '2026-04-09', time: '18:30', place: 'Schulhof' },

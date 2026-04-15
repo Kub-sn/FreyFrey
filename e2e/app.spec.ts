@@ -524,6 +524,7 @@ test('shows the planner shell and lets the user open the shopping module', async
   await expect(page.getByRole('button', { name: 'Artikel speichern' })).toBeVisible();
   await page.getByRole('button', { name: 'Notizen' }).click();
   await expect(page.getByRole('heading', { name: 'Neue Notiz' })).toBeVisible();
+  await expect(page.getByPlaceholder('Kategorie')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Notiz speichern' })).toBeVisible();
   await page.getByRole('button', { name: 'Essensplan' }).click();
   await expect(page.getByRole('heading', { name: 'Gericht eintragen' })).toBeVisible();

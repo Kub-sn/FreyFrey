@@ -90,7 +90,12 @@ describe('FamilyModule', () => {
         adminFamilyDirectoryError={null}
         adminInviteFamilies={[]}
         allowOpenRegistration={false}
-        authFamily={{ familyId: 'family-1', familyName: 'Familie Test', role: 'familyuser' }}
+        authFamily={{
+          familyId: 'family-1',
+          familyName: 'Familie Test',
+          role: 'familyuser',
+          allowOpenRegistration: false,
+        }}
         authProfile={{ id: 'member-1', display_name: 'Mia', email: 'mia@example.com', role: 'familyuser' }}
         canInviteFamilyMembers={false}
         canManageFamily={false}

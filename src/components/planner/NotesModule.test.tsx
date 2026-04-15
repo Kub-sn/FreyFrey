@@ -11,9 +11,11 @@ describe('NotesModule', () => {
 
     render(<NotesModule activeTab="notes" notes={plannerFixture.notes} onAddNote={onAddNote} />);
 
+    expect(document.querySelector('.notes-module-layout')).toBeInTheDocument();
+    expect(document.querySelector('.notes-form-panel')).toBeInTheDocument();
     expect(screen.getByText('Hinweis')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Kategorie')).not.toBeInTheDocument();
     await user.type(screen.getByPlaceholderText('Titel'), 'Neu');
-    await user.type(screen.getByPlaceholderText('Kategorie'), 'Schule');
     await user.type(screen.getByPlaceholderText('Inhalt'), 'Turnbeutel mitnehmen');
     await user.click(screen.getByRole('button', { name: 'Notiz speichern' }));
 

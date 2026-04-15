@@ -27,7 +27,6 @@ export type NoteItem = {
   id: string;
   title: string;
   text: string;
-  tag: string;
 };
 
 export type CalendarItem = {

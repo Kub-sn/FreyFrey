@@ -54,9 +54,3 @@ Melde dich mit dem neuen Konto an. Erwartung: Das Konto landet in der Familie, d
 Prüfe den Negativfall. Schalte als Admin die offene Registrierung aus und versuche danach eine Registrierung mit einer nicht eingeladenen Mailadresse. Erwartung: Oben auf der Registrierungsseite erscheint der Hinweis, und beim Absenden kommt die Fehlermeldung, dass der Admin die Registrierung deaktiviert hat.
 
 Wenn etwas davon fehlschlägt, ist die Zuordnung meist sofort eingrenzbar:
-
-Familienauswahl fehlt: Frontend ist nicht aktuell.
-Einladung speichert nicht: SQL/Migration nicht live.
-Mail kommt nicht: send-family-invite oder Mail-Secrets nicht korrekt live.
-Registrierung trotz Sperre möglich: Registrierungsgate nicht live.
-Nutzer landet in falscher Familie: Invite-Annahme oder Ziel-Familien-ID stimmt nicht.

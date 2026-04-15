@@ -28,7 +28,6 @@ describe('applyCloudCollections', () => {
           id: 'note-cloud-1',
           title: 'Arztunterlagen',
           text: 'Versichertenkarte mitnehmen.',
-          tag: 'Gesundheit',
         },
       ],
       calendar: [

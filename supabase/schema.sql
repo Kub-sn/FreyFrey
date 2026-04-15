@@ -65,7 +65,6 @@ create table public.notes (
   family_id uuid not null references public.families(id) on delete cascade,
   title text not null,
   text text not null,
-  tag text not null,
   created_at timestamptz not null default now()
 );
 

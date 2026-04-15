@@ -2,6 +2,19 @@ import { defaultPlannerState, type PlannerState } from './planner-data';
 
 const STORAGE_KEY = 'family-planner-state-v2';
 
+function normalizePlannerState(state: PlannerState): PlannerState {
+  return {
+    ...state,
+    notes: Array.isArray(state.notes)
+      ? state.notes.map((note) => ({
+          id: note.id,
+          title: note.title,
+          text: note.text,
+        }))
+      : defaultPlannerState.notes,
+  };
+}
+
 export function loadPlannerState(): PlannerState {
   if (typeof window === 'undefined') {
     return defaultPlannerState;
@@ -14,7 +27,7 @@ export function loadPlannerState(): PlannerState {
   }
 
   try {
-    return JSON.parse(rawState) as PlannerState;
+    return normalizePlannerState(JSON.parse(rawState) as PlannerState);
   } catch {
     return defaultPlannerState;
   }

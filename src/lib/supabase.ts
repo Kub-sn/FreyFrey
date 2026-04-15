@@ -89,7 +89,6 @@ type NoteRow = {
   id: string;
   title: string;
   text: string;
-  tag: string;
 };
 
 type CalendarRow = {
@@ -1017,7 +1016,7 @@ export async function fetchNotes(familyId: string): Promise<NoteItem[]> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('notes')
-    .select('id, title, text, tag')
+    .select('id, title, text')
     .eq('family_id', familyId)
     .order('created_at', { ascending: false });
 
@@ -1029,7 +1028,6 @@ export async function fetchNotes(familyId: string): Promise<NoteItem[]> {
     id: note.id,
     title: note.title,
     text: note.text,
-    tag: note.tag,
   }));
 }
 
@@ -1041,7 +1039,7 @@ export async function createNote(
   const { data, error } = await client
     .from('notes')
     .insert({ family_id: familyId, ...payload })
-    .select('id, title, text, tag')
+    .select('id, title, text')
     .single();
 
   if (error) {
@@ -1054,7 +1052,6 @@ export async function createNote(
     id: note.id,
     title: note.title,
     text: note.text,
-    tag: note.tag,
   };
 }
 

@@ -952,10 +952,9 @@ export default function PlannerShell({
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const title = String(form.get('title') || '').trim();
-    const tag = String(form.get('tag') || '').trim();
     const text = String(form.get('text') || '').trim();
 
-    if (!title || !tag || !text) {
+    if (!title || !text) {
       return;
     }
 
@@ -964,7 +963,6 @@ export default function PlannerShell({
         const createdNote = await createNote(authState.family.familyId, {
           title,
           text,
-          tag,
         });
 
         updateState((current) => ({
@@ -978,7 +976,7 @@ export default function PlannerShell({
       } else {
         updateState((current) => ({
           ...current,
-          notes: [{ id: nextStringId(), title, text, tag }, ...current.notes],
+          notes: [{ id: nextStringId(), title, text }, ...current.notes],
         }));
       }
 
