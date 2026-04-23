@@ -1417,6 +1417,14 @@ button {
   border-bottom: 1px solid rgba(24, 52, 47, 0.08);
 }
 
+.empty-state-text {
+  padding: 0.75rem 0;
+  color: rgba(24, 52, 47, 0.55);
+  font-style: italic;
+  border: none;
+  list-style: none;
+}
+
 .compact li {
   padding: 0.7rem 0;
 }

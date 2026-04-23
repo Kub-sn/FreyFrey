@@ -26,7 +26,7 @@ export function NotesModule({
         </form>
         <article className="panel masonry-panel">
           <div className="notes-grid">
-            {notes.map((note) => (
+            {notes.length > 0 ? notes.map((note) => (
               <article key={note.id} className="note-card">
                 <button
                   type="button"
@@ -46,7 +46,8 @@ export function NotesModule({
                   <p>{note.text}</p>
                 </button>
               </article>
-            ))}
+            )) : null}
+            {notes.length === 0 ? <p className="empty-state-text">Keine Notizen vorhanden</p> : null}
           </div>
         </article>
       </div>

@@ -26,7 +26,7 @@ export function TasksModule({
         </form>
         <article className="panel list-panel">
           <ul className="task-list">
-            {tasks.map((task) => (
+            {tasks.length > 0 ? tasks.map((task) => (
               <li key={task.id} className={task.done ? 'done' : ''}>
                 <button
                   type="button"
@@ -42,7 +42,8 @@ export function TasksModule({
                   </small>
                 </div>
               </li>
-            ))}
+            )) : null}
+            {tasks.length === 0 ? <li className="empty-state-text">Keine Aufgaben vorhanden</li> : null}
           </ul>
         </article>
       </div>

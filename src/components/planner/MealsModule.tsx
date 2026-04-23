@@ -23,7 +23,7 @@ export function MealsModule({
         </form>
         <article className="panel list-panel">
           <ul className="meal-list">
-            {meals.map((meal) => (
+            {meals.length > 0 ? meals.map((meal) => (
               <li key={meal.id} className={meal.prepared ? 'done' : ''}>
                 <button
                   type="button"
@@ -37,7 +37,8 @@ export function MealsModule({
                   <small>{meal.meal}</small>
                 </div>
               </li>
-            ))}
+            )) : null}
+            {meals.length === 0 ? <li className="empty-state-text">Keine Gerichte vorhanden</li> : null}
           </ul>
         </article>
       </div>

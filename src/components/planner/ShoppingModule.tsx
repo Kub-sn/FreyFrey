@@ -24,7 +24,7 @@ export function ShoppingModule({
         </form>
         <article className="panel list-panel">
           <ul className="check-list">
-            {items.map((item) => (
+            {items.length > 0 ? items.map((item) => (
               <li key={item.id} className={item.checked ? 'done' : ''}>
                 <label>
                   <input
@@ -39,7 +39,8 @@ export function ShoppingModule({
                   {item.quantity} · {item.category}
                 </small>
               </li>
-            ))}
+            )) : null}
+            {items.length === 0 ? <li className="empty-state-text">Keine Artikel vorhanden</li> : null}
           </ul>
         </article>
       </div>
