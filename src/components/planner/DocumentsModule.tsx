@@ -144,7 +144,7 @@ export function DocumentsModule({
         <article className="panel list-panel">
           <div className="document-toolbar">
             <div className="document-toolbar-copy">
-              <strong>{visibleDocuments.length} Dokumente sichtbar</strong>
+              <strong>{visibleDocuments.length} {visibleDocuments.length === 1 ? 'Dokument' : 'Dokumente'} sichtbar</strong>
               <small>{totalDocumentCount} insgesamt</small>
             </div>
             <div className="document-filter-grid">
@@ -206,14 +206,14 @@ export function DocumentsModule({
                   </div>
                   <div className="document-actions">
                     {document.url ? (
-                      <a className="secondary-action document-action-button document-link-button document-open-button" href={document.url} target="_blank" rel="noreferrer">
+                      <a className="auth-submit document-action-button document-link-button document-open-button" href={document.url} target="_blank" rel="noreferrer">
                         Datei öffnen
                       </a>
                     ) : null}
                     {canPreviewDocument(document) && document.url ? (
                       <button
                         type="button"
-                        className="secondary-action document-action-button document-preview-button"
+                        className="auth-submit document-action-button document-preview-button"
                         aria-label={`Dokument ${document.name} in Vorschau öffnen`}
                         onClick={() => onOpenDocumentPreview(document)}
                       >
@@ -222,7 +222,7 @@ export function DocumentsModule({
                     ) : null}
                     <button
                       type="button"
-                      className="secondary-action document-action-button document-edit-button"
+                      className="auth-submit document-action-button document-edit-button"
                       aria-label={`Dokument ${document.name} bearbeiten`}
                       onClick={() => onStartDocumentEdit(document)}
                     >

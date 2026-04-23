@@ -893,10 +893,15 @@ button {
 }
 
 .document-module-layout {
-  grid-template-columns: minmax(380px, 440px) minmax(0, 1fr);
-  align-items: start;
-  column-gap: 0.75rem;
-  row-gap: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.document-module-layout > .panel {
+  align-self: stretch;
+  width: 100%;
 }
 
 .calendar-module-layout {
@@ -1339,7 +1344,6 @@ button {
 
 .document-form-panel {
   gap: 0.8rem;
-  min-height: 22rem;
   padding: 1.15rem;
 }
 
@@ -1425,6 +1429,12 @@ button {
   border-bottom: none;
 }
 
+.document-list li {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
 .check-list label {
   display: flex;
   align-items: center;
@@ -1444,8 +1454,8 @@ button {
   display: grid;
   gap: 0.65rem;
   font-weight: 600;
-  min-height: 12rem;
-  align-content: center;
+  min-height: 8.5rem;
+  align-content: start;
   justify-items: start;
   padding: 1.3rem;
   border: 1px dashed rgba(24, 52, 47, 0.24);
@@ -1598,10 +1608,11 @@ button {
 }
 
 .document-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-items: stretch;
+  align-items: stretch;
   gap: 0.6rem;
 }
 
@@ -1611,7 +1622,7 @@ button {
 
 .document-action-button,
 .document-delete-button {
-  width: auto;
+  width: 100%;
 }
 
 .document-open-button {
@@ -1739,7 +1750,7 @@ button {
 
 .document-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 
@@ -1751,7 +1762,7 @@ button {
 }
 
 .document-link-button:hover {
-  background: rgba(24, 52, 47, 0.14);
+  transform: translateY(-2px);
 }
 
 .document-empty-state {
@@ -2235,16 +2246,22 @@ small {
   }
 }
 
-@media (min-width: 1180px) {
+@media (min-width: 900px) {
   .document-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
   }
 }
 
+@media (min-width: 1400px) {
+  .document-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 760px) and (max-width: 1080px) {
   .module-layout.document-module-layout {
-    grid-template-columns: minmax(340px, 400px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2763,7 +2780,6 @@ body::after {
 
 .secondary-action,
 .ghost-toggle,
-.document-link-button,
 .modal-link-button {
   border: 1px solid rgba(35, 63, 54, 0.08);
   background: rgba(35, 63, 54, 0.06);
@@ -2961,7 +2977,6 @@ select:focus-visible,
 
 .secondary-action:hover,
 .ghost-toggle:hover,
-.document-link-button:hover,
 .modal-link-button:hover {
   transform: translateY(-1px);
   border-color: rgba(35, 63, 54, 0.18);
@@ -3391,7 +3406,6 @@ body::after,
 .chip,
 .secondary-action,
 .ghost-toggle,
-.document-link-button,
 .modal-link-button,
 .auth-message,
 .document-icon,
@@ -3665,7 +3679,6 @@ body::after,
 
 .secondary-action,
 .ghost-toggle,
-.document-link-button,
 .modal-link-button,
 .auth-message,
 .selected-file-card,
@@ -3690,7 +3703,6 @@ body::after,
 
 .secondary-action:hover,
 .ghost-toggle:hover,
-.document-link-button:hover,
 .modal-link-button:hover,
 .mode-button:not(.active):hover {
   background: #e7d5c2;
@@ -3772,7 +3784,7 @@ body::after,
 
 .file-input-label {
   gap: 0.5rem;
-  min-height: 10.5rem;
+  min-height: 7.5rem;
   padding: 0.95rem;
   border-radius: 12px;
 }
@@ -3825,12 +3837,11 @@ body::after,
 }
 
 .document-module-layout {
-  column-gap: 0.7rem;
-  row-gap: 0.55rem;
+  gap: 0.65rem;
 }
 
 .document-form-panel .file-input-label {
-  min-height: 10.5rem;
+  min-height: 7.5rem;
   align-content: start;
   gap: 0.55rem;
   padding: 1rem;

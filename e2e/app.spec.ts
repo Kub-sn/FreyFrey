@@ -558,13 +558,17 @@ test('shows the upload-only documents module with a larger capture card on deskt
 
   const uploadCardBox = await page.locator('form.document-form-panel').boundingBox();
   const visibleDocumentsCardBox = await page.locator('.document-module-layout > .panel').nth(1).boundingBox();
+  const documentModuleBox = await page.locator('.document-module-layout').boundingBox();
 
   expect(uploadCardBox).not.toBeNull();
   expect(visibleDocumentsCardBox).not.toBeNull();
-  expect(uploadCardBox!.width).toBeGreaterThanOrEqual(340);
-  expect(uploadCardBox!.height).toBeGreaterThanOrEqual(320);
-  expect(Math.abs(visibleDocumentsCardBox!.y - uploadCardBox!.y)).toBeLessThanOrEqual(24);
-  expect(visibleDocumentsCardBox!.x).toBeGreaterThan(uploadCardBox!.x + 40);
+  expect(documentModuleBox).not.toBeNull();
+  expect(uploadCardBox!.width).toBeGreaterThanOrEqual(540);
+  expect(uploadCardBox!.height).toBeGreaterThanOrEqual(250);
+  expect(Math.abs(uploadCardBox!.width - documentModuleBox!.width)).toBeLessThanOrEqual(4);
+  expect(visibleDocumentsCardBox!.y - (uploadCardBox!.y + uploadCardBox!.height)).toBeLessThanOrEqual(20);
+  expect(visibleDocumentsCardBox!.y).toBeGreaterThan(uploadCardBox!.y + uploadCardBox!.height - 6);
+  expect(Math.abs(visibleDocumentsCardBox!.x - uploadCardBox!.x)).toBeLessThanOrEqual(24);
 
   await page.locator('input[type="file"][name="file"]').setInputFiles({
     name: 'Loeschprobe.pdf',
@@ -608,6 +612,106 @@ test('keeps the document edit dialog free of horizontal scrolling for long names
   });
 
   expect(dialogHasHorizontalOverflow).toBe(false);
+});
+
+test('shows the filename above a two-row action grid when the filename is long', async ({ page }) => {
+  await page.goto('/');
+
+  if (await page.getByRole('button', { name: 'Jetzt anmelden' }).isVisible()) {
+    return;
+  }
+
+  await page.getByRole('button', { name: 'Dokumente' }).click();
+
+  const longName = 'certificate_of_completion_react_certificate_of_completion_react_certificate_of_completion';
+
+  await page.locator('input[type="file"][name="file"]').setInputFiles({
+    name: `${longName}.pdf`,
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('pdf-content'),
+  });
+  await page.getByRole('button', { name: 'Dokument speichern' }).click();
+
+  const row = page.locator('.document-grid li').first();
+  const head = row.locator('.document-entry-head').first();
+  const actions = row.locator('.document-actions').first();
+  const openButton = row.getByRole('link', { name: 'Datei öffnen' });
+  const previewButton = row.getByRole('button', { name: `Dokument ${longName} in Vorschau öffnen` });
+  const editButton = row.getByRole('button', { name: `Dokument ${longName} bearbeiten` });
+  const deleteButton = row.getByRole('button', { name: `Dokument ${longName} löschen` });
+
+  await expect(row.getByText(longName)).toBeVisible();
+
+  const rowHasHorizontalOverflow = await row.evaluate((element) => element.scrollWidth > element.clientWidth);
+  const [headBox, actionsBox, openBox, previewBox, editBox, deleteBox] = await Promise.all([
+    head.boundingBox(),
+    actions.boundingBox(),
+    openButton.boundingBox(),
+    previewButton.boundingBox(),
+    editButton.boundingBox(),
+    deleteButton.boundingBox(),
+  ]);
+
+  expect(rowHasHorizontalOverflow).toBe(false);
+  expect(headBox).not.toBeNull();
+  expect(actionsBox).not.toBeNull();
+  expect(openBox).not.toBeNull();
+  expect(previewBox).not.toBeNull();
+  expect(editBox).not.toBeNull();
+  expect(deleteBox).not.toBeNull();
+  expect(actionsBox!.y).toBeGreaterThan(headBox!.y + headBox!.height - 6);
+  expect(Math.abs(openBox!.y - previewBox!.y)).toBeLessThanOrEqual(6);
+  expect(Math.abs(editBox!.y - deleteBox!.y)).toBeLessThanOrEqual(6);
+  expect(editBox!.y).toBeGreaterThan(openBox!.y + 20);
+});
+
+test('shows three document cards per row on large displays and fewer on smaller widths', async ({ page }) => {
+  await page.goto('/');
+
+  if (await page.getByRole('button', { name: 'Jetzt anmelden' }).isVisible()) {
+    return;
+  }
+
+  await page.getByRole('button', { name: 'Dokumente' }).click();
+
+  for (const name of ['Alpha.pdf', 'Bravo.pdf', 'Charlie.pdf']) {
+    await page.locator('input[type="file"][name="file"]').setInputFiles({
+      name,
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('pdf-content'),
+    });
+    await page.getByRole('button', { name: 'Dokument speichern' }).click();
+  }
+
+  const cards = page.locator('.document-grid li');
+
+  await page.setViewportSize({ width: 1600, height: 1200 });
+
+  const [firstLarge, secondLarge, thirdLarge] = await Promise.all([
+    cards.nth(0).boundingBox(),
+    cards.nth(1).boundingBox(),
+    cards.nth(2).boundingBox(),
+  ]);
+
+  expect(firstLarge).not.toBeNull();
+  expect(secondLarge).not.toBeNull();
+  expect(thirdLarge).not.toBeNull();
+  expect(Math.abs(firstLarge!.y - secondLarge!.y)).toBeLessThanOrEqual(6);
+  expect(Math.abs(secondLarge!.y - thirdLarge!.y)).toBeLessThanOrEqual(6);
+
+  await page.setViewportSize({ width: 1100, height: 1200 });
+
+  const [firstMedium, secondMedium, thirdMedium] = await Promise.all([
+    cards.nth(0).boundingBox(),
+    cards.nth(1).boundingBox(),
+    cards.nth(2).boundingBox(),
+  ]);
+
+  expect(firstMedium).not.toBeNull();
+  expect(secondMedium).not.toBeNull();
+  expect(thirdMedium).not.toBeNull();
+  expect(Math.abs(firstMedium!.y - secondMedium!.y)).toBeLessThanOrEqual(6);
+  expect(thirdMedium!.y).toBeGreaterThan(firstMedium!.y + 20);
 });
 
 test('lets the user complete the password reset flow and sign in afterwards', async ({ page }) => {
