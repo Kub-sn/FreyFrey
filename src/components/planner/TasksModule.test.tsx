@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { ActiveTabProvider } from '../../context/ActiveTabContext';
@@ -91,6 +91,56 @@ describe('TasksModule', () => {
     expect(onDeleteTask).not.toHaveBeenCalled();
     expect(onSetTaskStatus).toHaveBeenCalledWith('task-1', 'in-progress');
     expect(onToggleTaskSubtask).toHaveBeenCalledWith('task-1', 'task-1-subtask-2', true);
+  });
+
+  it('shows animated drag feedback on the drop target column without highlighting the hovered task card', () => {
+    const dataTransfer = {
+      effectAllowed: 'move',
+      setData: vi.fn(),
+      getData: vi.fn().mockReturnValue('task-1'),
+    };
+
+    render(
+      <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
+        <TasksModule
+          familyMemberOptions={plannerFixture.members.map((member) => member.name)}
+          ownerDefaultValue="Alex"
+          tasks={[
+            ...plannerFixture.tasks,
+            {
+              id: 'task-2',
+              title: 'Brotdose prüfen',
+              owner: 'Bea',
+              due: '2026-05-05',
+              status: 'in-progress',
+              subtasks: [],
+            },
+          ]}
+          onAddTask={vi.fn().mockResolvedValue(undefined)}
+          onUpdateTask={vi.fn().mockResolvedValue(undefined)}
+          onDeleteTask={vi.fn().mockResolvedValue(undefined)}
+          onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
+          onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
+        />
+      </ActiveTabProvider>,
+    );
+
+    const sourceTask = screen.getByText('Schultasche packen').closest('article');
+    const targetTask = screen.getByText('Brotdose prüfen').closest('article');
+    const targetColumn = screen.getByRole('heading', { level: 4, name: 'In Arbeit' }).closest('article');
+
+    if (!sourceTask || !targetTask || !targetColumn) {
+      throw new Error('Drag-and-drop test targets were not found.');
+    }
+
+    fireEvent.dragStart(sourceTask, { dataTransfer });
+    fireEvent.dragOver(targetTask, { dataTransfer });
+
+    expect(screen.getByText('Loslassen zum Verschieben')).toBeInTheDocument();
+    expect(targetColumn).toHaveClass('-translate-y-1');
+    expect(targetColumn).toHaveAttribute('data-drop-active', 'true');
+    expect(targetTask).not.toHaveClass('-translate-y-1');
+    expect(screen.queryByText('Hier ablegen')).not.toBeInTheDocument();
   });
 
   it('hides subtask progress and fallback text for tasks without subtasks', () => {

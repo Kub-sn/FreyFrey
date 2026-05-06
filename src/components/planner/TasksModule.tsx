@@ -50,6 +50,18 @@ function getDueBadgeClassName(due: string) {
   return 'border-[rgba(24,52,47,0.14)] bg-[rgba(255,255,255,0.72)] text-[rgba(24,52,47,0.78)]';
 }
 
+function getActiveColumnDropStyle(isActive: boolean) {
+  if (!isActive) {
+    return undefined;
+  }
+
+  return {
+    borderColor: '#19624d',
+    backgroundImage: 'linear-gradient(180deg, rgba(249,254,251,0.99), rgba(232,246,238,0.98))',
+    boxShadow: '0 24px 44px rgba(25,98,77,0.12), 0 0 36px rgba(125,186,162,0.18), inset 0 0 0 2px #19624d',
+  };
+}
+
 export function TasksModule({
   familyMemberOptions,
   ownerDefaultValue,
@@ -72,7 +84,7 @@ export function TasksModule({
   const { activeTab } = useActiveTab();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<{ status: TaskStatus; taskId: string | null } | null>(null);
+  const [dropTarget, setDropTarget] = useState<TaskStatus | null>(null);
   const [draftSubtasks, setDraftSubtasks] = useState<PlannerState['tasks'][number]['subtasks']>([]);
   const [taskDialogState, setTaskDialogState] = useState<{ mode: 'create' } | { mode: 'edit'; taskId: string } | null>(null);
   const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
@@ -192,29 +204,21 @@ export function TasksModule({
 
   const draggedTask = draggedTaskId ? tasks.find((entry) => entry.id === draggedTaskId) ?? null : null;
 
-  const canDropIntoStatus = (status: TaskStatus, taskId: string | null = null) => {
+  const canDropIntoStatus = (status: TaskStatus) => {
     if (!draggedTask) {
-      return false;
-    }
-
-    if (taskId && taskId === draggedTask.id) {
       return false;
     }
 
     return draggedTask.status !== status;
   };
 
-  const handleDragTarget = (status: TaskStatus, taskId: string | null = null) => {
-    if (!canDropIntoStatus(status, taskId)) {
+  const handleDragTarget = (status: TaskStatus) => {
+    if (!canDropIntoStatus(status)) {
       setDropTarget(null);
       return;
     }
 
-    setDropTarget((current) => (
-      current?.status === status && current.taskId === taskId
-        ? current
-        : { status, taskId }
-    ));
+    setDropTarget((current) => (current === status ? current : status));
   };
 
   const handleTaskDrop = (event: DragEvent<HTMLElement>, status: TaskStatus) => {
@@ -278,17 +282,20 @@ export function TasksModule({
         <div className="grid gap-4 max-[720px]:gap-3 xl:grid-cols-3 xl:items-stretch">
           {columns.map((column) => {
             const columnTasks = tasks.filter((task) => task.status === column.status);
+            const isColumnDropActive = dropTarget === column.status;
 
             return (
               <div key={column.status} className="grid min-w-0 xl:h-full">
                 <article
+                  data-drop-active={isColumnDropActive ? 'true' : undefined}
                   className={[
-                    `panel min-w-0 border max-[720px]:p-4 xl:flex xl:h-full xl:min-h-[26rem] xl:flex-col ${column.panelClassName}`,
+                    `panel relative min-w-0 border transition-all duration-200 max-[720px]:p-4 xl:flex xl:h-full xl:min-h-[26rem] xl:flex-col ${column.panelClassName}`,
                     openMenuTask?.status === column.status ? 'z-20' : 'z-0',
-                    dropTarget?.status === column.status
-                      ? 'ring-2 ring-[rgba(25,98,77,0.18)] border-[rgba(25,98,77,0.26)] shadow-[0_18px_36px_rgba(25,98,77,0.08)]'
+                    isColumnDropActive
+                      ? '-translate-y-1 ring-2 ring-[rgba(25,98,77,0.2)]'
                       : '',
                   ].join(' ')}
+                  style={getActiveColumnDropStyle(isColumnDropActive)}
                   onDragOver={(event) => {
                     event.preventDefault();
                     handleDragTarget(column.status);
@@ -303,6 +310,11 @@ export function TasksModule({
                   </div>
 
                   <div className="mt-3 max-[720px]:mt-2 grid gap-3 max-[720px]:gap-2">
+                  {isColumnDropActive ? (
+                    <div className="inline-flex w-fit items-center rounded-full border border-[rgba(25,98,77,0.24)] bg-[rgba(25,98,77,0.12)] px-3 py-1 text-[0.72rem] font-bold tracking-[0.04em] text-[#19624d] shadow-[0_10px_24px_rgba(25,98,77,0.12)] animate-pulse">
+                      Loslassen zum Verschieben
+                    </div>
+                  ) : null}
                   {columnTasks.length > 0 ? columnTasks.map((task) => {
                     const progress = getTaskSubtaskProgress(task.subtasks);
                     const isDragging = draggedTaskId === task.id;
@@ -315,7 +327,7 @@ export function TasksModule({
                         onDragOver={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
-                          handleDragTarget(column.status, task.id);
+                          handleDragTarget(column.status);
                         }}
                         onDrop={(event) => handleTaskDrop(event, column.status)}
                         onDragEnd={() => {
@@ -323,19 +335,11 @@ export function TasksModule({
                           setDropTarget(null);
                         }}
                         className={[
-                          'relative grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.98)] p-4 shadow-[0_18px_34px_rgba(35,27,17,0.06)] transition-transform max-[720px]:gap-2 max-[720px]:rounded-[20px] max-[720px]:p-3',
+                          'relative grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.98)] p-4 shadow-[0_18px_34px_rgba(35,27,17,0.06)] transition-all duration-150 max-[720px]:gap-2 max-[720px]:rounded-[20px] max-[720px]:p-3',
                           isDragging ? 'scale-[0.985] opacity-70' : 'opacity-100',
                           menuTaskId === task.id ? 'z-30' : 'z-0',
-                          dropTarget?.taskId === task.id
-                            ? 'border-[rgba(25,98,77,0.32)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(239,248,244,0.98))] ring-2 ring-[rgba(25,98,77,0.14)] shadow-[0_22px_42px_rgba(25,98,77,0.16)]'
-                            : '',
                         ].join(' ')}
                       >
-                        {dropTarget?.taskId === task.id ? (
-                          <span className="absolute right-3 top-3 inline-flex items-center rounded-full bg-[rgba(25,98,77,0.14)] px-[0.55rem] py-[0.24rem] text-[0.68rem] font-bold tracking-[0.05em] text-[#19624d] max-[720px]:right-2.5 max-[720px]:top-2.5">
-                            Hier ablegen
-                          </span>
-                        ) : null}
                         <div className="flex items-start justify-between gap-3">
                           <div className="grid gap-[0.35rem] min-w-0">
                             <strong className="[overflow-wrap:anywhere]">{task.title}</strong>
