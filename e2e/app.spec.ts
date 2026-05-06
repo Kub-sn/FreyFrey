@@ -550,9 +550,9 @@ test('creates and progresses a kanban task in demo mode', async ({ page }) => {
   }
 
   await page.getByRole('button', { name: 'To-dos' }).click();
-  await expect(page.getByRole('button', { name: 'Neue Aufgabe' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Todo hinzufügen' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Neue Aufgabe' }).click();
+  await page.getByRole('button', { name: 'Todo hinzufügen' }).click();
   await expect(page.getByRole('heading', { name: 'Neue Aufgabe' })).toBeVisible();
   await page.getByRole('dialog').getByPlaceholder('Aufgabe').fill('Muell rausbringen');
   await page.getByRole('dialog').getByLabel('Fälligkeitsdatum').fill('2026-05-04');
@@ -587,7 +587,7 @@ test('changes task status via dialog on mobile widths', async ({ page }) => {
   }
 
   await page.getByRole('button', { name: 'To-dos' }).click();
-  await expect(page.getByRole('button', { name: 'Neue Aufgabe' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Todo hinzufügen' })).toBeVisible();
 
   const taskCard = page.getByText('Schultasche packen').locator('xpath=ancestor::article[1]');
 

@@ -29,7 +29,7 @@ export function DocumentEditModal({
         </div>
       )}
     >
-      <form id="document-edit-form" className="grid gap-[0.8rem] min-w-0" onSubmit={(event) => void onSave(event)}>
+      <form id="document-edit-form" className="dialog-form form-panel grid min-w-0 gap-[0.8rem]" onSubmit={(event) => void onSave(event)}>
           <input
             aria-label="Dokumentname bearbeiten"
             value={documentEditState.name}

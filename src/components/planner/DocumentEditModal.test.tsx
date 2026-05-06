@@ -20,6 +20,8 @@ describe('DocumentEditModal', () => {
       />,
     );
 
+    expect(screen.getByLabelText('Dokumentname bearbeiten').closest('form')).toHaveClass('dialog-form');
+
     await user.type(screen.getByLabelText('Dokumentname bearbeiten'), ' X');
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
     await user.click(screen.getByRole('button', { name: 'Abbrechen' }));

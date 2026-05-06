@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { useState, type DragEvent, type FormEvent } from 'react';
 import type { PlannerState, TaskItem, TaskStatus } from '../../lib/planner-data';
 import { useActiveTab } from '../../context/ActiveTabContext';
@@ -88,6 +89,10 @@ export function TasksModule({
 
   const pendingDeleteTask = pendingDeleteTaskId
     ? tasks.find((task) => task.id === pendingDeleteTaskId) ?? null
+    : null;
+
+  const openMenuTask = menuTaskId
+    ? tasks.find((task) => task.id === menuTaskId) ?? null
     : null;
 
   const buildTaskPayload = (form: FormData) => ({
@@ -259,43 +264,45 @@ export function TasksModule({
 
   return (
     <section className={activeTab === 'tasks' ? 'module is-visible' : 'module'}>
-      <div className="grid gap-4 max-[720px]:gap-3 xl:grid-cols-3">
+      <div className="grid gap-1.5 max-[720px]:gap-2">
+        <div className="flex items-start">
+          <button
+            type="button"
+            className="secondary-action inline-flex items-center gap-2.5 rounded-[18px] border-[rgba(25,98,77,0.18)] bg-[rgba(255,250,244,0.96)] px-4 py-3 font-semibold text-[#19624d] shadow-[0_16px_32px_rgba(24,52,47,0.08)] hover:bg-[rgba(243,249,246,0.98)]"
+            onClick={openCreateDialog}
+          >
+            <Plus aria-hidden="true" size={18} strokeWidth={2.4} />
+            <span>Todo hinzufügen</span>
+          </button>
+        </div>
+        <div className="grid gap-4 max-[720px]:gap-3 xl:grid-cols-3">
           {columns.map((column) => {
             const columnTasks = tasks.filter((task) => task.status === column.status);
 
             return (
-              <article
-                key={column.status}
-                className={[
-                  `panel self-start min-w-0 border max-[720px]:p-4 ${column.panelClassName}`,
-                  dropTarget?.status === column.status
-                    ? 'ring-2 ring-[rgba(25,98,77,0.18)] border-[rgba(25,98,77,0.26)] shadow-[0_18px_36px_rgba(25,98,77,0.08)]'
-                    : '',
-                ].join(' ')}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  handleDragTarget(column.status);
-                }}
-                onDrop={(event) => handleTaskDrop(event, column.status)}
-              >
-                <div className="panel-heading items-center">
-                  {column.status === 'todo' ? (
-                    <button
-                      type="button"
-                      className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[rgba(25,98,77,0.18)] bg-[rgba(255,250,244,0.96)] text-[1.8rem] font-semibold leading-none text-[#19624d] shadow-[0_16px_32px_rgba(24,52,47,0.08)] transition hover:bg-[rgba(243,249,246,0.98)]"
-                      aria-label="Neue Aufgabe"
-                      onClick={openCreateDialog}
-                    >
-                      +
-                    </button>
-                  ) : null}
-                  <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-                    <h4>{column.title}</h4>
-                    <span className="chip">{columnTasks.length}</span>
+              <div key={column.status} className="grid self-start">
+                <article
+                  className={[
+                    `panel self-start min-w-0 border max-[720px]:p-4 ${column.panelClassName}`,
+                    openMenuTask?.status === column.status ? 'z-20' : 'z-0',
+                    dropTarget?.status === column.status
+                      ? 'ring-2 ring-[rgba(25,98,77,0.18)] border-[rgba(25,98,77,0.26)] shadow-[0_18px_36px_rgba(25,98,77,0.08)]'
+                      : '',
+                  ].join(' ')}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    handleDragTarget(column.status);
+                  }}
+                  onDrop={(event) => handleTaskDrop(event, column.status)}
+                >
+                  <div className="panel-heading items-center">
+                    <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                      <h4>{column.title}</h4>
+                      <span className="chip">{columnTasks.length}</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-3 grid gap-3 max-[720px]:mt-2 max-[720px]:gap-2">
+                  <div className="mt-3 max-[720px]:mt-2 grid gap-3 max-[720px]:gap-2">
                   {columnTasks.length > 0 ? columnTasks.map((task) => {
                     const progress = getTaskSubtaskProgress(task.subtasks);
                     const isDragging = draggedTaskId === task.id;
@@ -318,6 +325,7 @@ export function TasksModule({
                         className={[
                           'relative grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.98)] p-4 shadow-[0_18px_34px_rgba(35,27,17,0.06)] transition-transform max-[720px]:gap-2 max-[720px]:rounded-[20px] max-[720px]:p-3',
                           isDragging ? 'scale-[0.985] opacity-70' : 'opacity-100',
+                          menuTaskId === task.id ? 'z-30' : 'z-0',
                           dropTarget?.taskId === task.id
                             ? 'border-[rgba(25,98,77,0.32)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(239,248,244,0.98))] ring-2 ring-[rgba(25,98,77,0.14)] shadow-[0_22px_42px_rgba(25,98,77,0.16)]'
                             : '',
@@ -350,7 +358,7 @@ export function TasksModule({
                                 ⋯
                               </button>
                               {menuTaskId === task.id ? (
-                                <div className="absolute right-0 top-11 z-10 grid min-w-[12rem] gap-1 rounded-[18px] border border-[rgba(24,52,47,0.12)] bg-[rgba(255,250,244,0.98)] p-2 shadow-[0_18px_36px_rgba(24,52,47,0.14)]">
+                                <div className="absolute right-0 top-11 z-40 grid min-w-[12rem] gap-1 rounded-[18px] border border-[rgba(24,52,47,0.12)] bg-[rgba(255,250,244,0.98)] p-2 shadow-[0_18px_36px_rgba(24,52,47,0.14)]">
                                   <button
                                     type="button"
                                     className="secondary-action justify-start text-left"
@@ -398,7 +406,6 @@ export function TasksModule({
                               <label key={subtask.id} className="flex items-center gap-3 text-[0.92rem] text-[rgba(24,52,47,0.84)] max-[720px]:gap-2 max-[720px]:text-[0.84rem]">
                                 <input
                                   type="checkbox"
-                                  className="app-switch"
                                   checked={subtask.done}
                                   onChange={() => void onToggleTaskSubtask(task.id, subtask.id, !subtask.done)}
                                 />
@@ -415,17 +422,19 @@ export function TasksModule({
                       <small>Ziehe Aufgaben hierher oder lege oben eine neue an.</small>
                     </div>
                   )}
-                </div>
-              </article>
+                  </div>
+                </article>
+              </div>
             );
           })}
         </div>
+      </div>
 
         {taskDialogState ? (
         <ModalDialog
           id="task-create-title"
             title={taskDialogState.mode === 'edit' ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}
-            eyebrow={taskDialogState.mode === 'edit' && editingTask ? editingTask.title : 'Kanban'}
+            eyebrow={taskDialogState.mode === 'edit' && editingTask ? editingTask.title : undefined}
           className="w-[min(640px,100%)]"
           actions={(
               <button type="button" className="secondary-action" onClick={closeTaskDialog}>
@@ -433,7 +442,7 @@ export function TasksModule({
             </button>
           )}
         >
-          <form className="grid gap-4" onSubmit={(event) => void handleSubmit(event)} noValidate>
+          <form className="dialog-form form-panel grid gap-4" onSubmit={(event) => void handleSubmit(event)} noValidate>
             <input
               name="title"
               placeholder="Aufgabe"
@@ -499,7 +508,7 @@ export function TasksModule({
                 <p className="m-0 text-[0.9rem] text-[rgba(24,52,47,0.62)]">Noch keine Subtasks ergänzt.</p>
               )}
             </div>
-            <button type="submit">{taskDialogState.mode === 'edit' ? 'Änderungen speichern' : 'Aufgabe speichern'}</button>
+            <button type="submit" className="auth-submit">{taskDialogState.mode === 'edit' ? 'Änderungen speichern' : 'Aufgabe speichern'}</button>
           </form>
         </ModalDialog>
       ) : null}
@@ -513,7 +522,7 @@ export function TasksModule({
               <button type="button" className="secondary-action" onClick={() => setPendingDeleteTaskId(null)}>
                 Abbrechen
               </button>
-              <button type="button" className="danger-action" onClick={() => void handleConfirmDelete()}>
+              <button type="button" className="secondary-action danger-action" onClick={() => void handleConfirmDelete()}>
                 Löschen
               </button>
             </>

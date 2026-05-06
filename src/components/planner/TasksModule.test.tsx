@@ -33,12 +33,16 @@ describe('TasksModule', () => {
     expect(screen.getByRole('heading', { level: 4, name: 'In Arbeit' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 4, name: 'Erledigt' })).toBeInTheDocument();
     expect(screen.getByText('1/2 erledigt')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Neue Aufgabe' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Hefte sortieren' })).not.toHaveClass('app-switch');
+    const createButton = screen.getByRole('button', { name: 'Todo hinzufügen' });
+    expect(createButton).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 4, name: 'Todo' }).closest('article')).not.toContainElement(createButton);
 
-    await user.click(screen.getByRole('button', { name: 'Neue Aufgabe' }));
+    await user.click(createButton);
 
     const createDialog = screen.getByRole('dialog', { name: 'Neue Aufgabe' });
     expect(within(createDialog).getByRole('combobox', { name: 'Verantwortlich' })).toBeInTheDocument();
+    expect(within(createDialog).queryByText('Kanban')).not.toBeInTheDocument();
 
     await user.type(within(createDialog).getByPlaceholderText('Aufgabe'), 'Muell rausbringen');
     await user.selectOptions(within(createDialog).getByRole('combobox', { name: 'Verantwortlich' }), 'Bea User');
@@ -116,9 +120,12 @@ describe('TasksModule', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /Aufgabe Schultasche packen Aktionen/i }));
+    expect(screen.getByRole('heading', { level: 4, name: 'Todo' }).closest('article')).toHaveClass('z-20');
+    expect(screen.getByRole('button', { name: 'Status ändern' }).parentElement).toHaveClass('z-40');
     await user.click(screen.getByRole('button', { name: 'Bearbeiten' }));
 
     const editDialog = screen.getByRole('dialog', { name: 'Aufgabe bearbeiten' });
+    expect(within(editDialog).getByPlaceholderText('Aufgabe').closest('form')).toHaveClass('dialog-form');
     await user.clear(within(editDialog).getByPlaceholderText('Aufgabe'));
     await user.type(within(editDialog).getByPlaceholderText('Aufgabe'), 'Schultasche neu packen');
     await user.click(within(editDialog).getByRole('button', { name: 'Änderungen speichern' }));
@@ -136,6 +143,7 @@ describe('TasksModule', () => {
 
     await user.click(screen.getByRole('button', { name: /Aufgabe Schultasche packen Aktionen/i }));
     await user.click(screen.getByRole('button', { name: 'Löschen' }));
+    expect(screen.getByRole('button', { name: /^Löschen$/ })).toHaveClass('secondary-action', 'danger-action');
     await user.click(screen.getByRole('button', { name: /^Löschen$/ }));
 
     expect(onDeleteTask).toHaveBeenCalledWith('task-1');
@@ -159,7 +167,7 @@ describe('TasksModule', () => {
       </ActiveTabProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Neue Aufgabe' }));
+    await user.click(screen.getByRole('button', { name: 'Todo hinzufügen' }));
 
     const createDialog = screen.getByRole('dialog', { name: 'Neue Aufgabe' });
     await user.type(within(createDialog).getByPlaceholderText('Aufgabe'), 'Fehlversuch');
