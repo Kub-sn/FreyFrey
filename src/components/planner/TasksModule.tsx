@@ -304,7 +304,7 @@ export function TasksModule({
                 >
                   <div className="panel-heading items-center">
                     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                      <h4>{column.title}</h4>
+                      <h4 className="text-[1.34rem] font-bold leading-tight max-[720px]:text-[1.12rem]">{column.title}</h4>
                       <span className="chip">{columnTasks.length}</span>
                     </div>
                   </div>

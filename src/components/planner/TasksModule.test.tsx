@@ -24,9 +24,11 @@ describe('TasksModule', () => {
 
     const createButton = screen.getByRole('button', { name: 'Todo hinzufügen' });
     const moduleStack = createButton.closest('div')?.parentElement;
+    const todoHeading = screen.getByRole('heading', { level: 4, name: 'Todo' });
     const todoColumn = screen.getByRole('heading', { level: 4, name: 'Todo' }).closest('article');
 
     expect(moduleStack).toHaveClass('content-start', 'gap-4');
+    expect(todoHeading).toHaveClass('text-[1.34rem]', 'font-bold');
     expect(todoColumn).toHaveClass('xl:h-full', 'xl:min-h-[26rem]', 'xl:flex', 'xl:flex-col');
     expect(todoColumn).not.toHaveClass('self-start');
   });
