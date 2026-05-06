@@ -264,7 +264,7 @@ export function TasksModule({
 
   return (
     <section className={activeTab === 'tasks' ? 'module is-visible' : 'module'}>
-      <div className="grid gap-1.5 max-[720px]:gap-2">
+      <div className="grid content-start gap-4 max-[720px]:gap-3">
         <div className="flex items-start">
           <button
             type="button"
@@ -275,15 +275,15 @@ export function TasksModule({
             <span>Todo hinzufügen</span>
           </button>
         </div>
-        <div className="grid gap-4 max-[720px]:gap-3 xl:grid-cols-3">
+        <div className="grid gap-4 max-[720px]:gap-3 xl:grid-cols-3 xl:items-stretch">
           {columns.map((column) => {
             const columnTasks = tasks.filter((task) => task.status === column.status);
 
             return (
-              <div key={column.status} className="grid self-start">
+              <div key={column.status} className="grid min-w-0 xl:h-full">
                 <article
                   className={[
-                    `panel self-start min-w-0 border max-[720px]:p-4 ${column.panelClassName}`,
+                    `panel min-w-0 border max-[720px]:p-4 xl:flex xl:h-full xl:min-h-[26rem] xl:flex-col ${column.panelClassName}`,
                     openMenuTask?.status === column.status ? 'z-20' : 'z-0',
                     dropTarget?.status === column.status
                       ? 'ring-2 ring-[rgba(25,98,77,0.18)] border-[rgba(25,98,77,0.26)] shadow-[0_18px_36px_rgba(25,98,77,0.08)]'

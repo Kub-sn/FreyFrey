@@ -6,6 +6,31 @@ import { plannerFixture } from './planner-test-fixtures';
 import { TasksModule } from './TasksModule';
 
 describe('TasksModule', () => {
+  it('uses equal-height task columns with a desktop minimum height', () => {
+    render(
+      <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
+        <TasksModule
+          familyMemberOptions={plannerFixture.members.map((member) => member.name)}
+          ownerDefaultValue="Alex"
+          tasks={plannerFixture.tasks}
+          onAddTask={vi.fn().mockResolvedValue(undefined)}
+          onUpdateTask={vi.fn().mockResolvedValue(undefined)}
+          onDeleteTask={vi.fn().mockResolvedValue(undefined)}
+          onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
+          onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
+        />
+      </ActiveTabProvider>,
+    );
+
+    const createButton = screen.getByRole('button', { name: 'Todo hinzufügen' });
+    const moduleStack = createButton.closest('div')?.parentElement;
+    const todoColumn = screen.getByRole('heading', { level: 4, name: 'Todo' }).closest('article');
+
+    expect(moduleStack).toHaveClass('content-start', 'gap-4');
+    expect(todoColumn).toHaveClass('xl:h-full', 'xl:min-h-[26rem]', 'xl:flex', 'xl:flex-col');
+    expect(todoColumn).not.toHaveClass('self-start');
+  });
+
   it('renders kanban columns, submits the form, changes status via dialog, and toggles a subtask', async () => {
     const user = userEvent.setup();
     const onAddTask = vi.fn().mockResolvedValue(undefined);
