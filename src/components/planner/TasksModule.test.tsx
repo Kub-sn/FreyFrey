@@ -28,7 +28,7 @@ describe('TasksModule', () => {
     const todoColumn = screen.getByRole('heading', { level: 4, name: 'Todo' }).closest('article');
 
     expect(moduleStack).toHaveClass('content-start', 'gap-4');
-    expect(todoHeading).toHaveClass('text-[1.34rem]', 'font-bold');
+    expect(todoHeading).toHaveClass('text-[1.34rem]', 'font-semibold');
     expect(todoColumn).toHaveClass('xl:h-full', 'xl:min-h-[26rem]', 'xl:flex', 'xl:flex-col');
     expect(todoColumn).not.toHaveClass('self-start');
   });

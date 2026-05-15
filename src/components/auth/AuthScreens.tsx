@@ -70,12 +70,12 @@ function PasswordField({
       />
       <button
         type="button"
-        className="absolute top-1/2 right-[0.55rem] -translate-y-1/2 inline-flex items-center justify-center w-[2.2rem] h-[2.2rem] rounded-full border border-transparent bg-transparent text-[rgba(29,36,31,0.62)] transition-[background-color,color,border-color] duration-[140ms] ease-in-out hover:bg-[rgba(88,104,87,0.1)] hover:border-[rgba(88,104,87,0.16)] hover:text-forest-950 group-focus-within:text-forest-950 focus-visible:outline-2 focus-visible:outline-[rgba(88,104,87,0.35)] focus-visible:outline-offset-1 focus-visible:border-[rgba(88,104,87,0.2)] focus-visible:text-forest-950"
+        className="absolute top-1/2 right-[0.55rem] -translate-y-1/2 inline-flex size-[2.2rem] items-center justify-center rounded-full border border-transparent bg-transparent text-[rgba(29,36,31,0.62)] transition-[background-color,color,border-color] duration-[140ms] ease-in-out hover:bg-[rgba(88,104,87,0.1)] hover:border-[rgba(88,104,87,0.16)] hover:text-forest-950 group-focus-within:text-forest-950 focus-visible:outline-2 focus-visible:outline-[rgba(88,104,87,0.35)] focus-visible:outline-offset-1 focus-visible:border-[rgba(88,104,87,0.2)] focus-visible:text-forest-950"
         aria-label={isVisible ? `${placeholder} verbergen` : `${placeholder} anzeigen`}
         aria-pressed={isVisible}
         onClick={() => setIsVisible((current) => !current)}
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="w-4 h-4">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-4">
           <path
             d="M1.5 12s3.8-6 10.5-6 10.5 6 10.5 6-3.8 6-10.5 6S1.5 12 1.5 12Z"
             fill="none"
@@ -299,12 +299,12 @@ export function AuthLoadingScreen() {
       >
         <span className="sr-only">Lädt deine Familiendaten</span>
         <div
-          className="relative grid place-items-center isolate w-[10.5rem] h-[10.5rem] max-[720px]:w-[9.3rem] max-[720px]:h-[9.3rem] max-[560px]:w-[8.25rem] max-[560px]:h-[8.25rem] before:content-[''] before:absolute before:inset-[1.55rem] before:rounded-full before:bg-[radial-gradient(circle,rgba(244,111,58,0.2),rgba(244,111,58,0))] before:blur-[14px] before:z-0"
+          className="relative grid place-items-center isolate size-[10.5rem] max-[720px]:size-[9.3rem] max-[560px]:size-[8.25rem] before:content-[''] before:absolute before:inset-[1.55rem] before:rounded-full before:bg-[radial-gradient(circle,rgba(244,111,58,0.2),rgba(244,111,58,0))] before:blur-[14px] before:z-0"
           aria-hidden="true"
         >
           <span className="absolute rounded-full border-solid z-[1] inset-0 border-2 border-[rgba(24,52,47,0.08)] border-t-[rgba(244,111,58,0.96)] border-r-[rgba(24,52,47,0.3)] animate-loader-spin" />
           <span className="absolute rounded-full border-solid z-[1] inset-[0.82rem] border-[1.5px] border-[rgba(24,52,47,0.08)] border-b-[rgba(24,52,47,0.8)] border-l-[rgba(99,155,133,0.72)] animate-loader-spin-reverse max-[560px]:inset-[0.68rem]" />
-          <span className="relative z-[2] inline-flex items-center justify-center shrink-0 w-20 h-20 p-[0.58rem] rounded-[1.25rem] bg-linear-to-b from-[rgba(255,248,240,0.98)] to-[rgba(246,239,226,0.95)] shadow-[0_18px_36px_rgba(35,27,17,0.12),inset_0_1px_0_rgba(255,255,255,0.84)] max-[720px]:w-[4.55rem] max-[720px]:h-[4.55rem] max-[720px]:p-2 max-[720px]:rounded-[1.12rem] max-[560px]:w-16 max-[560px]:p-[0.44rem] max-[560px]:rounded-[1rem]">
+          <span className="relative z-[2] inline-flex size-20 items-center justify-center shrink-0 p-[0.58rem] rounded-[1.25rem] bg-linear-to-b from-[rgba(255,248,240,0.98)] to-[rgba(246,239,226,0.95)] shadow-[0_18px_36px_rgba(35,27,17,0.12),inset_0_1px_0_rgba(255,255,255,0.84)] max-[720px]:size-[4.55rem] max-[720px]:p-2 max-[720px]:rounded-[1.12rem] max-[560px]:w-16 max-[560px]:p-[0.44rem] max-[560px]:rounded-[1rem]">
             <img src="/freyLogo.svg" alt="" className="w-full h-full block object-contain" />
           </span>
         </div>

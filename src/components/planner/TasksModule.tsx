@@ -304,7 +304,7 @@ export function TasksModule({
                 >
                   <div className="panel-heading items-center">
                     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                      <h4 className="text-[1.34rem] font-bold leading-tight max-[720px]:text-[1.12rem]">{column.title}</h4>
+                      <h4 className="text-[1.34rem] font-semibold leading-tight max-[720px]:text-[1.12rem]">{column.title}</h4>
                       <span className="chip">{columnTasks.length}</span>
                     </div>
                   </div>
@@ -352,7 +352,7 @@ export function TasksModule({
                             <div className="relative">
                               <button
                                 type="button"
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.94)] text-[1.25rem] leading-none text-[#18342f]"
+                                className="inline-flex size-9 items-center justify-center rounded-full border border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.94)] text-[1.25rem] leading-none text-[#18342f]"
                                 aria-label={`Aufgabe ${task.title} Aktionen`}
                                 onClick={(event) => {
                                   event.stopPropagation();

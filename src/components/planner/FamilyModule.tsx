@@ -171,7 +171,7 @@ export function FamilyModule({
                 members.map((member, index) => (
                   <li key={member.id} className="flex justify-between items-center gap-[0.85rem] w-full min-w-0 py-4 px-[1.05rem] border border-[rgba(24,52,47,0.12)] rounded-[22px] bg-[rgba(255,255,255,0.98)] shadow-[0_12px_26px_rgba(35,27,17,0.05)] max-[720px]:flex-col max-[720px]:items-start">
                     <div className="flex items-center gap-[0.9rem] min-w-0">
-                      <span className="grid place-items-center w-12 h-12 rounded-[16px] shrink-0 bg-[linear-gradient(135deg,rgba(24,52,47,0.14),rgba(25,98,77,0.24))] text-[#18342f] text-[0.88rem] font-extrabold tracking-[0.08em]" aria-hidden="true">
+                      <span className="grid size-12 place-items-center rounded-[16px] shrink-0 bg-[linear-gradient(135deg,rgba(24,52,47,0.14),rgba(25,98,77,0.24))] text-[#18342f] text-[0.88rem] font-extrabold tracking-[0.08em]" aria-hidden="true">
                         {getMemberMonogram(member.name)}
                       </span>
                       <div className="gap-[0.3rem] grid min-w-0 [&>strong]:block [&>strong]:[overflow-wrap:anywhere] [&>small]:block [&>small]:[overflow-wrap:anywhere]">

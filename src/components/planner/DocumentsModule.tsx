@@ -159,9 +159,9 @@ export function DocumentsModule({
                   <div>
                     <div className="flex items-center gap-[0.9rem]">
                       {isPreviewableImage(document) ? (
-                        <img className="document-preview w-12 h-12 rounded-[14px] shrink-0 object-cover border border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.92)]" src={document.url} alt={`Vorschau für ${document.name}`} />
+                        <img className="document-preview size-12 rounded-[14px] shrink-0 object-cover border border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.92)]" src={document.url} alt={`Vorschau für ${document.name}`} />
                       ) : (
-                        <span className="document-icon inline-flex items-center justify-center w-12 h-12 rounded-[14px] shrink-0 bg-[rgba(24,52,47,0.1)] text-[#18342f] text-[0.78rem] font-bold" aria-hidden="true">
+                        <span className="document-icon inline-flex size-12 items-center justify-center rounded-[14px] shrink-0 bg-[rgba(24,52,47,0.1)] text-[#18342f] text-[0.78rem] font-bold" aria-hidden="true">
                           {getDocumentIcon(document)}
                         </span>
                       )}
