@@ -1,5 +1,11 @@
 import type { TaskItem, TaskStatus, TaskSubtask } from './planner-data';
 
+const TASK_DUE_DATE_FORMATTER = new Intl.DateTimeFormat('de-DE', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
 export function isTaskDone(task: Pick<TaskItem, 'status'>) {
   return task.status === 'done';
 }
@@ -51,11 +57,7 @@ export function formatTaskDueLabel(due: string) {
     return due;
   }
 
-  return new Intl.DateTimeFormat('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(dueDate);
+  return TASK_DUE_DATE_FORMATTER.format(dueDate);
 }
 
 export function getTaskStatusLabel(status: TaskStatus) {

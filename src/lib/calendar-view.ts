@@ -12,12 +12,21 @@ export type CalendarDayCell = {
 
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const TIME_PATTERN = /^(\d{2}):(\d{2})$/;
+const CALENDAR_MONTH_FORMATTER = new Intl.DateTimeFormat('de-DE', {
+  month: 'long',
+  year: 'numeric',
+});
+const CALENDAR_DATE_FORMATTER = new Intl.DateTimeFormat('de-DE', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+const CALENDAR_ENTRY_DATE_FORMATTER = new Intl.DateTimeFormat('de-DE', {
+  day: '2-digit',
+  month: 'short',
+});
 
 export const CALENDAR_WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
-function getDateFormatter(options: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat('de-DE', options);
-}
 
 function addDays(date: Date, amount: number) {
   const nextDate = new Date(date);
@@ -160,7 +169,7 @@ export function buildCalendarMonth(
 }
 
 export function formatCalendarMonthLabel(date: Date) {
-  return getDateFormatter({ month: 'long', year: 'numeric' }).format(date);
+  return CALENDAR_MONTH_FORMATTER.format(date);
 }
 
 export function formatCalendarDateLabel(value: string | Date) {
@@ -170,7 +179,7 @@ export function formatCalendarDateLabel(value: string | Date) {
     return typeof value === 'string' ? value : '';
   }
 
-  return getDateFormatter({ weekday: 'long', day: 'numeric', month: 'long' }).format(parsedDate);
+  return CALENDAR_DATE_FORMATTER.format(parsedDate);
 }
 
 export function formatCalendarEntrySchedule(entry: CalendarItem) {
@@ -180,12 +189,12 @@ export function formatCalendarEntrySchedule(entry: CalendarItem) {
     return [entry.date.trim(), entry.time.trim()].filter(Boolean).join(' · ');
   }
 
-  const dateLabel = getDateFormatter({ day: '2-digit', month: 'short' }).format(structuredDate);
+  const dateLabel = CALENDAR_ENTRY_DATE_FORMATTER.format(structuredDate);
   return [dateLabel, entry.time.trim()].filter(Boolean).join(' · ');
 }
 
 export function getCalendarDayButtonLabel(date: Date, entriesCount: number) {
-  const label = getDateFormatter({ weekday: 'long', day: 'numeric', month: 'long' }).format(date);
+  const label = CALENDAR_DATE_FORMATTER.format(date);
 
   if (entriesCount === 0) {
     return `${label}, keine Termine`;

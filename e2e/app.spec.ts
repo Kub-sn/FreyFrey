@@ -648,9 +648,11 @@ test('shows the upload-only documents module with a larger capture card on deskt
   await expect(page.getByPlaceholder('Status')).toHaveCount(0);
   await expect(page.getByPlaceholder('Link zum Dokument (optional)')).toHaveCount(0);
 
-  const uploadCardBox = await page.locator('form.document-form-panel').boundingBox();
-  const visibleDocumentsCardBox = await page.locator('.document-module-layout > .panel').nth(1).boundingBox();
-  const documentModuleBox = await page.locator('.document-module-layout').boundingBox();
+  const [uploadCardBox, visibleDocumentsCardBox, documentModuleBox] = await Promise.all([
+    page.locator('form.document-form-panel').boundingBox(),
+    page.locator('.document-module-layout > .panel').nth(1).boundingBox(),
+    page.locator('.document-module-layout').boundingBox(),
+  ]);
 
   expect(uploadCardBox).not.toBeNull();
   expect(visibleDocumentsCardBox).not.toBeNull();
