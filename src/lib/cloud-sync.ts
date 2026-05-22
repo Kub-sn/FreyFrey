@@ -4,12 +4,12 @@ import type {
   MealItem,
   NoteItem,
   PlannerState,
-  ShoppingItem,
+  ShoppingList,
   TaskItem,
 } from './planner-data';
 
 type CloudCollections = {
-  shoppingItems: ShoppingItem[];
+  shoppingLists: ShoppingList[];
   tasks: TaskItem[];
   notes: NoteItem[];
   calendar: CalendarItem[];
@@ -21,7 +21,7 @@ export function applyCloudCollections(
   current: PlannerState,
   collections: CloudCollections,
 ): PlannerState {
-  const shoppingChanged = JSON.stringify(current.shoppingItems) !== JSON.stringify(collections.shoppingItems);
+  const shoppingChanged = JSON.stringify(current.shoppingLists) !== JSON.stringify(collections.shoppingLists);
   const tasksChanged = JSON.stringify(current.tasks) !== JSON.stringify(collections.tasks);
   const notesChanged = JSON.stringify(current.notes) !== JSON.stringify(collections.notes);
   const calendarChanged = JSON.stringify(current.calendar) !== JSON.stringify(collections.calendar);
@@ -44,7 +44,7 @@ export function applyCloudCollections(
   return {
     ...current,
     storageMode: 'supabase-ready',
-    shoppingItems: collections.shoppingItems,
+    shoppingLists: collections.shoppingLists,
     tasks: collections.tasks,
     notes: collections.notes,
     calendar: collections.calendar,

@@ -106,25 +106,22 @@ describe('App', () => {
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Einkauf' }));
 
-    const heading = screen.getByRole('heading', { level: 4, name: 'Neuen Artikel hinzufügen' });
-    const form = heading.closest('form');
+    expect(screen.getByRole('button', { name: 'Liste erstellen' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Liste erstellen' }));
 
-    if (!form) {
-      throw new Error('Einkaufsformular wurde nicht gefunden.');
-    }
+    const dialog = screen.getByRole('dialog');
 
-    const shoppingForm = within(form);
+    expect(within(dialog).getByRole('heading', { level: 3, name: 'Neue Einkaufsliste' })).toBeInTheDocument();
+    await user.type(within(dialog).getByPlaceholderText('z. B. Wocheneinkauf'), 'Wocheneinkauf');
+    await user.clear(within(dialog).getByLabelText('Datum'));
+    await user.type(within(dialog).getByLabelText('Datum'), '2026-05-07');
+    await user.type(within(dialog).getByPlaceholderText('Artikel'), 'Milch');
+    await user.type(within(dialog).getByPlaceholderText('Anzahl'), '2');
+    await user.click(within(dialog).getByRole('button', { name: 'Liste anlegen' }));
 
-    expect(screen.getByRole('heading', { level: 4, name: 'Neuen Artikel hinzufügen' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Artikel speichern' })).toBeInTheDocument();
-    expect(screen.queryByText('Milch')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Wocheneinkauf/i }));
 
-    await user.type(shoppingForm.getByPlaceholderText('Artikel'), 'Milch');
-    await user.type(shoppingForm.getByPlaceholderText('Menge'), '2');
-    await user.type(shoppingForm.getByPlaceholderText('Kategorie'), 'Kueche');
-    await user.click(shoppingForm.getByRole('button', { name: 'Artikel speichern' }));
-
-    expect(screen.getByRole('checkbox', { name: 'Milch' })).toHaveClass('app-switch');
+    expect(screen.getByRole('checkbox', { name: 'Milch' })).not.toHaveClass('app-switch');
   });
 
   it('allows switching to the notes module', async () => {

@@ -6,28 +6,70 @@ import { plannerFixture } from './planner-test-fixtures';
 import { ShoppingModule } from './ShoppingModule';
 
 describe('ShoppingModule', () => {
-  it('renders items, submits the form, and toggles a shopping item', async () => {
-    const user = userEvent.setup();
-    const onAddShopping = vi.fn().mockResolvedValue(undefined);
-    const onToggleShopping = vi.fn().mockResolvedValue(undefined);
-
+  it('keeps the create action and shopping cards anchored at the top of the module stack', () => {
     render(
       <ActiveTabProvider activeTab="shopping" setActiveTab={vi.fn()}>
         <ShoppingModule
-          items={plannerFixture.shoppingItems}
-          onAddShopping={onAddShopping}
-          onToggleShopping={onToggleShopping}
+          lists={plannerFixture.shoppingLists}
+          onCreateList={vi.fn().mockResolvedValue(true)}
+          onDeleteList={vi.fn().mockResolvedValue(true)}
+          onToggleItem={vi.fn().mockResolvedValue(undefined)}
+          onUpdateList={vi.fn().mockResolvedValue(true)}
         />
       </ActiveTabProvider>,
     );
 
-    await user.type(screen.getByPlaceholderText('Artikel'), 'Brot');
-    await user.type(screen.getByPlaceholderText('Menge'), '1');
-    await user.type(screen.getByPlaceholderText('Kategorie'), 'Bäckerei');
-    await user.click(screen.getByRole('button', { name: 'Artikel speichern' }));
-    await user.click(screen.getByRole('checkbox'));
+    const createButton = screen.getByRole('button', { name: 'Liste erstellen' });
+    const moduleStack = createButton.closest('div')?.parentElement;
+    const cardsGrid = screen.getByRole('button', { name: /Wocheneinkauf/i }).closest('article')?.parentElement;
 
-    expect(onAddShopping).toHaveBeenCalled();
-    expect(onToggleShopping).toHaveBeenCalledWith('shopping-1', true);
+    expect(moduleStack).toHaveClass('content-start', 'gap-4');
+    expect(cardsGrid).toHaveClass('gap-4', 'max-[720px]:gap-3');
+  });
+
+  it('creates a list, opens a list dialog, and toggles an item', async () => {
+    const user = userEvent.setup();
+    const onCreateList = vi.fn().mockResolvedValue(true);
+    const onDeleteList = vi.fn().mockResolvedValue(true);
+    const onToggleItem = vi.fn().mockResolvedValue(undefined);
+    const onUpdateList = vi.fn().mockResolvedValue(true);
+
+    render(
+      <ActiveTabProvider activeTab="shopping" setActiveTab={vi.fn()}>
+        <ShoppingModule
+          lists={plannerFixture.shoppingLists}
+          onCreateList={onCreateList}
+          onDeleteList={onDeleteList}
+          onToggleItem={onToggleItem}
+          onUpdateList={onUpdateList}
+        />
+      </ActiveTabProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Liste erstellen' }));
+    await user.type(screen.getByPlaceholderText('z. B. Wocheneinkauf'), 'Supermarkt');
+    await user.clear(screen.getByLabelText('Datum'));
+    await user.type(screen.getByLabelText('Datum'), '2026-05-06');
+    await user.type(screen.getAllByPlaceholderText('Artikel')[0], 'Brot');
+    await user.type(screen.getByPlaceholderText('Anzahl'), '1');
+    await user.click(screen.getByRole('button', { name: 'Liste anlegen' }));
+
+    expect(onCreateList).toHaveBeenCalledWith({
+      title: 'Supermarkt',
+      date: '2026-05-06',
+      items: [
+        expect.objectContaining({
+          name: 'Brot',
+          quantity: '1',
+          checked: false,
+        }),
+      ],
+    });
+
+    await user.click(screen.getByRole('button', { name: /Wocheneinkauf/i }));
+    expect(screen.getByRole('checkbox', { name: 'Milch' })).not.toHaveClass('app-switch');
+    await user.click(screen.getByRole('checkbox', { name: 'Milch' }));
+
+    expect(onToggleItem).toHaveBeenCalledWith('shopping-list-1', 'shopping-1', true);
   });
 });

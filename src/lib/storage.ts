@@ -1,4 +1,12 @@
-import { defaultPlannerState, tabs, type PlannerState, type TabId, type TaskStatus } from './planner-data';
+import {
+  defaultPlannerState,
+  tabs,
+  type PlannerState,
+  type ShoppingList,
+  type ShoppingListItem,
+  type TabId,
+  type TaskStatus,
+} from './planner-data';
 
 const STORAGE_KEY = 'family-planner-state-v2';
 const ACTIVE_TAB_STORAGE_KEY = 'family-planner-active-tab-v1';
@@ -35,6 +43,81 @@ function normalizeTaskSubtasks(subtasks: unknown): PlannerState['tasks'][number]
       done: Boolean(candidate.done),
     }];
   });
+}
+
+function normalizeShoppingListItems(items: unknown): ShoppingListItem[] {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.flatMap((item) => {
+    if (!item || typeof item !== 'object') {
+      return [];
+    }
+
+    const candidate = item as Partial<ShoppingListItem>;
+    const id = typeof candidate.id === 'string' ? candidate.id : '';
+    const name = typeof candidate.name === 'string' ? candidate.name.trim() : '';
+    const quantity = typeof candidate.quantity === 'string' ? candidate.quantity.trim() : '';
+
+    if (!id || !name || !quantity) {
+      return [];
+    }
+
+    return [{
+      id,
+      name,
+      quantity,
+      checked: Boolean(candidate.checked),
+    }];
+  });
+}
+
+function normalizeShoppingLists(state: PlannerState & { shoppingItems?: unknown }): ShoppingList[] {
+  if (Array.isArray(state.shoppingLists)) {
+    const normalizedLists = state.shoppingLists.flatMap((list) => {
+      if (!list || typeof list !== 'object') {
+        return [];
+      }
+
+      const candidate = list as Partial<ShoppingList>;
+      const id = typeof candidate.id === 'string' ? candidate.id : '';
+      const title = typeof candidate.title === 'string' ? candidate.title.trim() : '';
+      const date = typeof candidate.date === 'string' ? candidate.date : '';
+
+      if (!id || !title || !date) {
+        return [];
+      }
+
+      return [{
+        id,
+        title,
+        date,
+        items: normalizeShoppingListItems(candidate.items),
+      }];
+    });
+
+    if (normalizedLists.length > 0 || !Array.isArray(state.shoppingItems) || state.shoppingItems.length === 0) {
+      return normalizedLists;
+    }
+  }
+
+  if (!Array.isArray(state.shoppingItems) || state.shoppingItems.length === 0) {
+    return defaultPlannerState.shoppingLists;
+  }
+
+  const migratedItems = normalizeShoppingListItems(state.shoppingItems);
+
+  if (migratedItems.length === 0) {
+    return defaultPlannerState.shoppingLists;
+  }
+
+  return [{
+    id: 'shopping-list-migrated',
+    title: 'Vorhandene Einkaufsliste',
+    date: new Date().toISOString().slice(0, 10),
+    items: migratedItems,
+  }];
 }
 
 function normalizeTasks(tasks: unknown): PlannerState['tasks'] {
@@ -76,6 +159,7 @@ function normalizeTasks(tasks: unknown): PlannerState['tasks'] {
 function normalizePlannerState(state: PlannerState): PlannerState {
   return {
     ...state,
+    shoppingLists: normalizeShoppingLists(state as PlannerState & { shoppingItems?: unknown }),
     tasks: normalizeTasks(state.tasks),
     notes: Array.isArray(state.notes)
       ? state.notes.map((note) => ({

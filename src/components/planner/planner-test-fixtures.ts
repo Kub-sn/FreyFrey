@@ -9,8 +9,15 @@ export const plannerFixture: PlannerState = {
     { id: 'member-admin', name: 'Alex Admin', email: 'alex@example.com', role: 'admin' },
     { id: 'member-user', name: 'Bea User', email: 'bea@example.com', role: 'familyuser' },
   ],
-  shoppingItems: [
-    { id: 'shopping-1', name: 'Milch', quantity: '2', category: 'Kueche', checked: false },
+  shoppingLists: [
+    {
+      id: 'shopping-list-1',
+      title: 'Wocheneinkauf',
+      date: '2026-05-04',
+      items: [
+        { id: 'shopping-1', name: 'Milch', quantity: '2', checked: false },
+      ],
+    },
   ],
   tasks: [
     {

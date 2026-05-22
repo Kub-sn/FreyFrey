@@ -136,8 +136,11 @@ export default function PlannerShell({
   );
 
   const pendingShopping = useMemo(
-    () => plannerState.shoppingItems.filter((item) => !item.checked).length,
-    [plannerState.shoppingItems],
+    () => plannerState.shoppingLists.reduce(
+      (total, list) => total + list.items.filter((item) => !item.checked).length,
+      0,
+    ),
+    [plannerState.shoppingLists],
   );
 
   const visibleTabs = useMemo(
@@ -204,9 +207,11 @@ export default function PlannerShell({
         />
 
         <ShoppingModule
-          items={plannerState.shoppingItems}
-          onAddShopping={crud.handleAddShopping}
-          onToggleShopping={crud.handleToggleShopping}
+          lists={plannerState.shoppingLists}
+          onCreateList={crud.handleCreateShoppingList}
+          onDeleteList={crud.handleDeleteShoppingList}
+          onToggleItem={crud.handleToggleShoppingListItem}
+          onUpdateList={crud.handleUpdateShoppingList}
         />
 
         <TasksModule

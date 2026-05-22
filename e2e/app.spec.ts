@@ -520,8 +520,20 @@ test('shows the planner shell and lets the user open the shopping module', async
 
   await expect(page.getByText('Demo-Modus')).toBeVisible();
   await page.getByRole('button', { name: 'Einkauf' }).click();
-  await expect(page.getByRole('heading', { name: 'Neuen Artikel hinzufügen' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Artikel speichern' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Liste erstellen' })).toBeVisible();
+  await page.getByRole('button', { name: 'Liste erstellen' }).click();
+  await expect(page.getByRole('heading', { name: 'Neue Einkaufsliste' })).toBeVisible();
+  await page.getByPlaceholder('z. B. Wocheneinkauf').fill('Markteinkauf');
+  await page.getByLabel('Datum').fill('2026-05-08');
+  await page.getByPlaceholder('Artikel').fill('Brot');
+  await page.getByPlaceholder('Anzahl').fill('1');
+  await page.getByRole('button', { name: 'Liste anlegen' }).click();
+  await expect(page.getByRole('button', { name: /Markteinkauf/i })).toBeVisible();
+  await page.getByRole('button', { name: /Markteinkauf/i }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Brot' }).check();
+  await expect(page.getByRole('checkbox', { name: 'Brot' })).toBeChecked();
+  await page.getByRole('button', { name: 'Schließen' }).click();
   await page.getByRole('button', { name: 'Notizen' }).click();
   await expect(page.getByRole('heading', { name: 'Neue Notiz' })).toBeVisible();
   await expect(page.getByPlaceholder('Kategorie')).toHaveCount(0);

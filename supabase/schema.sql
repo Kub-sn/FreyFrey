@@ -40,12 +40,20 @@ create unique index family_invites_unique_pending_email
 on public.family_invites (family_id, lower(email))
 where accepted_at is null;
 
+create table public.shopping_lists (
+  id uuid primary key default gen_random_uuid(),
+  family_id uuid not null references public.families(id) on delete cascade,
+  title text not null,
+  shopping_date text not null,
+  created_at timestamptz not null default now()
+);
+
 create table public.shopping_items (
   id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
+  list_id uuid not null references public.shopping_lists(id) on delete cascade,
   name text not null,
   quantity text not null,
-  category text not null,
   checked boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -104,6 +112,7 @@ alter table public.families enable row level security;
 alter table public.profiles enable row level security;
 alter table public.family_members enable row level security;
 alter table public.family_invites enable row level security;
+alter table public.shopping_lists enable row level security;
 alter table public.shopping_items enable row level security;
 alter table public.tasks enable row level security;
 alter table public.notes enable row level security;
@@ -597,8 +606,18 @@ on public.shopping_items
 for select
 using (public.is_family_member(family_id));
 
+create policy "family members can read shopping lists"
+on public.shopping_lists
+for select
+using (public.is_family_member(family_id));
+
 create policy "family members can insert shopping items"
 on public.shopping_items
+for insert
+with check (public.is_family_member(family_id));
+
+create policy "family members can insert shopping lists"
+on public.shopping_lists
 for insert
 with check (public.is_family_member(family_id));
 
@@ -607,6 +626,22 @@ on public.shopping_items
 for update
 using (public.is_family_member(family_id))
 with check (public.is_family_member(family_id));
+
+create policy "family members can delete shopping items"
+on public.shopping_items
+for delete
+using (public.is_family_member(family_id));
+
+create policy "family members can update shopping lists"
+on public.shopping_lists
+for update
+using (public.is_family_member(family_id))
+with check (public.is_family_member(family_id));
+
+create policy "family members can delete shopping lists"
+on public.shopping_lists
+for delete
+using (public.is_family_member(family_id));
 
 create policy "family members can read tasks"
 on public.tasks

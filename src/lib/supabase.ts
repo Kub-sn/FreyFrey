@@ -11,7 +11,8 @@ import type {
   DocumentItem,
   MealItem,
   NoteItem,
-  ShoppingItem,
+  ShoppingList,
+  ShoppingListItem,
   TaskItem,
   TaskStatus,
   TaskSubtask,
@@ -71,11 +72,17 @@ export type AdminFamilyDirectoryFamily = {
   members: AdminFamilyDirectoryMember[];
 };
 
-type ShoppingItemRow = {
+type ShoppingListRow = {
   id: string;
+  title: string;
+  shopping_date: string;
+};
+
+type ShoppingListItemRow = {
+  id: string;
+  list_id: string;
   name: string;
   quantity: string;
-  category: string;
   checked: boolean;
 };
 
@@ -894,54 +901,164 @@ export async function bootstrapFamilyForUser(user: User, familyName: string) {
   };
 }
 
-export async function fetchShoppingItems(familyId: string): Promise<ShoppingItem[]> {
-  const client = requireSupabase();
+function groupShoppingListItems(items: ShoppingListItemRow[]) {
+  return items.reduce<Record<string, ShoppingListItem[]>>((grouped, item) => {
+    const current = grouped[item.list_id] ?? [];
+    current.push({
+      id: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      checked: item.checked,
+    });
+    grouped[item.list_id] = current;
+    return grouped;
+  }, {});
+}
+
+async function insertShoppingListItems(
+  client: SupabaseClient,
+  familyId: string,
+  listId: string,
+  items: ShoppingListItem[],
+) {
+  if (items.length === 0) {
+    return [];
+  }
+
   const { data, error } = await client
     .from('shopping_items')
-    .select('id, name, quantity, category, checked')
-    .eq('family_id', familyId)
-    .order('created_at', { ascending: false });
+    .insert(items.map((item) => ({
+      family_id: familyId,
+      list_id: listId,
+      name: item.name,
+      quantity: item.quantity,
+      checked: item.checked,
+    })))
+    .select('id, list_id, name, quantity, checked');
 
   if (error) {
     throw error;
   }
 
-  return (data as ShoppingItemRow[]).map((item) => ({
+  return (data as ShoppingListItemRow[]).map((item) => ({
     id: item.id,
     name: item.name,
     quantity: item.quantity,
-    category: item.category,
     checked: item.checked,
   }));
 }
 
-export async function createShoppingItem(
+export async function fetchShoppingLists(familyId: string): Promise<ShoppingList[]> {
+  const client = requireSupabase();
+  const [{ data: lists, error: listsError }, { data: items, error: itemsError }] = await Promise.all([
+    client
+      .from('shopping_lists')
+      .select('id, title, shopping_date')
+      .eq('family_id', familyId)
+      .order('shopping_date', { ascending: false }),
+    client
+      .from('shopping_items')
+      .select('id, list_id, name, quantity, checked')
+      .eq('family_id', familyId)
+      .order('created_at', { ascending: true }),
+  ]);
+
+  if (listsError) {
+    throw listsError;
+  }
+
+  if (itemsError) {
+    throw itemsError;
+  }
+
+  const itemsByListId = groupShoppingListItems(items as ShoppingListItemRow[]);
+
+  return (lists as ShoppingListRow[]).map((list) => ({
+    id: list.id,
+    title: list.title,
+    date: list.shopping_date,
+    items: itemsByListId[list.id] ?? [],
+  }));
+}
+
+export async function createShoppingList(
   familyId: string,
-  payload: Omit<ShoppingItem, 'id'>,
-): Promise<ShoppingItem> {
+  payload: Omit<ShoppingList, 'id'>,
+): Promise<ShoppingList> {
   const client = requireSupabase();
   const { data, error } = await client
-    .from('shopping_items')
-    .insert({ family_id: familyId, ...payload })
-    .select('id, name, quantity, category, checked')
+    .from('shopping_lists')
+    .insert({
+      family_id: familyId,
+      title: payload.title,
+      shopping_date: payload.date,
+    })
+    .select('id, title, shopping_date')
     .single();
 
   if (error) {
     throw error;
   }
 
-  const item = data as ShoppingItemRow;
+  const list = data as ShoppingListRow;
 
   return {
-    id: item.id,
-    name: item.name,
-    quantity: item.quantity,
-    category: item.category,
-    checked: item.checked,
+    id: list.id,
+    title: list.title,
+    date: list.shopping_date,
+    items: await insertShoppingListItems(client, familyId, list.id, payload.items),
   };
 }
 
-export async function updateShoppingItemChecked(id: string, checked: boolean) {
+export async function updateShoppingList(
+  familyId: string,
+  id: string,
+  payload: Omit<ShoppingList, 'id'>,
+): Promise<ShoppingList> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('shopping_lists')
+    .update({
+      title: payload.title,
+      shopping_date: payload.date,
+    })
+    .eq('id', id)
+    .select('id, title, shopping_date')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const { error: deleteItemsError } = await client
+    .from('shopping_items')
+    .delete()
+    .eq('list_id', id);
+
+  if (deleteItemsError) {
+    throw deleteItemsError;
+  }
+
+  const list = data as ShoppingListRow;
+
+  return {
+    id: list.id,
+    title: list.title,
+    date: list.shopping_date,
+    items: await insertShoppingListItems(client, familyId, list.id, payload.items),
+  };
+}
+
+export async function deleteShoppingList(id: string) {
+  const client = requireSupabase();
+  const { error } = await client.from('shopping_lists').delete().eq('id', id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updateShoppingListItemChecked(id: string, checked: boolean) {
   const client = requireSupabase();
   const { error } = await client.from('shopping_items').update({ checked }).eq('id', id);
 

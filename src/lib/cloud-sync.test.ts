@@ -5,13 +5,19 @@ import { defaultPlannerState } from './planner-data';
 describe('applyCloudCollections', () => {
   it('replaces cloud-backed collections and marks the state as cloud-ready', () => {
     const nextState = applyCloudCollections(defaultPlannerState, {
-      shoppingItems: [
+      shoppingLists: [
         {
-          id: 'shopping-cloud-1',
-          name: 'Joghurt',
-          quantity: '4 Becher',
-          category: 'Frische',
-          checked: false,
+          id: 'shopping-list-cloud-1',
+          title: 'Wocheneinkauf',
+          date: '2026-05-01',
+          items: [
+            {
+              id: 'shopping-cloud-1',
+              name: 'Joghurt',
+              quantity: '4 Becher',
+              checked: false,
+            },
+          ],
         },
       ],
       tasks: [
@@ -59,8 +65,8 @@ describe('applyCloudCollections', () => {
     });
 
     expect(nextState.storageMode).toBe('supabase-ready');
-    expect(nextState.shoppingItems).toHaveLength(1);
-    expect(nextState.shoppingItems[0]?.name).toBe('Joghurt');
+  expect(nextState.shoppingLists).toHaveLength(1);
+  expect(nextState.shoppingLists[0]?.items[0]?.name).toBe('Joghurt');
     expect(nextState.tasks).toHaveLength(1);
     expect(nextState.tasks[0]?.title).toBe('Turnbeutel packen');
     expect(nextState.notes).toHaveLength(1);

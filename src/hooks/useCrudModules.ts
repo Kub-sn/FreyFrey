@@ -1,12 +1,20 @@
 import type { FormEvent } from 'react';
-import type { PlannerState, TaskItem, TaskStatus } from '../lib/planner-data';
+import type {
+  PlannerState,
+  ShoppingList,
+  ShoppingListItem,
+  TaskItem,
+  TaskStatus,
+} from '../lib/planner-data';
 import type { AuthState, CloudSyncSetterValue } from '../app/types';
 import {
-  createShoppingItem,
+  createShoppingList,
   createTask,
-  deleteTask,
   createMeal,
-  updateShoppingItemChecked,
+  deleteShoppingList,
+  deleteTask,
+  updateShoppingList,
+  updateShoppingListItemChecked,
   updateTask,
   updateMealPrepared,
 } from '../lib/supabase';
@@ -26,58 +34,158 @@ export function useCrudModules({
   setCloudSync,
   updateState,
 }: UseCrudModulesParams) {
-  const handleAddShopping = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    const name = String(form.get('name') || '').trim();
-    const quantity = String(form.get('quantity') || '').trim();
-    const category = String(form.get('category') || '').trim();
+  const normalizeShoppingItems = (items: ShoppingListItem[]) =>
+    items
+      .map((item) => ({
+        ...item,
+        id: item.id || nextStringId(),
+        name: item.name.trim(),
+        quantity: item.quantity.trim(),
+      }))
+      .filter((item) => item.name && item.quantity);
 
-    if (!name || !quantity || !category) {
-      return;
+  const handleCreateShoppingList = async (payload: Omit<ShoppingList, 'id'>) => {
+    const normalizedItems = normalizeShoppingItems(payload.items);
+
+    if (!payload.title.trim() || !payload.date || normalizedItems.length === 0) {
+      return false;
     }
 
     try {
       if (authState.family) {
-        const createdItem = await createShoppingItem(authState.family.familyId, {
-          name, quantity, category, checked: false,
+        const createdList = await createShoppingList(authState.family.familyId, {
+          title: payload.title.trim(),
+          date: payload.date,
+          items: normalizedItems,
         });
         updateState((current) => ({
           ...current,
-          shoppingItems: [createdItem, ...current.shoppingItems],
+          shoppingLists: [createdList, ...current.shoppingLists],
         }));
         setCloudSync({
           phase: 'ready',
-          message: 'Neuer Einkaufsartikel wurde gespeichert.',
+          message: 'Neue Einkaufsliste wurde gespeichert.',
         });
       } else {
         updateState((current) => ({
           ...current,
-          shoppingItems: [
-            { id: nextStringId(), name, quantity, category, checked: false },
-            ...current.shoppingItems,
+          shoppingLists: [
+            {
+              id: nextStringId(),
+              title: payload.title.trim(),
+              date: payload.date,
+              items: normalizedItems,
+            },
+            ...current.shoppingLists,
           ],
         }));
       }
-      formElement.reset();
+
+      return true;
     } catch (error) {
       setCloudSync({
         phase: 'error',
         message: humanizeAuthError(error),
       });
+      return false;
     }
   };
 
-  const handleToggleShopping = async (id: string, checked: boolean) => {
+  const handleUpdateShoppingList = async (id: string, payload: Omit<ShoppingList, 'id'>) => {
+    const normalizedItems = normalizeShoppingItems(payload.items);
+
+    if (!payload.title.trim() || !payload.date || normalizedItems.length === 0) {
+      return false;
+    }
+
     try {
       if (authState.family) {
-        await updateShoppingItemChecked(id, checked);
+        const savedList = await updateShoppingList(authState.family.familyId, id, {
+          title: payload.title.trim(),
+          date: payload.date,
+          items: normalizedItems,
+        });
+
+        updateState((current) => ({
+          ...current,
+          shoppingLists: current.shoppingLists.map((entry) =>
+            entry.id === id ? savedList : entry,
+          ),
+        }));
+      } else {
+        updateState((current) => ({
+          ...current,
+          shoppingLists: current.shoppingLists.map((entry) =>
+            entry.id === id
+              ? {
+                  ...entry,
+                  title: payload.title.trim(),
+                  date: payload.date,
+                  items: normalizedItems,
+                }
+              : entry,
+          ),
+        }));
       }
+
+      setCloudSync({
+        phase: 'ready',
+        message: 'Einkaufsliste wurde aktualisiert.',
+      });
+
+      return true;
+    } catch (error) {
+      setCloudSync({
+        phase: 'error',
+        message: humanizeAuthError(error),
+      });
+      return false;
+    }
+  };
+
+  const handleDeleteShoppingList = async (id: string) => {
+    try {
+      if (authState.family) {
+        await deleteShoppingList(id);
+      }
+
       updateState((current) => ({
         ...current,
-        shoppingItems: current.shoppingItems.map((entry) =>
-          entry.id === id ? { ...entry, checked } : entry,
+        shoppingLists: current.shoppingLists.filter((entry) => entry.id !== id),
+      }));
+
+      setCloudSync({
+        phase: 'ready',
+        message: 'Einkaufsliste wurde gelöscht.',
+      });
+
+      return true;
+    } catch (error) {
+      setCloudSync({
+        phase: 'error',
+        message: humanizeAuthError(error),
+      });
+      return false;
+    }
+  };
+
+  const handleToggleShoppingListItem = async (listId: string, itemId: string, checked: boolean) => {
+    try {
+      if (authState.family) {
+        await updateShoppingListItemChecked(itemId, checked);
+      }
+
+      updateState((current) => ({
+        ...current,
+        shoppingLists: current.shoppingLists.map((entry) =>
+          entry.id === listId
+            ? {
+                ...entry,
+                items: entry.items.map((item) =>
+                  item.id === itemId ? { ...item, checked } : item,
+                ),
+              }
+            : entry,
         ),
       }));
     } catch (error) {
@@ -296,8 +404,10 @@ export function useCrudModules({
   };
 
   return {
-    handleAddShopping,
-    handleToggleShopping,
+    handleCreateShoppingList,
+    handleUpdateShoppingList,
+    handleDeleteShoppingList,
+    handleToggleShoppingListItem,
     handleAddTask,
     handleUpdateTask,
     handleDeleteTask,

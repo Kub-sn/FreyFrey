@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import PlannerShell from './PlannerShell';
@@ -71,11 +71,13 @@ describe('PlannerShell', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Notiz Hinweis öffnen' }));
-    expect(screen.getByRole('button', { name: 'Bearbeiten' })).toBeInTheDocument();
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByRole('button', { name: 'Bearbeiten' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Bearbeiten' }));
-    await user.clear(screen.getByLabelText('Notizinhalt bearbeiten'));
-    await user.type(screen.getByLabelText('Notizinhalt bearbeiten'), 'Vollständiger bearbeiteter Text');
+    await user.click(within(dialog).getByRole('button', { name: 'Bearbeiten' }));
+    fireEvent.change(screen.getByLabelText('Notizinhalt bearbeiten'), {
+      target: { value: 'Vollständiger bearbeiteter Text' },
+    });
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
     expect(setPlannerState).toHaveBeenCalled();
@@ -116,7 +118,7 @@ describe('PlannerShell', () => {
     expect(screen.getByRole('heading', { level: 3, name: 'Löschen?' })).toBeInTheDocument();
     expect(setPlannerState).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: 'Löschen' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Löschen' }));
     expect(setPlannerState).toHaveBeenCalled();
   });
 });

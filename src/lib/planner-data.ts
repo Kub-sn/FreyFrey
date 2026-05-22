@@ -7,12 +7,18 @@ export type FamilyMember = {
   role: UserRole;
 };
 
-export type ShoppingItem = {
+export type ShoppingListItem = {
   id: string;
   name: string;
   quantity: string;
-  category: string;
   checked: boolean;
+};
+
+export type ShoppingList = {
+  id: string;
+  title: string;
+  date: string;
+  items: ShoppingListItem[];
 };
 
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
@@ -65,7 +71,7 @@ export type PlannerState = {
   familyName: string;
   storageMode: 'local' | 'supabase-ready';
   members: FamilyMember[];
-  shoppingItems: ShoppingItem[];
+  shoppingLists: ShoppingList[];
   tasks: TaskItem[];
   notes: NoteItem[];
   calendar: CalendarItem[];
@@ -91,7 +97,7 @@ export const defaultPlannerState: PlannerState = {
   familyName: 'Meine Familie',
   storageMode: 'local',
   members: [],
-  shoppingItems: [],
+  shoppingLists: [],
   tasks: [],
   notes: [],
   calendar: [],

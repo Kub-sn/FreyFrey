@@ -32,6 +32,39 @@ describe('loadPlannerState', () => {
     ]);
   });
 
+  it('migrates legacy flat shopping items into a shopping list', () => {
+    window.localStorage.setItem(
+      'family-planner-state-v2',
+      JSON.stringify({
+        ...defaultPlannerState,
+        shoppingItems: [
+          {
+            id: 'shopping-1',
+            name: 'Milch',
+            quantity: '2',
+            checked: false,
+          },
+        ],
+      }),
+    );
+
+    expect(loadPlannerState().shoppingLists).toEqual([
+      {
+        id: 'shopping-list-migrated',
+        title: 'Vorhandene Einkaufsliste',
+        date: expect.any(String),
+        items: [
+          {
+            id: 'shopping-1',
+            name: 'Milch',
+            quantity: '2',
+            checked: false,
+          },
+        ],
+      },
+    ]);
+  });
+
   it('migrates legacy tasks with only a done flag to the new task shape', () => {
     window.localStorage.setItem(
       'family-planner-state-v2',
