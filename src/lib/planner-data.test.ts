@@ -7,7 +7,6 @@ describe('defaultPlannerState', () => {
     expect(defaultPlannerState.shoppingLists).toEqual([]);
     expect(defaultPlannerState.tasks).toEqual([]);
     expect(defaultPlannerState.notes).toEqual([]);
-    expect(defaultPlannerState.calendar).toEqual([]);
     expect(defaultPlannerState.meals).toEqual([]);
     expect(defaultPlannerState.documents).toEqual([]);
   });

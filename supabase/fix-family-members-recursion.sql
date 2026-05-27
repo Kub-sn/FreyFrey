@@ -140,18 +140,6 @@ on public.notes
 for delete
 using (public.is_family_member(family_id));
 
-drop policy if exists "family members can read calendar events" on public.calendar_events;
-create policy "family members can read calendar events"
-on public.calendar_events
-for select
-using (public.is_family_member(family_id));
-
-drop policy if exists "family members can insert calendar events" on public.calendar_events;
-create policy "family members can insert calendar events"
-on public.calendar_events
-for insert
-with check (public.is_family_member(family_id));
-
 drop policy if exists "family members can read meals" on public.meals;
 create policy "family members can read meals"
 on public.meals

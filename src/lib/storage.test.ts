@@ -113,6 +113,44 @@ describe('loadPlannerState', () => {
     ]);
   });
 
+  it('prefers the current storage key when both current and legacy state exist', () => {
+    window.localStorage.setItem(
+      'family-planner-state-v2',
+      JSON.stringify({
+        ...defaultPlannerState,
+        notes: [
+          {
+            id: 'legacy-note',
+            title: 'Legacy',
+            text: 'Aus altem Speicher',
+          },
+        ],
+      }),
+    );
+
+    window.localStorage.setItem(
+      'family-planner-state-v3',
+      JSON.stringify({
+        ...defaultPlannerState,
+        notes: [
+          {
+            id: 'current-note',
+            title: 'Current',
+            text: 'Aus aktuellem Speicher',
+          },
+        ],
+      }),
+    );
+
+    expect(loadPlannerState().notes).toEqual([
+      {
+        id: 'current-note',
+        title: 'Current',
+        text: 'Aus aktuellem Speicher',
+      },
+    ]);
+  });
+
   it('loads and saves the active tab when it is valid', () => {
     saveActiveTab('family');
 

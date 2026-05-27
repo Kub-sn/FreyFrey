@@ -13,7 +13,6 @@ const {
   emitAuthChange,
   ensureProfile,
   fetchAdminFamilyDirectory,
-  fetchCalendarEntries,
   fetchDocuments,
   fetchFamilyContext,
   fetchFamilyInvites,
@@ -45,7 +44,6 @@ const {
     emitAuthChange: (session: unknown) => authChangeListener?.(session),
     ensureProfile: vi.fn(),
     fetchAdminFamilyDirectory: vi.fn(),
-    fetchCalendarEntries: vi.fn(),
     fetchDocuments: vi.fn(),
     fetchFamilyContext: vi.fn(),
     fetchFamilyInvites: vi.fn(),
@@ -87,7 +85,6 @@ vi.mock('./lib/supabase', async () => {
     deleteCurrentAccount,
     ensureProfile,
     fetchAdminFamilyDirectory,
-    fetchCalendarEntries,
     fetchDocuments,
     fetchFamilyContext,
     fetchFamilyInvites,
@@ -178,7 +175,6 @@ describe('App auth flow', () => {
     deleteFamilyMemberAccount.mockReset();
     ensureProfile.mockReset();
     fetchAdminFamilyDirectory.mockReset();
-    fetchCalendarEntries.mockReset();
     fetchDocuments.mockReset();
     fetchFamilyContext.mockReset();
     fetchFamilyInvites.mockReset();
@@ -201,7 +197,6 @@ describe('App auth flow', () => {
     fetchShoppingLists.mockResolvedValue([]);
     fetchTasks.mockResolvedValue([]);
     fetchNotes.mockResolvedValue([]);
-    fetchCalendarEntries.mockResolvedValue([]);
     fetchMeals.mockResolvedValue([]);
     fetchDocuments.mockResolvedValue([]);
     fetchAdminFamilyDirectory.mockResolvedValue([]);

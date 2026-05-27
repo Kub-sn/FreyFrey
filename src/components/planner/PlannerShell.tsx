@@ -13,14 +13,12 @@ import type {
 import type { SupabaseFamilyContext, SupabaseFamilyInvite } from '../../lib/supabase';
 import { ActiveTabProvider } from '../../context/ActiveTabContext';
 import { useNoteManager } from '../../hooks/useNoteManager';
-import { useCalendarManager } from '../../hooks/useCalendarManager';
 import { useAdminDirectory } from '../../hooks/useAdminDirectory';
 import { useCrudModules } from '../../hooks/useCrudModules';
 import { useDeletionManager } from '../../hooks/useDeletionManager';
 import { isTaskDone } from '../../lib/tasks';
 import { AppButton } from '../ui/AppButton';
 import { AccountCard } from './AccountCard';
-import { CalendarModule } from './CalendarModule';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { DocumentsModule } from './DocumentsModule';
 import { FamilyModule } from './FamilyModule';
@@ -98,13 +96,6 @@ export default function PlannerShell({
   });
 
   const notes = useNoteManager({
-    authState,
-    plannerState,
-    setCloudSync,
-    updateState,
-  });
-
-  const calendar = useCalendarManager({
     authState,
     plannerState,
     setCloudSync,
@@ -203,7 +194,6 @@ export default function PlannerShell({
         <PlannerOverview
           openTasks={openTasks}
           plannerState={plannerState}
-          sortedCalendarEntries={calendar.sortedCalendarEntries}
           onToggleTask={crud.handleToggleTask}
         />
 
@@ -273,19 +263,6 @@ export default function PlannerShell({
             </p>
           </ConfirmationDialog>
         ) : null}
-
-        <CalendarModule
-          calendarMonth={calendar.calendarMonth}
-          calendarViewDate={calendar.calendarViewDate}
-          selectedCalendarDate={calendar.selectedCalendarDate}
-          selectedDayEntries={calendar.selectedDayEntries}
-          unscheduledCalendarEntries={calendar.unscheduledCalendarEntries}
-          visibleMonthEventCount={calendar.visibleMonthEventCount}
-          onAddCalendar={calendar.handleAddCalendar}
-          onChangeCalendarMonth={calendar.handleChangeCalendarMonth}
-          onSelectCalendarDate={calendar.setSelectedCalendarDate}
-          onShowToday={calendar.handleShowTodayInCalendar}
-        />
 
         <MealsModule
           meals={plannerState.meals}

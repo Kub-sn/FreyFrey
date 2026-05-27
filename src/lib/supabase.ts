@@ -7,7 +7,6 @@ import {
 import { RESET_PASSWORD_PATH } from './auth-redirect';
 import { resolveSupabasePublicKey } from './supabase-config';
 import type {
-  CalendarItem,
   DocumentItem,
   MealItem,
   NoteItem,
@@ -99,14 +98,6 @@ type NoteRow = {
   id: string;
   title: string | null;
   text: string;
-};
-
-type CalendarRow = {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  place: string;
 };
 
 type MealRow = {
@@ -1300,53 +1291,6 @@ export async function deleteNote(noteId: string) {
   if (error) {
     throw error;
   }
-}
-
-export async function fetchCalendarEntries(familyId: string): Promise<CalendarItem[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('calendar_events')
-    .select('id, title, date, time, place')
-    .eq('family_id', familyId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  return (data as CalendarRow[]).map((entry) => ({
-    id: entry.id,
-    title: entry.title,
-    date: entry.date,
-    time: entry.time,
-    place: entry.place,
-  }));
-}
-
-export async function createCalendarEntry(
-  familyId: string,
-  payload: Omit<CalendarItem, 'id'>,
-): Promise<CalendarItem> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('calendar_events')
-    .insert({ family_id: familyId, ...payload })
-    .select('id, title, date, time, place')
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  const entry = data as CalendarRow;
-
-  return {
-    id: entry.id,
-    title: entry.title,
-    date: entry.date,
-    time: entry.time,
-    place: entry.place,
-  };
 }
 
 export async function fetchMeals(familyId: string): Promise<MealItem[]> {

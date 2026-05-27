@@ -134,10 +134,6 @@ export function compareDocumentLabels(left: string, right: string) {
   return left.localeCompare(right, 'de', { sensitivity: 'base' });
 }
 
-export function getCalendarMetaParts(entry: { time: string; place: string }) {
-  return [entry.time.trim(), entry.place.trim()].filter(Boolean).join(' · ');
-}
-
 export function syncPlannerWithAuth(
   current: PlannerState,
   profile: SupabaseProfile,

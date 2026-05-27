@@ -77,16 +77,6 @@ create table public.notes (
   created_at timestamptz not null default now()
 );
 
-create table public.calendar_events (
-  id uuid primary key default gen_random_uuid(),
-  family_id uuid not null references public.families(id) on delete cascade,
-  title text not null,
-  date text not null,
-  time text not null,
-  place text not null,
-  created_at timestamptz not null default now()
-);
-
 create table public.meals (
   id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
@@ -116,7 +106,6 @@ alter table public.shopping_lists enable row level security;
 alter table public.shopping_items enable row level security;
 alter table public.tasks enable row level security;
 alter table public.notes enable row level security;
-alter table public.calendar_events enable row level security;
 alter table public.meals enable row level security;
 alter table public.documents enable row level security;
 
@@ -684,16 +673,6 @@ create policy "family members can delete notes"
 on public.notes
 for delete
 using (public.is_family_member(family_id));
-
-create policy "family members can read calendar events"
-on public.calendar_events
-for select
-using (public.is_family_member(family_id));
-
-create policy "family members can insert calendar events"
-on public.calendar_events
-for insert
-with check (public.is_family_member(family_id));
 
 create policy "family members can read meals"
 on public.meals

@@ -20,14 +20,6 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-function toDateInputValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
 async function openDocumentsModule(user: ReturnType<typeof userEvent.setup>) {
   const moduleNav = screen.getByRole('navigation', { name: 'Module' });
 
@@ -47,17 +39,6 @@ function getDocumentForm() {
 
 function createDocumentFile(name: string, type: string, content = 'datei-inhalt') {
   return new File([content], name, { type });
-}
-
-function getCalendarForm() {
-  const heading = screen.getByRole('heading', { level: 4, name: 'Termin anlegen' });
-  const form = heading.closest('form');
-
-  if (!form) {
-    throw new Error('Kalenderformular wurde nicht gefunden.');
-  }
-
-  return within(form);
 }
 
 async function addLocalDocument(user: ReturnType<typeof userEvent.setup>, file: File) {
@@ -94,7 +75,6 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: 'Einstellungen' })).not.toBeInTheDocument();
     expect(overviewSection).not.toBeNull();
     expect(within(overviewSection as HTMLElement).getByRole('heading', { level: 3, name: 'To-dos' })).toBeInTheDocument();
-    expect(within(overviewSection as HTMLElement).getByRole('heading', { level: 3, name: 'Kalender' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 3, name: 'Auth-Status' })).not.toBeInTheDocument();
   });
 
@@ -206,32 +186,6 @@ describe('App', () => {
     expect(reloadedNotesHeading).toBeInTheDocument();
     expect(reloadedNotesSection).toHaveClass('is-visible');
     expect(reloadedOverviewSection).not.toHaveClass('is-visible');
-  });
-
-  it('shows a navigable month view in the calendar module', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    const moduleNav = screen.getByRole('navigation', { name: 'Module' });
-    await user.click(within(moduleNav).getByRole('button', { name: 'Kalender' }));
-
-    const dateInput = screen.getByLabelText('Datum');
-    const timeInput = screen.getByLabelText('Uhrzeit');
-    const form = getCalendarForm();
-
-    expect(screen.getByRole('button', { name: 'Heute' })).toBeInTheDocument();
-    expect(screen.getByRole('grid', { name: 'Monatskalender' })).toBeInTheDocument();
-    expect(dateInput).toHaveAttribute('type', 'date');
-    expect(timeInput).toHaveAttribute('type', 'time');
-
-    await user.type(form.getByPlaceholderText('Titel'), 'Laternenfest');
-    await user.type(dateInput, toDateInputValue(new Date()));
-    await user.type(timeInput, '18:30');
-    await user.type(form.getByPlaceholderText('Ort'), 'Schulhof');
-    await user.click(form.getByRole('button', { name: 'Termin speichern' }));
-
-    expect(screen.getAllByText('Laternenfest').length).toBeGreaterThan(0);
-    expect(screen.getByText('Schulhof')).toBeInTheDocument();
   });
 
   it('shows an upload-only document form in the documents module', async () => {

@@ -8,7 +8,8 @@ import {
   type TaskStatus,
 } from './planner-data';
 
-const STORAGE_KEY = 'family-planner-state-v2';
+const STORAGE_KEY = 'family-planner-state-v3';
+const LEGACY_STORAGE_KEYS = ['family-planner-state-v2'];
 const ACTIVE_TAB_STORAGE_KEY = 'family-planner-active-tab-v1';
 
 function isTabId(value: unknown): value is TabId {
@@ -176,7 +177,9 @@ export function loadPlannerState(): PlannerState {
     return defaultPlannerState;
   }
 
-  const rawState = window.localStorage.getItem(STORAGE_KEY);
+  const rawState = [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]
+    .map((key) => window.localStorage.getItem(key))
+    .find((value) => Boolean(value));
 
   if (!rawState) {
     return defaultPlannerState;

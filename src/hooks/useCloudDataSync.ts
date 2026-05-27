@@ -4,7 +4,6 @@ import type { AuthState, CloudSyncState } from '../app/types';
 import type { SupabaseFamilyInvite } from '../lib/supabase';
 import { humanizeAuthError } from '../lib/auth-errors';
 import {
-  fetchCalendarEntries,
   fetchDocuments,
   fetchFamilyInvites,
   fetchFamilyMembers,
@@ -48,11 +47,10 @@ export function useCloudDataSync({
       });
 
       try {
-        const [shoppingLists, tasks, notes, calendar, meals, documents, members, invites] = await Promise.all([
+        const [shoppingLists, tasks, notes, meals, documents, members, invites] = await Promise.all([
           fetchShoppingLists(familyId),
           fetchTasks(familyId),
           fetchNotes(familyId),
-          fetchCalendarEntries(familyId),
           fetchMeals(familyId),
           fetchDocuments(familyId),
           fetchFamilyMembers(familyId),
@@ -68,7 +66,6 @@ export function useCloudDataSync({
             shoppingLists,
             tasks,
             notes,
-            calendar,
             meals,
             documents,
           });

@@ -16,10 +16,6 @@
   --color-primary: #18342f;
   --color-primary-content: #f6efe2;
   --color-secondary: #19624d;
-  --color-secondary-content: #fffdf9;
-  --color-accent: #f46f3a;
-  --color-accent-content: #18342f;
-  --color-neutral: #233f36;
   --color-neutral-content: #f8f2e8;
   --color-info: #849481;
   --color-info-content: #18342f;
@@ -320,11 +316,6 @@ button {
   width: 100%;
 }
 
-.calendar-module-layout {
-  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
-  align-items: start;
-}
-
 .role-layout {
   grid-template-columns: 1.1fr 0.9fr;
 }
@@ -484,7 +475,6 @@ input[type='checkbox']:not(.app-switch):focus-visible {
   border: 1px solid;
 }
 
-.agenda-list,
 .check-list,
 .task-list,
 .meal-list,
@@ -496,7 +486,6 @@ input[type='checkbox']:not(.app-switch):focus-visible {
   gap: 0.8rem;
 }
 
-.agenda-list li,
 .check-list li,
 .task-list li,
 .meal-list li,
@@ -509,7 +498,6 @@ input[type='checkbox']:not(.app-switch):focus-visible {
   border-bottom: 1px solid rgba(24, 52, 47, 0.08);
 }
 
-.agenda-list li:last-child,
 .check-list li:last-child,
 .task-list li:last-child,
 .meal-list li:last-child,
@@ -548,65 +536,6 @@ input[type='checkbox']:not(.app-switch):focus-visible {
   gap: 1rem;
 }
 
-.calendar-day-panel h4 {
-  margin: 0;
-}
-
-.calendar-day-cell {
-  display: grid;
-  gap: 0.55rem;
-  padding: 0.75rem;
-  border: 1px solid rgba(24, 52, 47, 0.08);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.72);
-  text-align: left;
-  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
-}
-
-.calendar-day-cell.is-today {
-  border-color: rgba(244, 111, 58, 0.42);
-  background: rgba(244, 111, 58, 0.08);
-}
-
-.calendar-event-pill,
-.calendar-more-events {
-  display: block;
-  padding: 0.35rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(24, 52, 47, 0.08);
-  color: #18342f;
-  font-size: 0.78rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.calendar-event-pill {
-  background: rgba(25, 98, 77, 0.12);
-}
-
-.calendar-more-events {
-  color: rgba(24, 52, 47, 0.7);
-}
-
-.calendar-detail-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-  gap: 1rem;
-}
-
-.calendar-day-panel {
-  display: grid;
-  gap: 0.8rem;
-  padding: 1rem;
-  border-radius: 24px;
-  background: rgba(24, 52, 47, 0.05);
-}
-
-.calendar-unscheduled-panel {
-  background: rgba(246, 239, 226, 0.72);
-}
-
 small {
   color: rgba(24, 52, 47, 0.65);
 }
@@ -638,8 +567,7 @@ small {
   }
 
   .module-layout,
-  .role-layout,
-  .calendar-detail-grid {
+  .role-layout {
     grid-template-columns: 1fr;
   }
 
@@ -704,7 +632,6 @@ select,
 .panel,
 .note-card,
 .document-grid li,
-.calendar-day-cell,
 .selected-file-card,
 .selected-file-summary,
 .upload-progress-card,
@@ -837,7 +764,6 @@ select:focus-visible,
 
 .check-list li,
 .task-list li,
-.agenda-list li,
 .meal-list li,
 .document-list li {
   border-bottom-color: rgba(29, 36, 31, 0.06);
@@ -845,7 +771,6 @@ select:focus-visible,
 
 .check-list li:hover,
 .task-list li:hover,
-.agenda-list li:hover,
 .meal-list li:hover,
 .document-list li:hover {
   border-bottom-color: rgba(185, 95, 44, 0.18);
@@ -858,12 +783,6 @@ select:focus-visible,
 .note-card:focus-visible {
   outline: 2px solid rgba(185, 95, 44, 0.8);
   outline-offset: 3px;
-}
-
-.calendar-day-cell:hover {
-  transform: translateY(-1px);
-  border-color: rgba(25, 98, 77, 0.3);
-  box-shadow: 0 14px 26px rgba(58, 101, 87, 0.12);
 }
 
 .document-grid li {
@@ -886,12 +805,9 @@ body,
 .panel,
 .note-card,
 .document-grid li,
-.calendar-day-cell,
 .selected-file-card,
 .selected-file-summary,
-.upload-progress-card,
-.calendar-day-panel,
-.calendar-unscheduled-panel {
+.upload-progress-card {
   background: #fbf4ec;
   border-color: rgba(88, 104, 87, 0.16);
   backdrop-filter: none;
@@ -933,7 +849,6 @@ body,
 .panel,
 .note-card,
 .document-grid li,
-.calendar-day-cell,
 .selected-file-card,
 .selected-file-summary,
 .upload-progress-card {
@@ -978,8 +893,6 @@ body,
 .secondary-action,
 .ghost-toggle,
 .document-icon,
-.calendar-event-pill,
-.calendar-more-events,
 .file-input-label {
   background: #f6eee5;
   border-color: rgba(97, 105, 95, 0.12);
@@ -989,15 +902,8 @@ body,
 
 .chip.alt,
 .danger-action,
-.auth-error,
-.calendar-day-cell.is-today {
+.auth-error {
   background: #f1ddd2;
-}
-
-.calendar-day-cell.is-selected {
-  border-color: #19624d;
-  background: #e7eee5;
-  box-shadow: inset 0 0 0 1px rgba(58, 101, 87, 0.2), 0 12px 24px rgba(58, 101, 87, 0.12);
 }
 
 *::-webkit-scrollbar-thumb {
@@ -1166,20 +1072,14 @@ body,
 .selected-file-card,
 .selected-file-summary,
 .upload-progress-card,
-.calendar-day-cell,
 .document-grid li,
-.calendar-day-panel,
-.calendar-unscheduled-panel,
 .document-icon {
   background: #efdfcf;
   border-color: rgba(88, 104, 87, 0.18);
   color: #2a342d;
 }
 
-.document-grid li,
-.calendar-day-cell,
-.calendar-day-panel,
-.calendar-unscheduled-panel {
+.document-grid li {
   background: #fbf4ec;
 }
 
@@ -1289,9 +1189,7 @@ body,
 
 .module-layout,
 .document-module-layout,
-.calendar-module-layout,
-.role-layout,
-.calendar-detail-grid {
+.role-layout {
   gap: 0.85rem;
 }
 
@@ -1427,11 +1325,6 @@ body,
     grid-template-columns: 1fr;
   }
 
-  .calendar-day-cell {
-    min-height: 7.5rem;
-    padding: 0.6rem;
-  }
-
   .overview-row-panel {
     max-height: calc(100dvh - 8rem);
   }
@@ -1545,9 +1438,7 @@ body,
 
   .module-layout,
   .document-module-layout,
-  .calendar-module-layout,
-  .role-layout,
-  .calendar-detail-grid {
+  .role-layout {
     gap: 0.7rem;
   }
 
@@ -1608,7 +1499,6 @@ body,
     padding: 1rem;
   }
 
-  .agenda-list li,
   .check-list li,
   .task-list li,
   .meal-list li,

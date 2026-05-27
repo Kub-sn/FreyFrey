@@ -35,9 +35,6 @@ export const plannerFixture: PlannerState = {
   notes: [
     { id: 'note-1', title: 'Hinweis', text: 'Nicht vergessen.' },
   ],
-  calendar: [
-    { id: 'calendar-1', title: 'Laternenfest', date: '2026-04-09', time: '18:30', place: 'Schulhof' },
-  ],
   meals: [
     { id: 'meal-1', day: 'Montag', meal: 'Nudeln', prepared: false },
   ],

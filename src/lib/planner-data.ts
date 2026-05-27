@@ -44,14 +44,6 @@ export type NoteItem = {
   text: string;
 };
 
-export type CalendarItem = {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  place: string;
-};
-
 export type MealItem = {
   id: string;
   day: string;
@@ -74,7 +66,6 @@ export type PlannerState = {
   shoppingLists: ShoppingList[];
   tasks: TaskItem[];
   notes: NoteItem[];
-  calendar: CalendarItem[];
   meals: MealItem[];
   documents: DocumentItem[];
 };
@@ -84,7 +75,6 @@ export const tabs = [
   { id: 'shopping', label: 'Einkauf' },
   { id: 'tasks', label: 'To-dos' },
   { id: 'notes', label: 'Notizen' },
-  { id: 'calendar', label: 'Kalender' },
   { id: 'meals', label: 'Essensplan' },
   { id: 'documents', label: 'Dokumente' },
   { id: 'family', label: 'Einstellungen' },
@@ -100,7 +90,6 @@ export const defaultPlannerState: PlannerState = {
   shoppingLists: [],
   tasks: [],
   notes: [],
-  calendar: [],
   meals: [],
   documents: [],
 };
