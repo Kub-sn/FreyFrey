@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AppDialogShell } from '../ui/AppDialogShell';
 
 export function ModalDialog({
   actions,
@@ -16,13 +17,8 @@ export function ModalDialog({
   title: string;
 }) {
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-[rgba(24,52,47,0.5)] p-6 backdrop-blur-[10px]" role="presentation">
-      <section
-        className={`dialog-surface w-[min(560px,100%)] max-h-[min(88vh,1000px)] min-w-0 overflow-auto grid gap-4 rounded-[28px] border border-[rgba(24,52,47,0.1)] bg-[rgba(255,250,244,0.97)] p-5 shadow-[0_28px_70px_rgba(24,52,47,0.22)] ${className ?? ''}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={id}
-      >
+    <div className="modal modal-open fixed inset-0 z-40 !grid place-items-center bg-[rgba(24,52,47,0.5)] p-6 backdrop-blur-[10px]" role="presentation">
+      <AppDialogShell id={id} className={`grid gap-4 ${className ?? ''}`}>
         <div className="block min-w-0">
           <div className="w-auto min-w-0">
             {eyebrow ? <p className="m-0 uppercase tracking-[0.18em] text-[0.72rem] opacity-75">{eyebrow}</p> : null}
@@ -31,7 +27,7 @@ export function ModalDialog({
         </div>
         {children}
         {actions ? <div className="dialog-actions flex flex-wrap justify-end gap-3">{actions}</div> : null}
-      </section>
+      </AppDialogShell>
     </div>
   );
 }

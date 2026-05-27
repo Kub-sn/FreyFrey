@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react';
 import type { SupabaseProfile } from '../../lib/supabase';
 import type { AuthDraft, AuthMode } from '../../app/types';
 import { BrandHeading } from '../BrandHeading';
+import { appInputClassName } from '../ui/AppField';
+import { AppButton } from '../ui/AppButton';
 
 function AuthInput({
   field,
@@ -24,6 +26,7 @@ function AuthInput({
 }) {
   return (
     <input
+      className={appInputClassName()}
       name={inputName}
       type={type}
       placeholder={placeholder}
@@ -65,7 +68,7 @@ function PasswordField({
         data-auth-field={field}
         data-lpignore="true"
         data-1p-ignore="true"
-        className="pr-[3.25rem]"
+        className={appInputClassName('pr-[3.25rem]')}
         onChange={(event) => onChange(event.currentTarget.value)}
       />
       <button
@@ -150,20 +153,22 @@ export function AuthScreen({
 
             {mode === 'sign-in' || mode === 'sign-up' ? (
               <div className="mode-switch mt-0">
-                <button
+                <AppButton
                   type="button"
-                  className={mode === 'sign-in' ? 'mode-button active' : 'mode-button'}
+                  variant={mode === 'sign-in' ? 'primary' : 'secondary'}
+                  className="flex-[1_1_calc(50%-0.25rem)] justify-center text-center rounded-full"
                   onClick={() => onModeChange('sign-in')}
                 >
                   Anmelden
-                </button>
-                <button
+                </AppButton>
+                <AppButton
                   type="button"
-                  className={mode === 'sign-up' ? 'mode-button active' : 'mode-button'}
+                  variant={mode === 'sign-up' ? 'primary' : 'secondary'}
+                  className="flex-[1_1_calc(50%-0.25rem)] justify-center text-center rounded-full"
                   onClick={() => onModeChange('sign-up')}
                 >
                   Registrieren
-                </button>
+                </AppButton>
               </div>
             ) : null}
 
@@ -210,7 +215,7 @@ export function AuthScreen({
               />
             ) : null}
 
-            <button type="submit" className="auth-submit" disabled={busy}>
+            <AppButton type="submit" variant="primary" disabled={busy}>
               {busy
                 ? 'Bitte warten…'
                 : mode === 'sign-in'
@@ -220,25 +225,25 @@ export function AuthScreen({
                     : mode === 'forgot-password'
                       ? 'Reset-Link senden'
                       : 'Passwort speichern'}
-            </button>
+            </AppButton>
 
             {mode === 'sign-in' ? (
-              <button
+              <AppButton
                 type="button"
-                className="secondary-action"
+                variant="secondary"
                 onClick={() => onModeChange('forgot-password')}
               >
                 Passwort vergessen?
-              </button>
+              </AppButton>
             ) : null}
             {mode === 'forgot-password' || mode === 'reset-password' ? (
-              <button
+              <AppButton
                 type="button"
-                className="secondary-action"
+                variant="secondary"
                 onClick={() => onModeChange('sign-in')}
               >
                 Zurück zur Anmeldung
-              </button>
+              </AppButton>
             ) : null}
           </form>
         </section>
@@ -275,13 +280,13 @@ export function OnboardingScreen({
         </div>
 
         <form className="auth-panel auth-panel-editorial" onSubmit={(event) => void onSubmit(event)}>
-          <input name="familyName" placeholder="Name deiner Familie" autoComplete="organization" />
-          <button type="submit" className="auth-submit" disabled={busy}>
+          <input className={appInputClassName()} name="familyName" placeholder="Name deiner Familie" autoComplete="organization" />
+          <AppButton type="submit" variant="primary" disabled={busy}>
             {busy ? 'Familie wird angelegt…' : 'Familie erstellen'}
-          </button>
-          <button type="button" className="secondary-action" onClick={() => void onSignOut()}>
+          </AppButton>
+          <AppButton type="button" variant="secondary" onClick={() => void onSignOut()}>
             Abmelden
-          </button>
+          </AppButton>
         </form>
       </section>
     </div>

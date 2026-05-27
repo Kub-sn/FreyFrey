@@ -2,6 +2,9 @@ import type { FormEvent } from 'react';
 import type { PendingFamilyDeletionState, PendingMemberDeletionState } from '../../app/types';
 import type { PlannerState, UserRole } from '../../lib/planner-data';
 import type { AdminFamilyDirectoryFamily, SupabaseFamilyContext, SupabaseFamilyInvite, SupabaseProfile } from '../../lib/supabase';
+import { AppButton } from '../ui/AppButton';
+import { AppCard } from '../ui/AppCard';
+import { appInputClassName, appSelectClassName } from '../ui/AppField';
 import { FamilyStatusBadges, getRoleChipClass, getRoleLabel, isFamilyOwnerMember } from './planner-shell-utils';
 import { useActiveTab } from '../../context/ActiveTabContext';
 
@@ -70,14 +73,15 @@ export function FamilyModule({
 }) {
   const { activeTab } = useActiveTab();
   const canViewFamily = Boolean(authFamily);
-  const accountPanelClassName = 'panel self-start grid gap-[0.9rem] min-w-0 w-full family-account-panel [&>.danger-action]:justify-self-start';
+  const accountPanelClassName = 'self-start grid gap-[0.9rem] min-w-0 w-full family-account-panel [&>.danger-action]:justify-self-start';
   const invitePanel = (
-    <form className="panel form-panel family-invite-panel" onSubmit={(event) => void onAddMember(event)}>
+    <AppCard as="form" className="form-panel family-invite-panel" onSubmit={(event) => void onAddMember(event)}>
       <h4>Familienmitglied einladen</h4>
       {canManageFamily ? (
         <label className="grid gap-[0.35rem] [&>span]:text-[0.84rem] [&>span]:font-semibold [&>span]:tracking-[0.04em] [&>span]:text-[rgba(24,52,47,0.78)]">
           <span>Familie</span>
           <select
+            className={appSelectClassName()}
             name="familyId"
             aria-label="Familie fuer Einladung"
             value={selectedInviteFamilyId ?? ''}
@@ -92,36 +96,36 @@ export function FamilyModule({
           </select>
         </label>
       ) : null}
-      <input name="email" placeholder="E-Mail" disabled={!canInviteFamilyMembers} />
-      <select name="role" aria-label="Rolle fuer Einladung" defaultValue="familyuser" disabled={!canManageFamily}>
+      <input className={appInputClassName()} name="email" placeholder="E-Mail" disabled={!canInviteFamilyMembers} />
+      <select className={appSelectClassName()} name="role" aria-label="Rolle fuer Einladung" defaultValue="familyuser" disabled={!canManageFamily}>
         <option value="familyuser">familyuser</option>
         {canManageFamily ? <option value="admin">admin</option> : null}
       </select>
-      <button type="submit" disabled={!canInviteFamilyMembers}>
+      <AppButton type="submit" variant="primary" disabled={!canInviteFamilyMembers}>
         {canInviteFamilyMembers
           ? 'Einladung senden'
           : 'Nur Familiengruender oder Admin kann Einladungen senden'}
-      </button>
+      </AppButton>
       <small>
         Die Einladung wird per E-Mail verschickt. Sobald sich der Nutzer mit derselben
         E-Mail registriert oder anmeldet, wird die Familienzuordnung automatisch uebernommen.
       </small>
-    </form>
+    </AppCard>
   );
   const accountPanel = authProfile ? (
-    <article className={accountPanelClassName}>
+    <AppCard className={accountPanelClassName}>
       <div className="panel-heading">
         <h4>Konto</h4>
       </div>
       <p className="-mt-px m-0 text-[rgba(24,52,47,0.72)]">
       </p>
-      <button type="button" className="secondary-action danger-action" onClick={onOpenDeleteAccount}>
+      <AppButton type="button" variant="danger" onClick={onOpenDeleteAccount}>
         Account löschen
-      </button>
-    </article>
+      </AppButton>
+    </AppCard>
   ) : null;
   const registrationPanel = canManageFamily && authFamily ? (
-    <article className="panel form-panel gap-4">
+    <AppCard className="form-panel gap-4">
       <div className="panel-heading">
         <h4>Registrierungeinstellung</h4>
         <span className={allowOpenRegistration ? 'chip' : 'chip alt'}>
@@ -149,14 +153,14 @@ export function FamilyModule({
       <p className="m-0 text-[rgba(24,52,47,0.82)]">
         {allowOpenRegistration ? 'Neue Nutzer koennen sich aktuell auch ohne Einladung registrieren.' : null}
       </p>
-    </article>
+    </AppCard>
   ) : null;
 
   return (
     <section className={activeTab === 'family' && canViewFamily ? 'module is-visible' : 'module'}>
       <div className="role-layout flex flex-col gap-[0.65rem]">
         <div className="flex flex-wrap items-start gap-[0.65rem] max-[720px]:flex-col">
-          <article className="panel self-start flex-[1_1_620px] min-w-[min(100%,34rem)] max-[720px]:w-full max-[720px]:min-w-0">
+          <AppCard className="self-start flex-[1_1_620px] min-w-[min(100%,34rem)] max-[720px]:w-full max-[720px]:min-w-0">
             <div className="panel-heading items-start">
               <div className="grid gap-[0.3rem] min-w-0">
                 <h4>Familienmitglieder</h4>
@@ -210,22 +214,22 @@ export function FamilyModule({
                     </div>
                     <div className="flex items-center justify-end ml-auto max-[720px]:w-full max-[720px]:ml-0 max-[720px]:justify-start">
                       {canInviteFamilyMembers ? (
-                        <button
+                        <AppButton
                           type="button"
-                          className="ghost-toggle"
+                          variant="ghost"
                           disabled={pendingInviteActionId === invite.id}
                           aria-label={`Einladung für ${invite.email} zurückziehen`}
                           onClick={() => void onRemoveInvite(invite.id)}
                         >
                           {pendingInviteActionId === invite.id ? 'Wird entfernt…' : 'Zurückziehen'}
-                        </button>
+                        </AppButton>
                       ) : null}
                     </div>
                   </li>
                 ))}
               </ul>
             ) : null}
-          </article>
+          </AppCard>
 
           <div className="flex flex-[0_1_360px] flex-col gap-[0.6rem] min-w-[min(100%,21rem)] max-[720px]:w-full max-[720px]:min-w-0">
             {invitePanel}
@@ -235,7 +239,7 @@ export function FamilyModule({
         {!canManageFamily ? accountPanel : null}
 
         {canManageFamily ? (
-          <article className="panel self-start admin-directory-panel min-w-0 w-full overflow-x-clip gap-[0.75rem] max-[720px]:min-w-0">
+          <AppCard className="self-start admin-directory-panel min-w-0 w-full overflow-x-clip gap-[0.75rem] max-[720px]:min-w-0">
               <div className="panel-heading family-inline-heading">
                 <h4>Alle Familien</h4>
                 <span className="chip">{adminFamilyDirectory.length}</span>
@@ -274,9 +278,9 @@ export function FamilyModule({
                           </small>
                         </div>
                         <div className="flex flex-wrap items-center justify-end min-w-0 gap-[0.65rem] pr-[0.35rem] [&>.danger-action]:[white-space:normal] [&>.danger-action]:[overflow-wrap:anywhere] max-[720px]:w-full max-[720px]:ml-0 max-[720px]:justify-start [&>.danger-action]:max-[720px]:w-full">
-                          <button
+                          <AppButton
                             type="button"
-                            className="secondary-action danger-action"
+                            variant="danger"
                             aria-label={`Familie ${selectedAdminFamily.familyName} löschen`}
                             onClick={() =>
                               onSetPendingFamilyDeletion({
@@ -288,7 +292,7 @@ export function FamilyModule({
                             }
                           >
                             Familie löschen
-                          </button>
+                          </AppButton>
                         </div>
                       </div>
                       <ul className="document-list grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] min-w-0 gap-[0.8rem]">
@@ -303,9 +307,10 @@ export function FamilyModule({
                             </div>
                             <div className="flex flex-wrap items-center justify-end min-w-0 gap-[0.65rem] ml-auto pr-[0.35rem] [&>.ghost-toggle]:[white-space:normal] [&>.ghost-toggle]:[overflow-wrap:anywhere] max-[720px]:w-full max-[720px]:ml-0 max-[720px]:justify-start [&>.ghost-toggle]:max-[720px]:w-full">
                               {!member.isOwner && member.id !== authProfile?.id ? (
-                                <button
+                                <AppButton
                                   type="button"
-                                  className="ghost-toggle danger-action"
+                                  variant="ghost"
+                                  className="danger-action"
                                   aria-label={`Mitglied ${member.email || member.name} aus ${selectedAdminFamily.familyName} löschen`}
                                   onClick={() =>
                                     onSetPendingMemberDeletion({
@@ -318,7 +323,7 @@ export function FamilyModule({
                                   }
                                 >
                                   Mitglied löschen
-                                </button>
+                                </AppButton>
                               ) : null}
                             </div>
                           </li>
@@ -328,7 +333,7 @@ export function FamilyModule({
                   ) : null}
                 </>
               ) : null}
-          </article>
+          </AppCard>
         ) : null}
 
         {canManageFamily ? (

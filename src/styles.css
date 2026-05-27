@@ -1,4 +1,44 @@
 @import "tailwindcss";
+@plugin "daisyui" {
+  themes: false;
+}
+@plugin "daisyui/theme" {
+  name: "freyfrey";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #fffdf9;
+  --color-base-200: #f8f2e8;
+  --color-base-300: #f0e5d7;
+  --color-base-content: #18342f;
+
+  --color-primary: #18342f;
+  --color-primary-content: #f6efe2;
+  --color-secondary: #19624d;
+  --color-secondary-content: #fffdf9;
+  --color-accent: #f46f3a;
+  --color-accent-content: #18342f;
+  --color-neutral: #233f36;
+  --color-neutral-content: #f8f2e8;
+  --color-info: #849481;
+  --color-info-content: #18342f;
+  --color-success: #19624d;
+  --color-success-content: #fffdf9;
+  --color-warning: #b95f2c;
+  --color-warning-content: #fffdf9;
+  --color-error: #c8472d;
+  --color-error-content: #fff7f2;
+
+  --radius-selector: 1rem;
+  --radius-field: 1.125rem;
+  --radius-box: 1.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
 
 @theme {
   --color-earth-50: #fffdf9;
@@ -75,6 +115,10 @@ select {
   font: inherit;
 }
 
+html[data-theme='freyfrey'] {
+  background: #fffdf9;
+}
+
 button {
   cursor: pointer;
 }
@@ -143,14 +187,6 @@ button {
   background: rgba(255, 255, 255, 0.74);
 }
 
-.auth-panel input {
-  width: 100%;
-  padding: 0.95rem 1rem;
-  border-radius: 18px;
-  border: 1px solid rgba(24, 52, 47, 0.14);
-  background: rgba(255, 255, 255, 0.92);
-}
-
 .auth-submit,
 .secondary-action {
   border: none;
@@ -201,30 +237,10 @@ button {
   line-height: 1;
 }
 
-.account-card,
-.status-card,
-.panel,
-.note-card {
-  border: 1px solid rgba(24, 52, 47, 0.1);
-  box-shadow: 0 18px 44px rgba(24, 52, 47, 0.08);
-}
-
 .account-card strong,
 .account-card small {
   display: block;
 }
-
-.account-card .secondary-action {
-  margin-top: 0.25rem;
-}
-
-.family-status-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  align-items: center;
-}
-
 .panel-heading-tight {
   align-items: center;
   margin-top: 1rem;
@@ -240,48 +256,11 @@ button {
   gap: 0.6rem;
 }
 
-.member-pill,
-.tab-button,
-.mode-button,
-.reset-button {
-  transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease;
-}
-
-.member-pill span {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  opacity: 0.8;
-}
-
-.member-pill.active,
-.member-pill:hover,
-.tab-button:hover,
-.tab-button.active {
-  background: #f46f3a;
-  transform: translateX(4px);
-}
-
-.member-pill:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.member-pill:disabled:hover {
-  background: rgba(246, 239, 226, 0.05);
-  transform: none;
-}
-
 .mode-switch {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1rem;
-}
-
-.mode-button.active,
-.mode-button:hover {
-  background: #18342f;
-  color: #f6efe2;
 }
 
 .overview-stack,
@@ -492,23 +471,10 @@ input[type='checkbox']:not(.app-switch):focus-visible {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
-.form-panel button,
-.ghost-toggle,
-.reset-button {
+.ghost-toggle {
   border: none;
   border-radius: 18px;
   padding: 0.85rem 1rem;
-}
-
-.form-panel button,
-.reset-button {
-  background: #18342f;
-  color: #f6efe2;
-}
-
-.form-panel button:disabled {
-  background: rgba(24, 52, 47, 0.42);
-  cursor: not-allowed;
 }
 
 .ghost-toggle {
@@ -562,11 +528,6 @@ input[type='checkbox']:not(.app-switch):focus-visible {
   margin-top: 0.02rem;
 }
 
-.document-delete-button {
-  width: 100%;
-  order: 4;
-}
-
 .role-layout .document-list > li {
   align-items: center;
 }
@@ -585,10 +546,6 @@ input[type='checkbox']:not(.app-switch):focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
-}
-
-.document-link-button:hover {
-  transform: translateY(-2px);
 }
 
 .calendar-day-panel h4 {
@@ -648,11 +605,6 @@ input[type='checkbox']:not(.app-switch):focus-visible {
 
 .calendar-unscheduled-panel {
   background: rgba(246, 239, 226, 0.72);
-}
-
-.reset-button:hover {
-  transform: translateY(-1px);
-  background: #f46f3a;
 }
 
 small {
@@ -717,12 +669,6 @@ small {
   }
 }
 
-.auth-panel-editorial input {
-  border: 1px solid rgba(35, 63, 54, 0.12);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
-}
-
 .brand-lockup-sidebar .brand-mark,
 .brand-lockup-mobile .brand-mark {
   width: 2.55rem;
@@ -762,14 +708,10 @@ select,
 .selected-file-card,
 .selected-file-summary,
 .upload-progress-card,
-.tab-button,
-.member-pill,
 .chip,
 .secondary-action,
 .auth-submit,
-.ghost-toggle,
-.form-panel button,
-.document-link-button {
+.ghost-toggle {
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -783,18 +725,13 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
-.tab-button:focus-visible,
-.member-pill:focus-visible,
 .secondary-action:focus-visible,
 .ghost-toggle:focus-visible,
-.auth-submit:focus-visible,
-.form-panel button:focus-visible,
-.document-link-button:focus-visible {
+.auth-submit:focus-visible {
   outline: 2px solid rgba(185, 95, 44, 0.8);
   outline-offset: 3px;
 }
 
-.auth-panel-editorial input:focus,
 .form-panel input:focus,
 .form-panel textarea:focus,
 .form-panel select:focus,
@@ -806,9 +743,7 @@ select:focus-visible,
     inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
-.auth-submit:hover,
-.form-panel button:hover,
-.reset-button:hover {
+.auth-submit:hover {
   transform: translateY(-2px);
   box-shadow: none;
 }
@@ -818,8 +753,7 @@ select:focus-visible,
   transform: translateY(-1px);
 }
 
-.danger-action:hover,
-.document-delete-button:hover {
+.danger-action:hover {
   background: #ae351f;
   border-color: rgba(117, 30, 18, 0.32);
   color: #fffaf7;
@@ -890,39 +824,6 @@ select:focus-visible,
 .module.is-visible > .panel,
 .module.is-visible > .document-toolbar {
   animation: rise-in 520ms ease both;
-}
-
-.tab-button {
-  position: relative;
-  border-radius: 20px;
-  border: 1px solid rgba(246, 239, 226, 0.12);
-  padding: 0.95rem 1rem;
-  background: rgba(246, 239, 226, 0.06);
-  color: inherit;
-  text-align: left;
-  font-weight: 600;
-  overflow: hidden;
-  font-size: 0.98rem;
-  letter-spacing: 0.01em;
-}
-
-.member-pill {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 1rem;
-  border-radius: 18px;
-  border: 1px solid rgba(246, 239, 226, 0.12);
-  padding: 0.85rem 0.95rem;
-  background: rgba(246, 239, 226, 0.05);
-  color: inherit;
-  text-align: left;
-}
-
-.member-pill strong,
-.tab-button {
-  position: relative;
-  z-index: 1;
 }
 
 .overview-empty-state {
@@ -1073,22 +974,6 @@ body,
   z-index: 1;
 }
 
-.tab-button.active,
-.tab-button:hover,
-.member-pill.active,
-.member-pill:hover {
-  background: #d9e6d6;
-  border-color: rgba(88, 104, 87, 0.28);
-  color: #1d241f;
-  transform: none;
-}
-
-.tab-button.active::after,
-.tab-button:hover::after {
-  width: 100%;
-  background: #849481;
-}
-
 .chip,
 .secondary-action,
 .ghost-toggle,
@@ -1104,7 +989,6 @@ body,
 
 .chip.alt,
 .danger-action,
-.document-delete-button,
 .auth-error,
 .calendar-day-cell.is-today {
   background: #f1ddd2;
@@ -1121,10 +1005,7 @@ body,
   background: #a6b29f;
 }
 
-.form-panel button,
-.auth-submit,
-.reset-button,
-.mode-button.active {
+.auth-submit {
   background: #cddcc9;
   color: #1d241f;
   border: 1px solid rgba(88, 104, 87, 0.22);
@@ -1157,18 +1038,13 @@ body,
 .form-panel textarea,
 .form-panel select,
 .document-filter-grid input,
-.document-filter-grid select,
-.auth-panel-editorial input {
+.document-filter-grid select {
   border-radius: 12px;
 }
 
-.form-panel button,
 .auth-submit,
-.reset-button,
 .secondary-action,
-.ghost-toggle,
-.document-link-button,
-.mode-button {
+.ghost-toggle {
   border-radius: 12px;
 }
 
@@ -1250,23 +1126,11 @@ body,
 }
 
 .status-card,
-.account-card,
-.tab-button,
-.member-pill {
+.account-card {
   background: #f6e7d8;
   border-color: rgba(88, 104, 87, 0.16);
   color: #1d241f;
   backdrop-filter: none;
-}
-
-.tab-button::after {
-  content: '';
-  position: absolute;
-  inset: auto 50% 0;
-  width: 0;
-  height: 2px;
-  transition: width 200ms ease;
-  background: rgba(88, 104, 87, 0.26);
 }
 
 .panel {
@@ -1292,7 +1156,6 @@ body,
 
 .chip.alt,
 .danger-action,
-.document-delete-button,
 .auth-error {
   background: rgba(185, 95, 44, 0.16);
   color: #8e3f16;
@@ -1321,39 +1184,17 @@ body,
 }
 
 .secondary-action:hover,
-.ghost-toggle:hover,
-.mode-button:not(.active):hover {
+.ghost-toggle:hover {
   background: #e7d5c2;
   border-color: rgba(88, 104, 87, 0.24);
   color: #1d241f;
   box-shadow: none;
 }
 
-.form-panel button:hover,
-.auth-submit:hover,
-.reset-button:hover,
-.mode-button.active:hover,
-.tab-button.active:hover,
-.member-pill.active:hover {
+.auth-submit:hover {
   background: #b6caae;
   border-color: rgba(88, 104, 87, 0.34);
   color: #1d241f;
-}
-
-.tab-button,
-.member-pill {
-  padding: 0.78rem 0.85rem;
-  border-radius: 14px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
-}
-
-.mode-button {
-  border: 1px solid rgba(24, 52, 47, 0.16);
-  border-radius: 999px;
-  padding: 0.75rem 1rem;
-  background: #efdfcf;
-  color: #1d241f;
-  border-color: rgba(88, 104, 87, 0.18);
 }
 
 .mobile-module-switch {
@@ -1393,12 +1234,8 @@ body,
   border-radius: 10px;
 }
 
-.form-panel button,
 .secondary-action,
 .ghost-toggle,
-.document-link-button,
-.mode-button,
-.reset-button,
 .auth-submit {
   padding: 0.72rem 0.88rem;
   border-radius: 10px;
@@ -1659,16 +1496,8 @@ body,
     gap: 0.5rem;
   }
 
-  .mode-button {
-    flex: 1 1 calc(50% - 0.25rem);
-    justify-content: center;
-    text-align: center;
-  }
-
-  .auth-panel-editorial input,
   .auth-submit,
-  .secondary-action,
-  .mode-button {
+  .secondary-action {
     min-height: 48px;
   }
 
@@ -1784,20 +1613,14 @@ body,
   .task-list li,
   .meal-list li,
   .document-list li,
-  .panel-heading,
-  .member-pill {
+  .panel-heading {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .ghost-toggle,
-  .form-panel button,
-  .reset-button {
+  .form-panel .app-button {
     width: 100%;
-  }
-
-  .document-delete-button {
-    grid-column: 2;
   }
 
   .panel,
@@ -1845,10 +1668,6 @@ body,
   .mode-switch {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .mode-button {
-    width: 100%;
   }
 
   .mobile-module-switch select,

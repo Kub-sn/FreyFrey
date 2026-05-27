@@ -11,6 +11,9 @@ import {
 } from './planner-shell-utils';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { useDocumentManager } from '../../hooks/useDocumentManager';
+import { AppButton, AppButtonLink } from '../ui/AppButton';
+import { AppCard } from '../ui/AppCard';
+import { appInputClassName, appSelectClassName } from '../ui/AppField';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { DocumentEditModal } from './DocumentEditModal';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
@@ -48,7 +51,7 @@ export function DocumentsModule({
         </div>
       ) : null}
       <div className="module-layout document-module-layout">
-        <form className="panel form-panel document-form-panel gap-[0.8rem] p-[1.15rem] max-[720px]:p-[0.8rem]" onSubmit={(event) => void documents.handleAddDocument(event)}>
+        <AppCard as="form" className="form-panel document-form-panel gap-[0.8rem] p-[1.15rem] max-[720px]:p-[0.8rem]" onSubmit={(event) => void documents.handleAddDocument(event)}>
           <h4>Dokument erfassen</h4>
           <label
             className={`file-input-label grid gap-[0.65rem] font-semibold min-h-[8.5rem] content-start justify-items-start p-[1.3rem] border border-dashed border-[rgba(24,52,47,0.24)] rounded-[18px] bg-[rgba(246,239,226,0.5)] transition-[border-color,background,transform] duration-[140ms] ease-out hover:border-[rgba(185,95,44,0.42)] hover:bg-[rgba(255,247,239,0.72)] hover:-translate-y-px${documents.isDocumentDropActive ? ' is-drag-active !border-[#19624d] !bg-[rgba(25,98,77,0.12)] !-translate-y-px' : ''}`}
@@ -73,9 +76,9 @@ export function DocumentsModule({
             <div className="grid gap-3">
               <div className="selected-file-summary flex justify-between items-center gap-4 py-[0.9rem] px-4 rounded-[18px] bg-[rgba(24,52,47,0.08)]">
                 <strong>{documents.selectedDocumentFiles.length} Datei(en) ausgewählt</strong>
-                <button type="button" className="secondary-action" onClick={documents.handleClearSelectedDocumentFiles}>
+                <AppButton type="button" variant="secondary" onClick={documents.handleClearSelectedDocumentFiles}>
                   Auswahl leeren
-                </button>
+                </AppButton>
               </div>
               {documents.selectedDocumentFiles.map((file) => (
                 <div key={`${file.name}-${file.size}`} className="selected-file-card flex justify-between items-center gap-4 py-[0.9rem] px-4 rounded-[18px] bg-[rgba(24,52,47,0.08)]">
@@ -83,13 +86,14 @@ export function DocumentsModule({
                     <strong className="block">{file.name}</strong>
                     <small className="block">{Math.max(1, Math.round(file.size / 1024))} KB</small>
                   </div>
-                  <button
+                  <AppButton
                     type="button"
-                    className="secondary-action py-[0.65rem] px-[0.9rem]"
+                    variant="secondary"
+                    className="py-[0.65rem] px-[0.9rem]"
                     onClick={() => documents.handleRemoveSelectedDocumentFile(file)}
                   >
                     Entfernen
-                  </button>
+                  </AppButton>
                 </div>
               ))}
             </div>
@@ -113,9 +117,9 @@ export function DocumentsModule({
               </div>
             </div>
           ) : null}
-          <button type="submit">Dokument speichern</button>
-        </form>
-        <article className="panel self-start">
+          <AppButton type="submit" variant="primary">Dokument speichern</AppButton>
+        </AppCard>
+        <AppCard className="self-start">
           <div className="document-toolbar grid gap-4 mb-4">
             <div className="document-toolbar-copy flex justify-between items-center gap-4 [&>strong]:block [&>small]:block max-[560px]:flex-col max-[560px]:items-start max-[560px]:gap-1">
               <strong>{documents.visibleDocuments.length} {documents.visibleDocuments.length === 1 ? 'Dokument' : 'Dokumente'} sichtbar</strong>
@@ -123,12 +127,14 @@ export function DocumentsModule({
             </div>
             <div className="document-filter-grid">
               <input
+                className={appInputClassName()}
                 aria-label="Dokumente suchen"
                 placeholder="Dokumente suchen"
                 value={documents.documentSearchTerm}
                 onChange={(event) => documents.setDocumentSearchTerm(event.currentTarget.value)}
               />
               <select
+                className={appSelectClassName()}
                 aria-label="Dokumenttyp filtern"
                 value={documents.documentKindFilter}
                 onChange={(event) => documents.setDocumentKindFilter(event.currentTarget.value as DocumentFilterKind)}
@@ -140,6 +146,7 @@ export function DocumentsModule({
                 ))}
               </select>
               <select
+                className={appSelectClassName()}
                 aria-label="Dokumente sortieren"
                 value={documents.documentSort}
                 onChange={(event) => documents.setDocumentSort(event.currentTarget.value as DocumentSortOption)}
@@ -180,36 +187,39 @@ export function DocumentsModule({
                   </div>
                   <div className="w-full grid grid-cols-[repeat(2,minmax(0,1fr))] justify-items-stretch items-stretch gap-[0.6rem]">
                     {document.url ? (
-                      <a className="auth-submit w-full document-link-button inline-flex items-center justify-center no-underline order-1 max-[560px]:[grid-column:1]" href={document.url} target="_blank" rel="noreferrer">
+                      <AppButtonLink variant="primary" className="w-full inline-flex items-center justify-center no-underline order-1 max-[560px]:[grid-column:1]" href={document.url} target="_blank" rel="noreferrer">
                         Datei öffnen
-                      </a>
+                      </AppButtonLink>
                     ) : null}
                     {canPreviewDocument(document) && document.url ? (
-                      <button
+                      <AppButton
                         type="button"
-                        className="auth-submit w-full order-2 max-[560px]:[grid-column:2]"
+                        variant="primary"
+                        className="w-full order-2 max-[560px]:[grid-column:2]"
                         aria-label={`Dokument ${document.name} in Vorschau öffnen`}
                         onClick={() => documents.handleOpenDocumentPreview(document)}
                       >
                         Vorschau
-                      </button>
+                      </AppButton>
                     ) : null}
-                    <button
+                    <AppButton
                       type="button"
-                      className="auth-submit w-full order-3 max-[560px]:[grid-column:1]"
+                      variant="primary"
+                      className="w-full order-3 max-[560px]:[grid-column:1]"
                       aria-label={`Dokument ${document.name} bearbeiten`}
                       onClick={() => documents.handleStartDocumentEdit(document)}
                     >
                       Bearbeiten
-                    </button>
-                    <button
+                    </AppButton>
+                    <AppButton
                       type="button"
-                      className="secondary-action document-delete-button w-full order-4 py-[0.65rem] px-[0.9rem]"
+                      variant="danger"
+                      className="w-full order-4 py-[0.65rem] px-[0.9rem]"
                       aria-label={`Dokument ${document.name} löschen`}
                       onClick={() => void documents.handleDeleteDocument(document)}
                     >
                       Löschen
-                    </button>
+                    </AppButton>
                   </div>
                 </li>
               ))
@@ -219,7 +229,7 @@ export function DocumentsModule({
               </li>
             )}
           </ul>
-        </article>
+        </AppCard>
       </div>
 
       {documents.documentEditState ? (
@@ -244,22 +254,22 @@ export function DocumentsModule({
           id="delete-document-title"
           actions={(
             <>
-              <button
+              <AppButton
                 type="button"
-                className="secondary-action"
+                variant="secondary"
                 disabled={documents.documentDeletionBusy}
                 onClick={() => documents.setPendingDocumentDeletion(null)}
               >
                 Abbrechen
-              </button>
-              <button
+              </AppButton>
+              <AppButton
                 type="button"
-                className="secondary-action danger-action"
+                variant="danger"
                 disabled={documents.documentDeletionBusy}
                 onClick={() => void documents.handleConfirmDocumentDeletion()}
               >
                 {documents.documentDeletionBusy ? 'Lösche…' : 'Löschen'}
-              </button>
+              </AppButton>
             </>
           )}
         >

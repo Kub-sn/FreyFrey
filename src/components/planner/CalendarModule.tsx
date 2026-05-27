@@ -11,6 +11,9 @@ import type { PlannerState } from '../../lib/planner-data';
 import { getCalendarMetaParts } from './planner-shell-utils';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { validateRequiredFields, type FieldErrors } from '../../lib/form-validation';
+import { AppButton } from '../ui/AppButton';
+import { AppCard } from '../ui/AppCard';
+import { appInputClassName } from '../ui/AppField';
 import { FieldError } from './FieldError';
 
 type CalendarMonth = ReturnType<typeof buildCalendarMonth>;
@@ -68,9 +71,10 @@ export function CalendarModule({
   return (
     <section className={activeTab === 'calendar' ? 'module is-visible' : 'module'}>
       <div className="module-layout calendar-module-layout">
-        <form className="panel form-panel" onSubmit={handleSubmit} noValidate>
+        <AppCard as="form" className="form-panel" onSubmit={handleSubmit} noValidate>
           <h4>Termin anlegen</h4>
           <input
+            className={appInputClassName()}
             name="title"
             placeholder="Titel"
             aria-invalid={errors.title ? 'true' : undefined}
@@ -79,6 +83,7 @@ export function CalendarModule({
           />
           <FieldError fieldName="title" message={errors.title} />
           <input
+            className={appInputClassName()}
             name="date"
             type="date"
             aria-label="Datum"
@@ -88,6 +93,7 @@ export function CalendarModule({
           />
           <FieldError fieldName="date" message={errors.date} />
           <input
+            className={appInputClassName()}
             name="time"
             type="time"
             aria-label="Uhrzeit"
@@ -97,6 +103,7 @@ export function CalendarModule({
           />
           <FieldError fieldName="time" message={errors.time} />
           <input
+            className={appInputClassName()}
             name="place"
             placeholder="Ort"
             aria-invalid={errors.place ? 'true' : undefined}
@@ -104,12 +111,12 @@ export function CalendarModule({
             onInput={() => clearFieldError('place')}
           />
           <FieldError fieldName="place" message={errors.place} />
-            <small className="leading-[1.5] max-[560px]:text-[#4c564d]">
+          <small className="leading-[1.5] max-[560px]:text-[#4c564d]">
             Monatsansicht und Tagesdetails aktualisieren sich sofort nach dem Speichern.
           </small>
-          <button type="submit">Termin speichern</button>
-        </form>
-        <article className="panel self-start p-5">
+          <AppButton type="submit" variant="primary">Termin speichern</AppButton>
+        </AppCard>
+        <AppCard className="self-start p-5">
           <div className="grid gap-4">
             <div className="flex items-center justify-between gap-4 max-[560px]:flex-col max-[560px]:items-start">
               <div>
@@ -117,25 +124,27 @@ export function CalendarModule({
                 <small>{visibleMonthEventCount} Termine im sichtbaren Monat</small>
               </div>
               <div className="flex items-center gap-[0.6rem] max-[560px]:flex-col max-[560px]:items-start">
-                <button type="button" className="secondary-action" onClick={onShowToday}>
+                <AppButton type="button" variant="secondary" onClick={onShowToday}>
                   Heute
-                </button>
-                <button
+                </AppButton>
+                <AppButton
                   type="button"
-                  className="secondary-action"
+                  variant="secondary"
+                  size="icon"
                   aria-label="Vorheriger Monat"
                   onClick={() => onChangeCalendarMonth(-1)}
                 >
                   ←
-                </button>
-                <button
+                </AppButton>
+                <AppButton
                   type="button"
-                  className="secondary-action"
+                  variant="secondary"
+                  size="icon"
                   aria-label="Nächster Monat"
                   onClick={() => onChangeCalendarMonth(1)}
                 >
                   →
-                </button>
+                </AppButton>
               </div>
             </div>
 
@@ -228,7 +237,7 @@ export function CalendarModule({
               ) : null}
             </div>
           </div>
-        </article>
+        </AppCard>
       </div>
     </section>
   );

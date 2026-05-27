@@ -2,6 +2,8 @@ import type { PlannerState } from '../../lib/planner-data';
 import { formatCalendarEntrySchedule } from '../../lib/calendar-view';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { formatTaskDueLabel, isTaskDone } from '../../lib/tasks';
+import { AppButton } from '../ui/AppButton';
+import { AppCard } from '../ui/AppCard';
 
 export function PlannerOverview({
   openTasks,
@@ -19,7 +21,7 @@ export function PlannerOverview({
 
   return (
     <section className={activeTab === 'overview' ? 'overview-stack is-visible' : 'overview-stack'}>
-      <article className="panel overview-row-panel">
+      <AppCard className="overview-row-panel">
         <div className="panel-heading">
           <h3>To-dos</h3>
           <span className="chip alt">{openTasks} offen</span>
@@ -29,13 +31,13 @@ export function PlannerOverview({
             <ul className="task-list [&>li]:py-[0.7rem]">
               {visibleTasks.map((task) => (
                 <li key={task.id}>
-                  <button
+                  <AppButton
                     type="button"
-                    className="ghost-toggle"
+                    variant="ghost"
                     onClick={() => void onToggleTask(task.id, true)}
                   >
                     Erledigen
-                  </button>
+                  </AppButton>
                   <div>
                     <strong>{task.title}</strong>
                     <small>
@@ -52,9 +54,9 @@ export function PlannerOverview({
             </div>
           )}
         </div>
-      </article>
+      </AppCard>
 
-      <article className="panel overview-row-panel">
+      <AppCard className="overview-row-panel">
         <div className="panel-heading">
           <h3>Kalender</h3>
           <span className="chip">{plannerState.calendar.length} Termine</span>
@@ -79,7 +81,7 @@ export function PlannerOverview({
             </div>
           )}
         </div>
-      </article>
+      </AppCard>
     </section>
   );
 }

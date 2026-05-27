@@ -1,5 +1,7 @@
 import type { FormEvent } from 'react';
 import type { NoteDialogState } from '../../app/types';
+import { AppButton } from '../ui/AppButton';
+import { appInputClassName, appTextareaClassName } from '../ui/AppField';
 import { ModalDialog } from './ModalDialog';
 
 export function NoteDialog({
@@ -23,32 +25,34 @@ export function NoteDialog({
       className="w-[min(760px,100%)]"
       actions={note.isEditing ? (
         <div key="editing-actions" className="flex flex-wrap gap-3">
-          <button type="button" className="secondary-action" onClick={onClose}>
+          <AppButton type="button" variant="secondary" onClick={onClose}>
             Abbrechen
-          </button>
-          <button type="submit" form="note-edit-form" className="auth-submit">
+          </AppButton>
+          <AppButton type="submit" form="note-edit-form" variant="primary">
             Änderungen speichern
-          </button>
+          </AppButton>
         </div>
       ) : (
         <div key="view-actions" className="flex flex-wrap gap-3">
-          <button type="button" className="secondary-action" onClick={onClose}>
+          <AppButton type="button" variant="secondary" onClick={onClose}>
             Abbrechen
-          </button>
-          <button type="button" className="secondary-action" onClick={onEdit}>
+          </AppButton>
+          <AppButton type="button" variant="secondary" onClick={onEdit}>
             Bearbeiten
-          </button>
+          </AppButton>
         </div>
       )}
     >
       {note.isEditing ? (
         <form id="note-edit-form" className="dialog-form form-panel grid min-w-0 gap-[0.8rem]" onSubmit={(event) => void onSave(event)}>
             <input
+              className={appInputClassName()}
               aria-label="Notiztitel bearbeiten"
               value={note.title}
               onChange={(event) => onFieldChange('title', event.currentTarget.value)}
             />
             <textarea
+              className={appTextareaClassName()}
               aria-label="Notizinhalt bearbeiten"
               rows={12}
               value={note.text}

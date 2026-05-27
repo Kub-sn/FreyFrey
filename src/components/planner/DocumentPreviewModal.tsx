@@ -1,4 +1,5 @@
 import type { DocumentPreviewState } from '../../app/types';
+import { AppButton, AppButtonLink } from '../ui/AppButton';
 import { ModalDialog } from './ModalDialog';
 
 export function DocumentPreviewModal({
@@ -16,12 +17,12 @@ export function DocumentPreviewModal({
       className="w-[min(980px,100%)]"
       actions={(
         <>
-          <button type="button" className="secondary-action" onClick={onClose}>
+          <AppButton type="button" variant="secondary" onClick={onClose}>
             Abbrechen
-          </button>
-          <a className="secondary-action no-underline" href={documentPreviewState.url} target="_blank" rel="noreferrer">
+          </AppButton>
+          <AppButtonLink variant="secondary" className="no-underline" href={documentPreviewState.url} target="_blank" rel="noreferrer">
             In neuem Tab öffnen
-          </a>
+          </AppButtonLink>
         </>
       )}
     >

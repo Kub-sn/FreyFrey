@@ -2,6 +2,9 @@ import { useState, type FormEvent } from 'react';
 import type { PlannerState } from '../../lib/planner-data';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { validateRequiredFields, type FieldErrors } from '../../lib/form-validation';
+import { AppButton } from '../ui/AppButton';
+import { AppCard } from '../ui/AppCard';
+import { appInputClassName } from '../ui/AppField';
 import { FieldError } from './FieldError';
 
 export function MealsModule({
@@ -41,9 +44,10 @@ export function MealsModule({
   return (
     <section className={activeTab === 'meals' ? 'module is-visible' : 'module'}>
       <div className="module-layout">
-        <form className="panel form-panel" onSubmit={handleSubmit} noValidate>
+        <AppCard as="form" className="form-panel" onSubmit={handleSubmit} noValidate>
           <h4>Gericht eintragen</h4>
           <input
+            className={appInputClassName()}
             name="day"
             placeholder="Wochentag"
             aria-invalid={errors.day ? 'true' : undefined}
@@ -52,6 +56,7 @@ export function MealsModule({
           />
           <FieldError fieldName="day" message={errors.day} />
           <input
+            className={appInputClassName()}
             name="meal"
             placeholder="Gericht"
             aria-invalid={errors.meal ? 'true' : undefined}
@@ -59,19 +64,19 @@ export function MealsModule({
             onInput={() => clearFieldError('meal')}
           />
           <FieldError fieldName="meal" message={errors.meal} />
-          <button type="submit">Gericht speichern</button>
-        </form>
-        <article className="panel self-start">
+          <AppButton type="submit" variant="primary">Gericht speichern</AppButton>
+        </AppCard>
+        <AppCard className="self-start">
           <ul className="meal-list">
             {meals.length > 0 ? meals.map((meal) => (
               <li key={meal.id} className={meal.prepared ? 'done' : ''}>
-                <button
+                <AppButton
                   type="button"
-                  className="ghost-toggle"
+                  variant="ghost"
                   onClick={() => void onToggleMealPrepared(meal.id, !meal.prepared)}
                 >
                   {meal.prepared ? 'Bereit' : 'Planen'}
-                </button>
+                </AppButton>
                 <div>
                   <strong>{meal.day}</strong>
                   <small>{meal.meal}</small>
@@ -80,7 +85,7 @@ export function MealsModule({
             )) : null}
             {meals.length === 0 ? <li className="py-3 text-[rgba(24,52,47,0.55)] italic border-none list-none">Keine Gerichte vorhanden</li> : null}
           </ul>
-        </article>
+        </AppCard>
       </div>
     </section>
   );

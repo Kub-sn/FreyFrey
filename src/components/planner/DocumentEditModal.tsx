@@ -1,5 +1,7 @@
 import type { FormEvent } from 'react';
 import type { DocumentEditState } from '../../app/types';
+import { AppButton } from '../ui/AppButton';
+import { appInputClassName } from '../ui/AppField';
 import { ModalDialog } from './ModalDialog';
 
 export function DocumentEditModal({
@@ -20,17 +22,18 @@ export function DocumentEditModal({
       eyebrow="Dokument bearbeiten"
       actions={(
         <div className="flex flex-wrap gap-3">
-          <button type="button" className="secondary-action" onClick={onClose}>
+          <AppButton type="button" variant="secondary" onClick={onClose}>
             Abbrechen
-          </button>
-          <button type="submit" form="document-edit-form" className="auth-submit">
+          </AppButton>
+          <AppButton type="submit" form="document-edit-form" variant="primary">
             Änderungen speichern
-          </button>
+          </AppButton>
         </div>
       )}
     >
       <form id="document-edit-form" className="dialog-form form-panel grid min-w-0 gap-[0.8rem]" onSubmit={(event) => void onSave(event)}>
           <input
+            className={appInputClassName()}
             aria-label="Dokumentname bearbeiten"
             value={documentEditState.name}
             onChange={(event) => onFieldChange('name', event.currentTarget.value)}

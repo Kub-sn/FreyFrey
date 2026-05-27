@@ -18,6 +18,7 @@ import { useAdminDirectory } from '../../hooks/useAdminDirectory';
 import { useCrudModules } from '../../hooks/useCrudModules';
 import { useDeletionManager } from '../../hooks/useDeletionManager';
 import { isTaskDone } from '../../lib/tasks';
+import { AppButton } from '../ui/AppButton';
 import { AccountCard } from './AccountCard';
 import { CalendarModule } from './CalendarModule';
 import { ConfirmationDialog } from './ConfirmationDialog';
@@ -248,22 +249,22 @@ export default function PlannerShell({
             id="delete-note-title"
             actions={(
               <>
-                <button
+                <AppButton
                   type="button"
-                  className="secondary-action"
+                  variant="secondary"
                   disabled={notes.noteDeletionBusy}
                   onClick={() => notes.setPendingNoteDeletion(null)}
                 >
                   Abbrechen
-                </button>
-                <button
+                </AppButton>
+                <AppButton
                   type="button"
-                  className="secondary-action danger-action"
+                  variant="danger"
                   disabled={notes.noteDeletionBusy}
                   onClick={() => void notes.handleConfirmNoteDeletion()}
                 >
                   {notes.noteDeletionBusy ? 'Lösche…' : 'Löschen'}
-                </button>
+                </AppButton>
               </>
             )}
           >
@@ -331,22 +332,22 @@ export default function PlannerShell({
             id="delete-account-title"
             actions={(
               <>
-                <button
+                <AppButton
                   type="button"
-                  className="secondary-action"
+                  variant="secondary"
                   disabled={deletions.deleteAccountBusy}
                   onClick={() => deletions.setIsDeleteAccountDialogOpen(false)}
                 >
                   Abbrechen
-                </button>
-                <button
+                </AppButton>
+                <AppButton
                   type="button"
-                  className="secondary-action danger-action"
+                  variant="danger"
                   disabled={deletions.deleteAccountBusy}
                   onClick={() => void deletions.handleConfirmAccountDeletion()}
                 >
                   {deletions.deleteAccountBusy ? 'Wird gelöscht…' : 'Ja, Account löschen'}
-                </button>
+                </AppButton>
               </>
             )}
           >
@@ -362,22 +363,22 @@ export default function PlannerShell({
             id="delete-member-title"
             actions={(
               <>
-                <button
+                <AppButton
                   type="button"
-                  className="secondary-action"
+                  variant="secondary"
                   disabled={deletions.memberDeletionBusy}
                   onClick={() => deletions.setPendingMemberDeletion(null)}
                 >
                   Abbrechen
-                </button>
-                <button
+                </AppButton>
+                <AppButton
                   type="button"
-                  className="secondary-action danger-action"
+                  variant="danger"
                   disabled={deletions.memberDeletionBusy}
                   onClick={() => void deletions.handleConfirmMemberDeletion()}
                 >
                   {deletions.memberDeletionBusy ? 'Wird gelöscht…' : 'Mitglied endgültig löschen'}
-                </button>
+                </AppButton>
               </>
             )}
           >
@@ -393,22 +394,22 @@ export default function PlannerShell({
             id="delete-family-title"
             actions={(
               <>
-                <button
+                <AppButton
                   type="button"
-                  className="secondary-action"
+                  variant="secondary"
                   disabled={deletions.familyDeletionBusy}
                   onClick={() => deletions.setPendingFamilyDeletion(null)}
                 >
                   Abbrechen
-                </button>
-                <button
+                </AppButton>
+                <AppButton
                   type="button"
-                  className="secondary-action danger-action"
+                  variant="danger"
                   disabled={deletions.familyDeletionBusy}
                   onClick={() => void deletions.handleConfirmFamilyDeletion()}
                 >
                   {deletions.familyDeletionBusy ? 'Wird gelöscht…' : 'Familie endgültig löschen'}
-                </button>
+                </AppButton>
               </>
             )}
           >
@@ -425,13 +426,14 @@ export default function PlannerShell({
 
         {!authDriven ? (
           <section className="module flex justify-end is-visible">
-            <button
+            <AppButton
               type="button"
-              className="reset-button"
+              variant="danger"
+              className="max-[560px]:w-full"
               onClick={() => setPlannerState(defaultPlannerState)}
             >
               Lokale Daten zurücksetzen
-            </button>
+            </AppButton>
           </section>
         ) : null}
 

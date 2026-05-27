@@ -3,6 +3,9 @@ import { useState, type FormEvent } from 'react';
 import type { PlannerState } from '../../lib/planner-data';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { validateRequiredFields, type FieldErrors } from '../../lib/form-validation';
+import { AppButton } from '../ui/AppButton';
+import { AppCard } from '../ui/AppCard';
+import { appInputClassName, appTextareaClassName } from '../ui/AppField';
 import { FieldError } from './FieldError';
 
 export function NotesModule({
@@ -41,10 +44,11 @@ export function NotesModule({
   return (
     <section className={activeTab === 'notes' ? 'module is-visible' : 'module'}>
       <div className="module-layout grid-cols-[minmax(320px,440px)_minmax(0,1fr)]">
-        <form className="panel form-panel min-w-0" onSubmit={handleSubmit} noValidate>
+        <AppCard as="form" className="form-panel min-w-0" onSubmit={handleSubmit} noValidate>
           <h4>Neue Notiz</h4>
-          <input name="title" placeholder="Titel" />
+          <input className={appInputClassName()} name="title" placeholder="Titel" />
           <textarea
+            className={appTextareaClassName()}
             name="text"
             placeholder="Inhalt"
             rows={5}
@@ -53,9 +57,9 @@ export function NotesModule({
             onInput={() => clearFieldError('text')}
           />
           <FieldError fieldName="text" message={errors.text} />
-          <button type="submit">Notiz speichern</button>
-        </form>
-        <article className="panel self-start">
+          <AppButton type="submit" variant="primary">Notiz speichern</AppButton>
+        </AppCard>
+        <AppCard className="self-start">
           <div className="columns-2 gap-x-[1.15rem] max-[720px]:columns-1">
             {notes.length > 0 ? notes.map((note) => (
               <article key={note.id} className="note-card break-inside-avoid relative grid mb-4 p-0 w-full max-w-full max-h-[15rem] overflow-hidden rounded-[24px] bg-[rgba(255,248,239,0.92)]">
@@ -80,7 +84,7 @@ export function NotesModule({
             )) : null}
             {notes.length === 0 ? <p className="py-3 text-[rgba(24,52,47,0.55)] italic border-none list-none">Keine Notizen vorhanden</p> : null}
           </div>
-        </article>
+        </AppCard>
       </div>
     </section>
   );

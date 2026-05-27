@@ -10,6 +10,9 @@ import {
   getTaskStatusLabel,
   getTaskSubtaskProgress,
 } from '../../lib/tasks';
+import { AppButton } from '../ui/AppButton';
+import { AppCard } from '../ui/AppCard';
+import { appInputClassName, appSelectClassName } from '../ui/AppField';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { FieldError } from './FieldError';
 import { ModalDialog } from './ModalDialog';
@@ -270,14 +273,15 @@ export function TasksModule({
     <section className={activeTab === 'tasks' ? 'module is-visible' : 'module'}>
       <div className="grid content-start gap-4 max-[720px]:gap-3">
         <div className="flex items-start">
-          <button
+          <AppButton
             type="button"
-            className="secondary-action inline-flex items-center gap-2.5 rounded-[18px] border-[rgba(25,98,77,0.18)] bg-[rgba(255,250,244,0.96)] px-4 py-3 font-semibold text-[#19624d] shadow-[0_16px_32px_rgba(24,52,47,0.08)] hover:bg-[rgba(243,249,246,0.98)]"
+            variant="secondary"
+            className="inline-flex items-center gap-2.5 border-[rgba(25,98,77,0.18)] bg-[rgba(255,250,244,0.96)] text-[#19624d] shadow-[0_16px_32px_rgba(24,52,47,0.08)] hover:bg-[rgba(243,249,246,0.98)]"
             onClick={openCreateDialog}
           >
             <Plus aria-hidden="true" size={18} strokeWidth={2.4} />
             <span>Todo hinzufügen</span>
-          </button>
+          </AppButton>
         </div>
         <div className="grid gap-4 max-[720px]:gap-3 xl:grid-cols-3 xl:items-stretch">
           {columns.map((column) => {
@@ -286,10 +290,11 @@ export function TasksModule({
 
             return (
               <div key={column.status} className="grid min-w-0 xl:h-full">
-                <article
+                <AppCard
+                  as="article"
                   data-drop-active={isColumnDropActive ? 'true' : undefined}
                   className={[
-                    `panel relative min-w-0 border transition-all duration-200 max-[720px]:p-4 xl:flex xl:h-full xl:min-h-[26rem] xl:flex-col ${column.panelClassName}`,
+                    `relative min-w-0 transition-all duration-200 max-[720px]:p-4 xl:flex xl:h-full xl:min-h-[26rem] xl:flex-col ${column.panelClassName}`,
                     openMenuTask?.status === column.status ? 'z-20' : 'z-0',
                     isColumnDropActive
                       ? '-translate-y-1 ring-2 ring-[rgba(25,98,77,0.2)]'
@@ -320,7 +325,8 @@ export function TasksModule({
                     const isDragging = draggedTaskId === task.id;
 
                     return (
-                      <article
+                      <AppCard
+                        as="article"
                         key={task.id}
                         draggable
                         onDragStart={(event) => handleCardDragStart(event, task.id)}
@@ -335,7 +341,7 @@ export function TasksModule({
                           setDropTarget(null);
                         }}
                         className={[
-                          'relative grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.98)] p-4 shadow-[0_18px_34px_rgba(35,27,17,0.06)] transition-all duration-150 max-[720px]:gap-2 max-[720px]:rounded-[20px] max-[720px]:p-3',
+                          'relative grid gap-3 border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.98)] p-4 shadow-[0_18px_34px_rgba(35,27,17,0.06)] transition-all duration-150 max-[720px]:gap-2 max-[720px]:rounded-[20px] max-[720px]:p-3',
                           isDragging ? 'scale-[0.985] opacity-70' : 'opacity-100',
                           menuTaskId === task.id ? 'z-30' : 'z-0',
                         ].join(' ')}
@@ -350,9 +356,11 @@ export function TasksModule({
                               {formatTaskDueLabel(task.due)}
                             </span>
                             <div className="relative">
-                              <button
+                              <AppButton
                                 type="button"
-                                className="inline-flex size-9 items-center justify-center rounded-full border border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.94)] text-[1.25rem] leading-none text-[#18342f]"
+                                variant="secondary"
+                                size="icon"
+                                className="inline-flex size-9 items-center justify-center border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.94)] text-[1.25rem] leading-none text-[#18342f]"
                                 aria-label={`Aufgabe ${task.title} Aktionen`}
                                 onClick={(event) => {
                                   event.stopPropagation();
@@ -360,36 +368,39 @@ export function TasksModule({
                                 }}
                               >
                                 ⋯
-                              </button>
+                              </AppButton>
                               {menuTaskId === task.id ? (
                                 <div className="absolute right-0 top-11 z-40 grid min-w-[12rem] gap-1 rounded-[18px] border border-[rgba(24,52,47,0.12)] bg-[rgba(255,250,244,0.98)] p-2 shadow-[0_18px_36px_rgba(24,52,47,0.14)]">
-                                  <button
+                                  <AppButton
                                     type="button"
-                                    className="secondary-action justify-start text-left"
+                                    variant="secondary"
+                                    className="justify-start text-left"
                                     onClick={() => {
                                       setStatusDialogTaskId(task.id);
                                       setMenuTaskId(null);
                                     }}
                                   >
                                     Status ändern
-                                  </button>
-                                  <button
+                                  </AppButton>
+                                  <AppButton
                                     type="button"
-                                    className="secondary-action justify-start text-left"
+                                    variant="secondary"
+                                    className="justify-start text-left"
                                     onClick={() => openEditDialog(task)}
                                   >
                                     Bearbeiten
-                                  </button>
-                                  <button
+                                  </AppButton>
+                                  <AppButton
                                     type="button"
-                                    className="secondary-action justify-start text-left text-[#8f3415]"
+                                    variant="danger"
+                                    className="justify-start text-left"
                                     onClick={() => {
                                       setPendingDeleteTaskId(task.id);
                                       setMenuTaskId(null);
                                     }}
                                   >
                                     Löschen
-                                  </button>
+                                  </AppButton>
                                 </div>
                               ) : null}
                             </div>
@@ -418,7 +429,7 @@ export function TasksModule({
                             ))}
                           </div>
                         ) : null}
-                      </article>
+                      </AppCard>
                     );
                   }) : (
                     <div className="grid gap-[0.25rem] rounded-[20px] border border-dashed border-[rgba(24,52,47,0.16)] bg-[rgba(255,255,255,0.5)] p-4 text-[rgba(24,52,47,0.62)]">
@@ -427,7 +438,7 @@ export function TasksModule({
                     </div>
                   )}
                   </div>
-                </article>
+                </AppCard>
               </div>
             );
           })}
@@ -441,13 +452,14 @@ export function TasksModule({
             eyebrow={taskDialogState.mode === 'edit' && editingTask ? editingTask.title : undefined}
           className="w-[min(640px,100%)]"
           actions={(
-              <button type="button" className="secondary-action" onClick={closeTaskDialog}>
+              <AppButton type="button" variant="secondary" onClick={closeTaskDialog}>
               Abbrechen
-            </button>
+            </AppButton>
           )}
         >
           <form className="dialog-form form-panel grid gap-4" onSubmit={(event) => void handleSubmit(event)} noValidate>
             <input
+              className={appInputClassName()}
               name="title"
               placeholder="Aufgabe"
                 defaultValue={editingTask?.title ?? ''}
@@ -457,6 +469,7 @@ export function TasksModule({
             />
             <FieldError fieldName="title" message={errors.title} />
             <select
+              className={appSelectClassName()}
               name="owner"
               aria-label="Verantwortlich"
               defaultValue={editingTask?.owner ?? ownerDefaultValue}
@@ -472,6 +485,7 @@ export function TasksModule({
             </select>
             <FieldError fieldName="owner" message={errors.owner} />
             <input
+              className={appInputClassName()}
               name="due"
               type="date"
               aria-label="Fälligkeitsdatum"
@@ -484,27 +498,29 @@ export function TasksModule({
             <div className="grid gap-3 rounded-[22px] border border-[rgba(24,52,47,0.1)] bg-[rgba(248,243,235,0.62)] p-4">
               <div className="flex items-center justify-between gap-3 max-[560px]:flex-col max-[560px]:items-start">
                 <strong className="text-[0.96rem] text-[#18342f]">Subtasks</strong>
-                <button type="button" className="secondary-action" onClick={handleAddDraftSubtask}>
+                <AppButton type="button" variant="secondary" onClick={handleAddDraftSubtask}>
                   Subtask hinzufügen
-                </button>
+                </AppButton>
               </div>
               {draftSubtasks.length > 0 ? (
                 <div className="grid gap-2">
                   {draftSubtasks.map((subtask, index) => (
                     <div key={subtask.id} className="flex items-center gap-2 max-[560px]:items-stretch">
                       <input
+                        className={appInputClassName()}
                         value={subtask.title}
                         onChange={(event) => handleDraftSubtaskChange(subtask.id, event.currentTarget.value)}
                         placeholder={`Subtask ${index + 1}`}
                         aria-label={`Subtask ${index + 1}`}
                       />
-                      <button
+                      <AppButton
                         type="button"
-                        className="ghost-toggle whitespace-nowrap"
+                        variant="ghost"
+                        className="whitespace-nowrap"
                         onClick={() => handleRemoveDraftSubtask(subtask.id)}
                       >
                         Entfernen
-                      </button>
+                      </AppButton>
                     </div>
                   ))}
                 </div>
@@ -512,7 +528,7 @@ export function TasksModule({
                 <p className="m-0 text-[0.9rem] text-[rgba(24,52,47,0.62)]">Noch keine Subtasks ergänzt.</p>
               )}
             </div>
-            <button type="submit" className="auth-submit">{taskDialogState.mode === 'edit' ? 'Änderungen speichern' : 'Aufgabe speichern'}</button>
+            <AppButton type="submit" variant="primary">{taskDialogState.mode === 'edit' ? 'Änderungen speichern' : 'Aufgabe speichern'}</AppButton>
           </form>
         </ModalDialog>
       ) : null}
@@ -523,12 +539,12 @@ export function TasksModule({
           heading="Löschen?"
           actions={(
             <>
-              <button type="button" className="secondary-action" onClick={() => setPendingDeleteTaskId(null)}>
+              <AppButton type="button" variant="secondary" onClick={() => setPendingDeleteTaskId(null)}>
                 Abbrechen
-              </button>
-              <button type="button" className="secondary-action danger-action" onClick={() => void handleConfirmDelete()}>
+              </AppButton>
+              <AppButton type="button" variant="danger" onClick={() => void handleConfirmDelete()}>
                 Löschen
-              </button>
+              </AppButton>
             </>
           )}
         >
@@ -544,9 +560,9 @@ export function TasksModule({
           title="Status ändern"
           eyebrow={statusDialogTask.title}
           actions={(
-            <button type="button" className="secondary-action" onClick={() => setStatusDialogTaskId(null)}>
+            <AppButton type="button" variant="secondary" onClick={() => setStatusDialogTaskId(null)}>
               Abbrechen
-            </button>
+            </AppButton>
           )}
         >
           <div className="grid gap-3">
@@ -555,9 +571,10 @@ export function TasksModule({
             </p>
             <div className="grid gap-2">
               {columns.map((target) => (
-                <button
+                <AppButton
                   key={target.status}
                   type="button"
+                  variant="secondary"
                   className={[
                     'flex items-center justify-between gap-3 rounded-[18px] border px-4 py-3 text-left transition',
                     target.status === statusDialogTask.status
@@ -568,7 +585,7 @@ export function TasksModule({
                 >
                   <strong>{target.title}</strong>
                   <span className="chip alt">{getTaskStatusLabel(target.status)}</span>
-                </button>
+                </AppButton>
               ))}
             </div>
           </div>

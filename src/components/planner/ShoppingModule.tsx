@@ -3,6 +3,9 @@ import { useMemo, useState } from 'react';
 import type { PlannerState, ShoppingList, ShoppingListItem } from '../../lib/planner-data';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { nextStringId } from '../../lib/id';
+import { AppButton } from '../ui/AppButton';
+import { AppCard } from '../ui/AppCard';
+import { appInputClassName } from '../ui/AppField';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { ModalDialog } from './ModalDialog';
 
@@ -193,19 +196,20 @@ export function ShoppingModule({
     <section className={activeTab === 'shopping' ? 'module is-visible' : 'module'}>
       <div className="grid content-start gap-4 max-[720px]:gap-3">
         <div className="flex items-start">
-          <button
+          <AppButton
             type="button"
-            className="secondary-action inline-flex items-center gap-2.5 rounded-[18px] border-[rgba(25,98,77,0.18)] bg-[rgba(255,250,244,0.96)] px-4 py-3 font-semibold text-[#19624d] shadow-[0_16px_32px_rgba(24,52,47,0.08)] hover:bg-[rgba(243,249,246,0.98)]"
+            variant="secondary"
+            className="inline-flex items-center gap-2.5 border-[rgba(25,98,77,0.18)] bg-[rgba(255,250,244,0.96)] text-[#19624d] shadow-[0_16px_32px_rgba(24,52,47,0.08)] hover:bg-[rgba(243,249,246,0.98)]"
             onClick={openCreateDialog}
           >
             <Plus aria-hidden="true" size={18} strokeWidth={2.4} />
             <span>Liste erstellen</span>
-          </button>
+          </AppButton>
         </div>
 
         <div className="grid gap-4 max-[720px]:gap-3 md:grid-cols-2 xl:grid-cols-3">
           {lists.map((list) => (
-            <article
+            <AppCard
               key={list.id}
               className="panel flex min-h-[15rem] flex-col gap-4 border border-[rgba(24,52,47,0.1)] bg-[linear-gradient(180deg,rgba(255,252,246,0.98),rgba(247,241,231,0.96))]"
             >
@@ -253,34 +257,36 @@ export function ShoppingModule({
               </button>
 
               <div className="mt-auto flex flex-wrap justify-end gap-2">
-                <button
+                <AppButton
                   type="button"
-                  className="secondary-action inline-flex items-center gap-2"
+                  variant="secondary"
+                  className="inline-flex items-center gap-2"
                   onClick={() => openEditDialog(list)}
                 >
                   <Pencil aria-hidden="true" size={16} />
                   Bearbeiten
-                </button>
-                <button
+                </AppButton>
+                <AppButton
                   type="button"
-                  className="secondary-action danger-action inline-flex items-center gap-2"
+                  variant="danger"
+                  className="inline-flex items-center gap-2"
                   onClick={() => setPendingDeleteListId(list.id)}
                 >
                   <Trash2 aria-hidden="true" size={16} />
                   Löschen
-                </button>
+                </AppButton>
               </div>
-            </article>
+            </AppCard>
           ))}
 
           {lists.length === 0 ? (
-            <article className="panel flex min-h-[15rem] flex-col items-center justify-center gap-3 border border-dashed border-[rgba(24,52,47,0.18)] bg-[rgba(255,250,244,0.78)] text-center text-[rgba(24,52,47,0.6)]">
+            <AppCard className="flex min-h-[15rem] flex-col items-center justify-center gap-3 border-dashed border-[rgba(24,52,47,0.18)] bg-[rgba(255,250,244,0.78)] text-center text-[rgba(24,52,47,0.6)]">
               <ShoppingCart aria-hidden="true" size={28} />
               <div className="grid gap-1">
                 <strong className="text-[#18342f]">Noch keine Einkaufsliste</strong>
                 <span>Erstelle eine Liste mit Datum und mehreren Artikeln.</span>
               </div>
-            </article>
+            </AppCard>
           ) : null}
         </div>
       </div>
@@ -291,9 +297,9 @@ export function ShoppingModule({
           title={openList.title}
           eyebrow={formatListDate(openList.date)}
           actions={(
-            <button type="button" className="secondary-action" onClick={() => setOpenListId(null)}>
+            <AppButton type="button" variant="secondary" onClick={() => setOpenListId(null)}>
               Schließen
-            </button>
+            </AppButton>
           )}
         >
           <div className="grid gap-3">
@@ -330,12 +336,12 @@ export function ShoppingModule({
           className="w-[min(760px,100%)]"
           actions={(
             <>
-              <button type="button" className="secondary-action" onClick={resetEditor}>
+              <AppButton type="button" variant="secondary" onClick={resetEditor}>
                 Abbrechen
-              </button>
-              <button type="button" onClick={() => void handleSaveList()}>
+              </AppButton>
+              <AppButton type="button" variant="primary" onClick={() => void handleSaveList()}>
                 {editorState.mode === 'edit' ? 'Liste speichern' : 'Liste anlegen'}
-              </button>
+              </AppButton>
             </>
           )}
         >
@@ -344,6 +350,7 @@ export function ShoppingModule({
               <label className="grid gap-2">
                 <span className="text-[0.82rem] font-semibold uppercase tracking-[0.08em] text-[rgba(24,52,47,0.62)]">Listenname</span>
                 <input
+                  className={appInputClassName()}
                   value={draftList.title}
                   onChange={(event) => updateDraftField('title', event.currentTarget.value)}
                   placeholder="z. B. Wocheneinkauf"
@@ -353,6 +360,7 @@ export function ShoppingModule({
               <label className="grid gap-2">
                 <span className="text-[0.82rem] font-semibold uppercase tracking-[0.08em] text-[rgba(24,52,47,0.62)]">Datum</span>
                 <input
+                  className={appInputClassName()}
                   type="date"
                   value={draftList.date}
                   onChange={(event) => updateDraftField('date', event.currentTarget.value)}
@@ -363,10 +371,10 @@ export function ShoppingModule({
             <div className="grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.1)] bg-[rgba(255,255,255,0.62)] p-4">
               <div className="flex items-center justify-between gap-3">
                 <h4 className="m-0 text-[1.05rem] font-semibold text-[#18342f]">Artikel</h4>
-                <button type="button" className="secondary-action inline-flex items-center gap-2" onClick={addDraftItem}>
+                <AppButton type="button" variant="secondary" className="inline-flex items-center gap-2" onClick={addDraftItem}>
                   <Plus aria-hidden="true" size={16} />
                   Weiteren Artikel
-                </button>
+                </AppButton>
               </div>
 
               <div className="grid gap-3">
@@ -374,19 +382,20 @@ export function ShoppingModule({
                   <div key={item.id} className="grid gap-3 rounded-[20px] border border-[rgba(24,52,47,0.08)] bg-[rgba(255,250,244,0.88)] p-4">
                     <div className="flex items-center justify-between gap-3">
                       <strong className="text-[#18342f]">Artikel {index + 1}</strong>
-                      <button
+                      <AppButton
                         type="button"
-                        className="secondary-action danger-action"
+                        variant="danger"
                         onClick={() => removeDraftItem(item.id)}
                       >
                         Entfernen
-                      </button>
+                      </AppButton>
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2">
                       <label className="grid gap-2">
                         <span className="text-[0.8rem] text-[rgba(24,52,47,0.62)]">Artikel</span>
                         <input
+                          className={appInputClassName()}
                           value={item.name}
                           onChange={(event) => updateDraftItem(item.id, 'name', event.currentTarget.value)}
                           placeholder="Artikel"
@@ -396,6 +405,7 @@ export function ShoppingModule({
                       <label className="grid gap-2">
                         <span className="text-[0.8rem] text-[rgba(24,52,47,0.62)]">Anzahl</span>
                         <input
+                          className={appInputClassName()}
                           value={item.quantity}
                           onChange={(event) => updateDraftItem(item.id, 'quantity', event.currentTarget.value)}
                           placeholder="Anzahl"
@@ -420,12 +430,12 @@ export function ShoppingModule({
           id="delete-shopping-list-title"
           actions={(
             <>
-              <button type="button" className="secondary-action" onClick={() => setPendingDeleteListId(null)}>
+              <AppButton type="button" variant="secondary" onClick={() => setPendingDeleteListId(null)}>
                 Abbrechen
-              </button>
-              <button type="button" className="secondary-action danger-action" onClick={() => void handleConfirmDelete()}>
+              </AppButton>
+              <AppButton type="button" variant="danger" onClick={() => void handleConfirmDelete()}>
                 Löschen
-              </button>
+              </AppButton>
             </>
           )}
         >

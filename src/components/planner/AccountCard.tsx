@@ -1,5 +1,6 @@
 import type { PlannerState } from '../../lib/planner-data';
 import type { AuthState } from '../../app/types';
+import { AppButton } from '../ui/AppButton';
 import { getFamilyPermissionNote, FamilyStatusBadges } from './planner-shell-utils';
 import { MemberSwitcher } from './MemberSwitcher';
 
@@ -39,9 +40,9 @@ export function AccountCard({
         <div className="grid gap-[0.3rem]">
           <strong>{authState.profile.display_name}</strong>
           <small>{authState.profile.email}</small>
-          <button type="button" className="secondary-action" onClick={() => void onSignOut()}>
+          <AppButton type="button" variant="secondary" onClick={() => void onSignOut()}>
             Abmelden
-          </button>
+          </AppButton>
         </div>
       ) : (
         <div className="grid gap-[0.3rem]">
