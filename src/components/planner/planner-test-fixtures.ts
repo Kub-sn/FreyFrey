@@ -36,7 +36,7 @@ export const plannerFixture: PlannerState = {
     { id: 'note-1', title: 'Hinweis', text: 'Nicht vergessen.' },
   ],
   meals: [
-    { id: 'meal-1', day: 'Montag', meal: 'Nudeln', prepared: false },
+    { id: 'meal-1', date: '2026-06-02', name: 'Nudeln', recipe: 'Mit Tomatensauce.' },
   ],
   documents: [
     {

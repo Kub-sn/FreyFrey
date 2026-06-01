@@ -102,9 +102,9 @@ type NoteRow = {
 
 type MealRow = {
   id: string;
-  day: string;
-  meal: string;
-  prepared: boolean;
+  meal_date: string;
+  name: string;
+  recipe: string | null;
 };
 
 type DocumentRow = {
@@ -1297,9 +1297,10 @@ export async function fetchMeals(familyId: string): Promise<MealItem[]> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('meals')
-    .select('id, day, meal, prepared')
+    .select('id, meal_date, name, recipe')
     .eq('family_id', familyId)
-    .order('created_at', { ascending: false });
+    .order('meal_date', { ascending: true })
+    .order('created_at', { ascending: true });
 
   if (error) {
     throw error;
@@ -1307,9 +1308,9 @@ export async function fetchMeals(familyId: string): Promise<MealItem[]> {
 
   return (data as MealRow[]).map((entry) => ({
     id: entry.id,
-    day: entry.day,
-    meal: entry.meal,
-    prepared: entry.prepared,
+    date: entry.meal_date,
+    name: entry.name,
+    recipe: entry.recipe ?? '',
   }));
 }
 
@@ -1320,8 +1321,13 @@ export async function createMeal(
   const client = requireSupabase();
   const { data, error } = await client
     .from('meals')
-    .insert({ family_id: familyId, ...payload })
-    .select('id, day, meal, prepared')
+    .insert({
+      family_id: familyId,
+      meal_date: payload.date,
+      name: payload.name,
+      recipe: payload.recipe || '',
+    })
+    .select('id, meal_date, name, recipe')
     .single();
 
   if (error) {
@@ -1332,15 +1338,15 @@ export async function createMeal(
 
   return {
     id: entry.id,
-    day: entry.day,
-    meal: entry.meal,
-    prepared: entry.prepared,
+    date: entry.meal_date,
+    name: entry.name,
+    recipe: entry.recipe ?? '',
   };
 }
 
-export async function updateMealPrepared(id: string, prepared: boolean) {
+export async function deleteMeal(mealId: string) {
   const client = requireSupabase();
-  const { error } = await client.from('meals').update({ prepared }).eq('id', id);
+  const { error } = await client.from('meals').delete().eq('id', mealId);
 
   if (error) {
     throw error;

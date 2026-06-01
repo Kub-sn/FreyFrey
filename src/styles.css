@@ -279,6 +279,11 @@ button {
   animation: rise-in 600ms ease;
 }
 
+.module.meals-module.is-visible {
+  align-self: start;
+  align-content: start;
+}
+
 .overview-row-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -309,6 +314,15 @@ button {
   display: grid;
   grid-template-columns: minmax(280px, 340px) 1fr;
   gap: 1rem;
+}
+
+.module-layout.meals-module-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.module-layout.meals-module-layout > .meals-module-content {
+  min-width: 0;
+  width: 100%;
 }
 
 .document-module-layout > .panel {

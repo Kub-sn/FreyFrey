@@ -40,9 +40,9 @@ describe('applyCloudCollections', () => {
       meals: [
         {
           id: 'meal-cloud-1',
-          day: 'Freitag',
-          meal: 'Kartoffelgratin',
-          prepared: true,
+          date: '2026-06-05',
+          name: 'Kartoffelgratin',
+          recipe: 'Mit gruenem Salat servieren.',
         },
       ],
       documents: [
@@ -63,7 +63,7 @@ describe('applyCloudCollections', () => {
     expect(nextState.notes).toHaveLength(1);
     expect(nextState.notes[0]?.title).toBe('Arztunterlagen');
     expect(nextState.meals).toHaveLength(1);
-    expect(nextState.meals[0]?.meal).toBe('Kartoffelgratin');
+    expect(nextState.meals[0]?.name).toBe('Kartoffelgratin');
     expect(nextState.documents).toHaveLength(1);
     expect(nextState.documents[0]?.name).toBe('Reisepass');
   });

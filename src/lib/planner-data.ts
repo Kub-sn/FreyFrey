@@ -46,9 +46,9 @@ export type NoteItem = {
 
 export type MealItem = {
   id: string;
-  day: string;
-  meal: string;
-  prepared: boolean;
+  date: string;
+  name: string;
+  recipe: string;
 };
 
 export type DocumentItem = {

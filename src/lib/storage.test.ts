@@ -1,10 +1,16 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultPlannerState } from './planner-data';
 import { loadActiveTab, loadPlannerState, saveActiveTab } from './storage';
 
 describe('loadPlannerState', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-03T12:00:00'));
+  });
+
   afterEach(() => {
     window.localStorage.clear();
+    vi.useRealTimers();
   });
 
   it('strips legacy note categories from stored planner state', () => {
@@ -148,6 +154,32 @@ describe('loadPlannerState', () => {
             checked: false,
           },
         ],
+      },
+    ]);
+  });
+
+  it('migrates legacy meals into the new calendar meal shape', () => {
+    window.localStorage.setItem(
+      'family-planner-state-v3',
+      JSON.stringify({
+        ...defaultPlannerState,
+        meals: [
+          {
+            id: 'meal-1',
+            day: 'Dienstag',
+            meal: 'Suppe',
+            prepared: false,
+          },
+        ],
+      }),
+    );
+
+    expect(loadPlannerState().meals).toEqual([
+      {
+        id: 'meal-1',
+        date: '2026-06-02',
+        name: 'Suppe',
+        recipe: '',
       },
     ]);
   });

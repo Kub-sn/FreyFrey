@@ -80,9 +80,9 @@ create table public.notes (
 create table public.meals (
   id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
-  day text not null,
-  meal text not null,
-  prepared boolean not null default false,
+  meal_date date not null,
+  name text not null,
+  recipe text not null default '',
   created_at timestamptz not null default now()
 );
 

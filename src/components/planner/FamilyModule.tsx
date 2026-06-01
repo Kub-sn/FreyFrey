@@ -254,18 +254,22 @@ export function FamilyModule({
               {adminFamilyDirectory.length > 0 ? (
                 <>
                   <div className="flex flex-wrap gap-[0.65rem] mb-[1.2rem] max-[720px]:grid max-[720px]:justify-start max-[720px]:gap-[0.55rem]" role="tablist" aria-label="Zwischen Familien wechseln">
-                    {adminFamilyDirectory.map((family) => (
+                    {adminFamilyDirectory.map((family) => {
+                      const isSelectedFamily = selectedAdminFamily?.familyId === family.familyId;
+
+                      return (
                       <button
                         key={family.familyId}
                         type="button"
-                        className={`grid gap-[0.18rem] min-w-[10.5rem] py-[0.85rem] px-4 border border-[rgba(24,52,47,0.12)] rounded-[18px] bg-[rgba(255,252,248,0.96)] text-[#18342f] text-left shadow-[0_8px_18px_rgba(35,27,17,0.04)] transition-[transform,border-color,box-shadow,background] duration-[180ms] ease-out hover:-translate-y-px hover:border-[rgba(24,52,47,0.22)] hover:shadow-[0_12px_22px_rgba(35,27,17,0.06)] [&>strong]:block [&>strong]:[overflow-wrap:anywhere] [&>small]:block [&>small]:[overflow-wrap:anywhere] max-[720px]:w-auto max-[720px]:min-w-[min(10.5rem,100%)]${selectedAdminFamily?.familyId === family.familyId ? ' border-[rgba(24,52,47,0.26)] !bg-[rgba(232,242,238,0.96)] !shadow-[0_14px_26px_rgba(24,52,47,0.08)]' : ''}`}
-                        aria-pressed={selectedAdminFamily?.familyId === family.familyId}
+                        className={`grid gap-[0.18rem] min-w-[10.5rem] py-[0.85rem] px-4 border border-[rgba(24,52,47,0.12)] rounded-[18px] bg-[rgba(255,252,248,0.96)] text-[#18342f] text-left shadow-[0_8px_18px_rgba(35,27,17,0.04)] transition-[transform,border-color,box-shadow,background] duration-[180ms] ease-out hover:-translate-y-px hover:border-[rgba(24,52,47,0.22)] hover:shadow-[0_12px_22px_rgba(35,27,17,0.06)] [&>strong]:block [&>strong]:[overflow-wrap:anywhere] [&>small]:block [&>small]:[overflow-wrap:anywhere] max-[720px]:w-auto max-[720px]:min-w-[min(10.5rem,100%)]${isSelectedFamily ? ' border-[rgba(24,52,47,0.26)] !bg-[rgba(232,242,238,0.96)] !shadow-[0_14px_26px_rgba(24,52,47,0.08)]' : ''}`}
+                        aria-pressed={isSelectedFamily ? 'true' : 'false'}
                         onClick={() => onSelectAdminFamily(family.familyId)}
                       >
                         <strong>{family.familyName}</strong>
                         <small>{family.members.length} Mitglieder</small>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {selectedAdminFamily ? (

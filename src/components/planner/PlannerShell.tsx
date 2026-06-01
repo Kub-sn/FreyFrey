@@ -266,8 +266,8 @@ export default function PlannerShell({
 
         <MealsModule
           meals={plannerState.meals}
-          onAddMeal={crud.handleAddMeal}
-          onToggleMealPrepared={crud.handleToggleMealPrepared}
+          onCreateMeal={crud.handleCreateMeal}
+          onDeleteMeal={crud.handleDeleteMeal}
         />
 
         <DocumentsModule

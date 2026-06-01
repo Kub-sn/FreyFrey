@@ -648,6 +648,38 @@ test('edits and deletes a task through the action menu in demo mode', async ({ p
   await expect(page.getByText('Schultasche neu packen')).toHaveCount(0);
 });
 
+test('keeps the meal planner card wide on large desktop screens', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1200 });
+  await page.goto('/');
+
+  await expect(page.getByRole('heading', { name: 'Frey Frey' }).first()).toBeVisible();
+
+  if (await page.getByRole('button', { name: 'Jetzt anmelden' }).isVisible()) {
+    return;
+  }
+
+  await page.getByRole('button', { name: 'Essensplan' }).click();
+  await expect(page.getByRole('button', { name: '2 Wochen' })).toBeVisible();
+
+  const content = page.locator('main.content');
+  const moduleLayout = page.locator('.module-layout.meals-module-layout');
+  const mealContent = moduleLayout.locator('> .meals-module-content').first();
+
+  const [contentShellBox, layoutBox, contentBox] = await Promise.all([
+    content.boundingBox(),
+    moduleLayout.boundingBox(),
+    mealContent.boundingBox(),
+  ]);
+
+  expect(contentShellBox).not.toBeNull();
+  expect(layoutBox).not.toBeNull();
+  expect(contentBox).not.toBeNull();
+  expect(contentBox!.width).toBeGreaterThan(1100);
+  expect(Math.abs(layoutBox!.width - contentBox!.width)).toBeLessThan(32);
+  expect(layoutBox!.y - contentShellBox!.y).toBeLessThan(40);
+  await expect(moduleLayout.locator('> .panel')).toHaveCount(0);
+});
+
 test('shows the upload-only documents module with a larger capture card on desktop', async ({ page }) => {
   await page.goto('/');
 
@@ -1060,12 +1092,14 @@ test('keeps family settings cards usable on mobile widths', async ({ page }) => 
   const firstMemberBadges = memberCards.first().locator('.family-status-badges');
   const firstMemberAvatar = memberCards.first().locator('[aria-hidden="true"]');
   const firstMemberSlot = memberCards.first().locator('span[class*="uppercase"]');
-  const familyButtons = page.locator('[aria-pressed]');
+  const familyButtons = page.getByRole('tablist', { name: 'Zwischen Familien wechseln' }).getByRole('button');
   const openInvitesHeading = page.getByRole('heading', { name: 'Offene Einladungen' });
   const openInvitesChip = openInvitesHeading.locator('..').locator('.chip');
   const allFamiliesHeading = page.getByRole('heading', { name: 'Alle Familien' });
   const allFamiliesChip = allFamiliesHeading.locator('..').locator('.chip');
   const memberIntro = page.getByText('Jede Person steht in einer eigenen Zeile mit Rolle, E-Mail und Status, damit du sie im Desktop-Layout sofort unterscheiden kannst.');
+
+  await expect(familyButtons).toHaveCount(2);
 
   const [memberCopyBox, memberBadgesBox, firstMemberAvatarBox, firstMemberSlotBox, firstFamilyButtonBox, secondFamilyButtonBox, openInvitesHeadingBox, openInvitesChipBox, allFamiliesHeadingBox, allFamiliesChipBox, widths] = await Promise.all([
     firstMemberCopy.boundingBox(),

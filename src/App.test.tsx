@@ -168,8 +168,8 @@ describe('App', () => {
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Essensplan' }));
 
-    expect(screen.getByRole('heading', { level: 4, name: 'Gericht eintragen' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Gericht speichern' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 4, name: 'Essenskalender' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2 Wochen' })).toBeInTheDocument();
   });
 
   it('keeps the active planner module after a reload without router state', async () => {

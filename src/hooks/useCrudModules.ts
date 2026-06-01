@@ -1,5 +1,5 @@
-import type { FormEvent } from 'react';
 import type {
+  MealItem,
   PlannerState,
   ShoppingList,
   ShoppingListItem,
@@ -11,12 +11,12 @@ import {
   createShoppingList,
   createTask,
   createMeal,
+  deleteMeal,
   deleteShoppingList,
   deleteTask,
   updateShoppingList,
   updateShoppingListItemChecked,
   updateTask,
-  updateMealPrepared,
 } from '../lib/supabase';
 import { humanizeAuthError } from '../lib/auth-errors';
 import { nextStringId } from '../lib/id';
@@ -368,25 +368,25 @@ export function useCrudModules({
     }
   };
 
-  const handleAddMeal = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    const day = String(form.get('day') || '').trim();
-    const meal = String(form.get('meal') || '').trim();
+  const handleCreateMeal = async (payload: Omit<MealItem, 'id'>) => {
+    const date = payload.date.trim();
+    const name = payload.name.trim();
+    const recipe = payload.recipe.trim();
 
-    if (!day || !meal) {
-      return;
+    if (!date || !name) {
+      return false;
     }
 
     try {
       if (authState.family) {
         const createdMeal = await createMeal(authState.family.familyId, {
-          day, meal, prepared: false,
+          date,
+          name,
+          recipe,
         });
         updateState((current) => ({
           ...current,
-          meals: [createdMeal, ...current.meals],
+          meals: [...current.meals, createdMeal],
         }));
         setCloudSync({
           phase: 'ready',
@@ -395,32 +395,45 @@ export function useCrudModules({
       } else {
         updateState((current) => ({
           ...current,
-          meals: [{ id: nextStringId(), day, meal, prepared: false }, ...current.meals],
+          meals: [...current.meals, { id: nextStringId(), date, name, recipe }],
         }));
       }
-      formElement.reset();
+
+      return true;
     } catch (error) {
       setCloudSync({
         phase: 'error',
         message: humanizeAuthError(error),
       });
+
+      return false;
     }
   };
 
-  const handleToggleMealPrepared = async (id: string, prepared: boolean) => {
+  const handleDeleteMeal = async (mealId: string) => {
     try {
       if (authState.family) {
-        await updateMealPrepared(id, prepared);
+        await deleteMeal(mealId);
       }
+
       updateState((current) => ({
         ...current,
-        meals: current.meals.map((entry) => (entry.id === id ? { ...entry, prepared } : entry)),
+        meals: current.meals.filter((meal) => meal.id !== mealId),
       }));
+
+      setCloudSync({
+        phase: 'ready',
+        message: 'Gericht wurde gelöscht.',
+      });
+
+      return true;
     } catch (error) {
       setCloudSync({
         phase: 'error',
         message: humanizeAuthError(error),
       });
+
+      return false;
     }
   };
 
@@ -435,7 +448,7 @@ export function useCrudModules({
     handleToggleTask,
     handleSetTaskStatus,
     handleToggleTaskSubtask,
-    handleAddMeal,
-    handleToggleMealPrepared,
+    handleCreateMeal,
+    handleDeleteMeal,
   };
 }

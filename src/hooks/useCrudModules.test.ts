@@ -8,12 +8,12 @@ const supabaseMocks = vi.hoisted(() => ({
   createShoppingList: vi.fn(),
   createTask: vi.fn(),
   createMeal: vi.fn(),
+  deleteMeal: vi.fn(),
   deleteShoppingList: vi.fn(),
   deleteTask: vi.fn(),
   updateShoppingList: vi.fn(),
   updateShoppingListItemChecked: vi.fn(),
   updateTask: vi.fn(),
-  updateMealPrepared: vi.fn(),
 }));
 
 vi.mock('../lib/supabase', () => supabaseMocks);
@@ -83,5 +83,31 @@ describe('useCrudModules', () => {
     deferred.resolve();
     await Promise.resolve();
     expect(setCloudSync).not.toHaveBeenCalledWith(expect.objectContaining({ phase: 'error' }));
+  });
+
+  it('removes a meal locally when deleting it in demo mode', async () => {
+    const updateState = vi.fn();
+    const setCloudSync = vi.fn();
+
+    const localAuthState = {
+      ...authFixture,
+      family: null,
+    };
+
+    const { result } = renderHook(() => useCrudModules({
+      authState: localAuthState,
+      plannerState: plannerFixture,
+      setCloudSync,
+      updateState,
+    }));
+
+    await act(async () => {
+      await result.current.handleDeleteMeal('meal-1');
+    });
+
+    expect(updateState).toHaveBeenCalledTimes(1);
+    const nextState = updateState.mock.calls[0][0](plannerFixture as PlannerState);
+    expect(nextState.meals).toEqual([]);
+    expect(setCloudSync).toHaveBeenCalledWith(expect.objectContaining({ phase: 'ready' }));
   });
 });

@@ -7,6 +7,7 @@ import {
   type TabId,
   type TaskStatus,
 } from './planner-data';
+import { isDateKey, resolveLegacyMealDate } from './meals';
 
 const STORAGE_KEY = 'family-planner-state-v3';
 const LEGACY_STORAGE_KEYS = ['family-planner-state-v2'];
@@ -157,11 +158,52 @@ function normalizeTasks(tasks: unknown): PlannerState['tasks'] {
   });
 }
 
+function normalizeMeals(meals: unknown): PlannerState['meals'] {
+  if (!Array.isArray(meals)) {
+    return defaultPlannerState.meals;
+  }
+
+  return meals.flatMap((meal) => {
+    if (!meal || typeof meal !== 'object') {
+      return [];
+    }
+
+    const candidate = meal as Partial<PlannerState['meals'][number]> & {
+      day?: string;
+      meal?: string;
+    };
+    const id = typeof candidate.id === 'string' ? candidate.id : '';
+    const date = typeof candidate.date === 'string' && isDateKey(candidate.date)
+      ? candidate.date
+      : typeof candidate.day === 'string'
+        ? resolveLegacyMealDate(candidate.day)
+        : '';
+    const name = typeof candidate.name === 'string'
+      ? candidate.name.trim()
+      : typeof candidate.meal === 'string'
+        ? candidate.meal.trim()
+        : '';
+    const recipe = typeof candidate.recipe === 'string' ? candidate.recipe.trim() : '';
+
+    if (!id || !date || !name) {
+      return [];
+    }
+
+    return [{
+      id,
+      date,
+      name,
+      recipe,
+    }];
+  });
+}
+
 function normalizePlannerState(state: PlannerState): PlannerState {
   return {
     ...state,
     shoppingLists: normalizeShoppingLists(state as PlannerState & { shoppingItems?: unknown }),
     tasks: normalizeTasks(state.tasks),
+    meals: normalizeMeals(state.meals),
     notes: Array.isArray(state.notes)
       ? state.notes.map((note) => ({
           id: note.id,
