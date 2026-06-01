@@ -94,7 +94,7 @@ export function FamilyStatusBadges({
   isOwner?: boolean;
 }) {
   return (
-    <div className="family-status-badges">
+    <div className="family-status-badges gap-2 flex">
       {isOwner ? <span className="chip border border-[rgba(180,120,35,0.18)] bg-[linear-gradient(135deg,rgba(221,179,87,0.16),rgba(253,244,221,0.92))] text-[#825c18] shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] font-semibold tracking-[0.01em]">Familiengründer</span> : null}
       <span className={getRoleChipClass(role)}>{getRoleLabel(role)}</span>
     </div>

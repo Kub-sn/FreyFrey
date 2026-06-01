@@ -72,7 +72,6 @@ describe('FamilyModule', () => {
 
     expect(screen.getAllByText('Alex Admin')).toHaveLength(2);
     expect(screen.getByText('neu@example.com')).toBeInTheDocument();
-    expect(screen.getByText('Jede Person steht in einer eigenen Zeile mit Rolle, E-Mail und Status, damit du sie im Desktop-Layout sofort unterscheiden kannst.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /zurückziehen/i }));
     await user.click(screen.getByLabelText('Freie Registrierung erlauben'));
     await user.click(screen.getByRole('button', { name: 'Account löschen' }));

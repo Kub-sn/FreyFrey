@@ -160,9 +160,6 @@ export function FamilyModule({
             <div className="panel-heading items-start">
               <div className="grid gap-[0.3rem] min-w-0">
                 <h4>Familienmitglieder</h4>
-                <p className="-mt-px text-[rgba(24,52,47,0.72)] m-0 max-w-[42rem]">
-                  Jede Person steht in einer eigenen Zeile mit Rolle, E-Mail und Status, damit du sie im Desktop-Layout sofort unterscheiden kannst.
-                </p>
               </div>
               <span className="chip">{members.length}</span>
             </div>
@@ -196,7 +193,7 @@ export function FamilyModule({
                 </li>
               )}
             </ul>
-            <div className="panel-heading panel-heading-tight family-inline-heading">
+            <div className="panel-heading panel-heading-tight mb-8 family-inline-heading">
               <h4>Offene Einladungen</h4>
               <span className="chip">{familyInvites.length}</span>
             </div>

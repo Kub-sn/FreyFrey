@@ -1045,7 +1045,6 @@ test('keeps the selected planner section after a hard reload without app routing
 
   await expect(page.getByRole('heading', { name: 'Familienmitglieder' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Alle Familien' })).toBeVisible();
-  await expect(page.getByText('Jede Person steht in einer eigenen Zeile mit Rolle, E-Mail und Status, damit du sie im Desktop-Layout sofort unterscheiden kannst.')).toBeVisible();
   const reloadedMemberList = page.getByRole('list', { name: 'Familienmitglieder Liste' });
   await expect(reloadedMemberList.locator(':scope > li').first()).toBeVisible();
   await expect(reloadedMemberList.locator(':scope > li').first().locator('[aria-hidden="true"]')).toContainText('A');
@@ -1097,7 +1096,6 @@ test('keeps family settings cards usable on mobile widths', async ({ page }) => 
   const openInvitesChip = openInvitesHeading.locator('..').locator('.chip');
   const allFamiliesHeading = page.getByRole('heading', { name: 'Alle Familien' });
   const allFamiliesChip = allFamiliesHeading.locator('..').locator('.chip');
-  const memberIntro = page.getByText('Jede Person steht in einer eigenen Zeile mit Rolle, E-Mail und Status, damit du sie im Desktop-Layout sofort unterscheiden kannst.');
 
   await expect(familyButtons).toHaveCount(2);
 
@@ -1131,7 +1129,6 @@ test('keeps family settings cards usable on mobile widths', async ({ page }) => 
   await expect(memberCards.first()).toBeVisible();
   await expect(firstMemberAvatar).toContainText('A');
   await expect(firstMemberSlot).toContainText('Du');
-  await expect(memberIntro).toBeVisible();
 
   expect(widths.scrollWidth).toBeLessThanOrEqual(widths.clientWidth + 1);
   expect((memberBadgesBox as NonNullable<typeof memberBadgesBox>).y).toBeGreaterThan(
