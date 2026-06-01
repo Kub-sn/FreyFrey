@@ -25,3 +25,19 @@ The app supports both a local MVP workflow and a cloud-backed setup with authent
 - Capacitor for Android integration
 - PWA foundation via `public/manifest.webmanifest`
 - Vitest, Testing Library, and Playwright for automated tests
+
+## Android Distribution
+
+- Private direct APK distribution: [ANDROID_PRIVATE_DISTRIBUTION.md](/home/kubi/Documents/FamilyPlanner/ANDROID_PRIVATE_DISTRIBUTION.md)
+- Preferred Play Store Internal Testing flow: [ANDROID_INTERNAL_TESTING.md](/home/kubi/Documents/FamilyPlanner/ANDROID_INTERNAL_TESTING.md)
+
+Useful Android helper commands:
+
+```bash
+npm run android:prepare
+npm run android:open
+npm run android:apk:debug
+npm run android:bundle:release
+```
+
+`android:bundle:release` is the relevant path when you want to ship builds through Play Store Internal Testing.
