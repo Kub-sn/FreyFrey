@@ -101,15 +101,11 @@ export function FamilyModule({
         <option value="familyuser">familyuser</option>
         {canManageFamily ? <option value="admin">admin</option> : null}
       </select>
-      <AppButton type="submit" variant="primary" disabled={!canInviteFamilyMembers}>
+      <AppButton type="submit" variant="primary" className="mb-4" disabled={!canInviteFamilyMembers}>
         {canInviteFamilyMembers
           ? 'Einladung senden'
           : 'Nur Familiengruender oder Admin kann Einladungen senden'}
       </AppButton>
-      <small>
-        Die Einladung wird per E-Mail verschickt. Sobald sich der Nutzer mit derselben
-        E-Mail registriert oder anmeldet, wird die Familienzuordnung automatisch uebernommen.
-      </small>
     </AppCard>
   );
   const accountPanel = authProfile ? (
