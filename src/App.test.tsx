@@ -104,9 +104,9 @@ describe('App', () => {
 
     await user.click(within(dialog).getByRole('button', { name: 'Liste anlegen' }));
 
-    await user.click(screen.getByRole('button', { name: /Wocheneinkauf/i }));
+    await user.click(screen.getByText('Wocheneinkauf').closest('button') as HTMLButtonElement);
 
-    expect(screen.getByRole('checkbox', { name: 'Milch' })).toHaveClass('app-checkbox', 'checkbox');
+    expect(screen.getByRole('checkbox', { name: /Milch/i })).toHaveClass('app-checkbox', 'checkbox');
   });
 
   it('allows switching to the notes module', async () => {

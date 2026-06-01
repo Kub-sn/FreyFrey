@@ -21,7 +21,7 @@ describe('ShoppingModule', () => {
 
     const createButton = screen.getByRole('button', { name: 'Liste erstellen' });
     const moduleStack = createButton.closest('div')?.parentElement;
-    const cardsGrid = screen.getByRole('button', { name: /Wocheneinkauf/i }).closest('article')?.parentElement;
+    const cardsGrid = screen.getByText('Wocheneinkauf').closest('button')?.closest('article')?.parentElement;
 
     expect(moduleStack).toHaveClass('content-start', 'gap-4');
     expect(cardsGrid).toHaveClass('gap-4', 'max-[720px]:gap-3');
@@ -81,10 +81,52 @@ describe('ShoppingModule', () => {
       ],
     });
 
-    await user.click(screen.getByRole('button', { name: /Wocheneinkauf/i }));
-    expect(screen.getByRole('checkbox', { name: 'Milch' })).toHaveClass('app-checkbox', 'checkbox');
-    await user.click(screen.getByRole('checkbox', { name: 'Milch' }));
+    await user.click(screen.getByRole('button', { name: /Einkaufsliste Wocheneinkauf Aktionen/i }));
+    expect(screen.getByRole('button', { name: 'Bearbeiten' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Löschen' })).toBeInTheDocument();
+
+    await user.click(screen.getByText('Wocheneinkauf').closest('button') as HTMLButtonElement);
+    expect(screen.getByRole('checkbox', { name: /Milch/i })).toHaveClass('app-checkbox', 'checkbox');
+    expect(screen.getByText('2')).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: /Milch/i }));
 
     expect(onToggleItem).toHaveBeenCalledWith('shopping-list-1', 'shopping-1', true);
+  });
+
+  it('assigns a default title when a new list is created without a name', async () => {
+    const user = userEvent.setup();
+    const onCreateList = vi.fn().mockResolvedValue(true);
+
+    render(
+      <ActiveTabProvider activeTab="shopping" setActiveTab={vi.fn()}>
+        <ShoppingModule
+          lists={plannerFixture.shoppingLists}
+          onCreateList={onCreateList}
+          onDeleteList={vi.fn().mockResolvedValue(true)}
+          onToggleItem={vi.fn().mockResolvedValue(undefined)}
+          onUpdateList={vi.fn().mockResolvedValue(true)}
+        />
+      </ActiveTabProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Liste erstellen' }));
+    await user.clear(screen.getByLabelText('Datum'));
+    await user.type(screen.getByLabelText('Datum'), '2026-05-06');
+
+    const quickAddInput = screen.getByLabelText('Neuer Artikel');
+    await user.type(quickAddInput, 'Milch{Enter}');
+    await user.click(screen.getByRole('button', { name: 'Liste anlegen' }));
+
+    expect(onCreateList).toHaveBeenCalledWith({
+      title: 'Einkaufsliste 1',
+      date: '2026-05-06',
+      items: [
+        expect.objectContaining({
+          name: 'Milch',
+          quantity: undefined,
+          checked: false,
+        }),
+      ],
+    });
   });
 });

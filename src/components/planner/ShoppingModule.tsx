@@ -91,8 +91,14 @@ function formatListDate(date: string) {
   }).format(parsedDate);
 }
 
-function getOpenItemCount(list: ShoppingList) {
-  return list.items.filter((item) => !item.checked).length;
+function getNextShoppingListTitle(lists: PlannerState['shoppingLists']) {
+  let index = 1;
+
+  while (lists.some((list) => list.title === `Einkaufsliste ${index}`)) {
+    index += 1;
+  }
+
+  return `Einkaufsliste ${index}`;
 }
 
 export function ShoppingModule({
@@ -111,6 +117,7 @@ export function ShoppingModule({
   const { activeTab } = useActiveTab();
   const [editorState, setEditorState] = useState<{ mode: 'create' } | { mode: 'edit'; listId: string } | null>(null);
   const [openListId, setOpenListId] = useState<string | null>(null);
+  const [menuListId, setMenuListId] = useState<string | null>(null);
   const [pendingDeleteListId, setPendingDeleteListId] = useState<string | null>(null);
   const [draftList, setDraftList] = useState<ShoppingListDraft>(createDraftList);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
@@ -127,6 +134,13 @@ export function ShoppingModule({
     [lists, pendingDeleteListId],
   );
 
+  const editedList = useMemo(
+    () => editorState?.mode === 'edit'
+      ? lists.find((list) => list.id === editorState.listId) ?? null
+      : null,
+    [editorState, lists],
+  );
+
   const resetEditor = () => {
     setDraftList(createDraftList());
     setQuickAddItemText('');
@@ -138,6 +152,7 @@ export function ShoppingModule({
     setDraftList(createDraftList());
     setQuickAddItemText('');
     setValidationMessage(null);
+    setMenuListId(null);
     setEditorState({ mode: 'create' });
   };
 
@@ -153,6 +168,7 @@ export function ShoppingModule({
     });
     setQuickAddItemText('');
     setValidationMessage(null);
+    setMenuListId(null);
     setEditorState({ mode: 'edit', listId: list.id });
   };
 
@@ -232,11 +248,6 @@ export function ShoppingModule({
         };
       });
 
-    if (!draftList.title.trim()) {
-      setValidationMessage('Bitte gib der Einkaufsliste einen Namen.');
-      return;
-    }
-
     if (!draftList.date) {
       setValidationMessage('Bitte wähle ein Datum für die Einkaufsliste.');
       return;
@@ -252,8 +263,12 @@ export function ShoppingModule({
       return;
     }
 
+    const resolvedTitle = editorState?.mode === 'edit'
+      ? draftList.title.trim() || editedList?.title || getNextShoppingListTitle(lists)
+      : draftList.title.trim() || getNextShoppingListTitle(lists);
+
     const payload = {
-      title: draftList.title.trim(),
+      title: resolvedTitle,
       date: draftList.date,
       items: normalizedItems,
     };
@@ -284,6 +299,10 @@ export function ShoppingModule({
       setOpenListId(null);
     }
 
+    if (menuListId === pendingDeleteList.id) {
+      setMenuListId(null);
+    }
+
     setPendingDeleteListId(null);
   };
 
@@ -306,44 +325,70 @@ export function ShoppingModule({
           {lists.map((list) => (
             <AppCard
               key={list.id}
-              className="panel flex min-h-0 flex-col gap-3 border border-[rgba(24,52,47,0.1)] bg-[linear-gradient(180deg,rgba(255,252,246,0.98),rgba(247,241,231,0.96))] p-4 max-[720px]:gap-2.5 max-[720px]:p-3.5"
+              className={[
+                'panel relative flex min-h-0 flex-col gap-3 border border-[rgba(24,52,47,0.1)] bg-[linear-gradient(180deg,rgba(255,252,246,0.98),rgba(247,241,231,0.96))] p-4 max-[720px]:gap-2.5 max-[720px]:p-3.5',
+                menuListId === list.id ? 'z-30' : 'z-0',
+              ].join(' ')}
             >
-              <button
-                type="button"
-                className="grid gap-3 rounded-[20px] text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[rgba(25,98,77,0.12)]"
-                onClick={() => setOpenListId(list.id)}
-              >
-                <div className="grid gap-2">
-                  <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[rgba(25,98,77,0.14)] bg-[rgba(255,255,255,0.66)] px-3 py-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[rgba(24,52,47,0.66)]">
-                      <CalendarDays aria-hidden="true" size={14} />
-                      <span>{formatListDate(list.date)}</span>
+              <div className="flex items-start justify-between gap-3">
+                <button
+                  type="button"
+                  className="grid min-w-0 flex-1 gap-3 rounded-[20px] text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[rgba(25,98,77,0.12)]"
+                  onClick={() => {
+                    setMenuListId(null);
+                    setOpenListId(list.id);
+                  }}
+                >
+                  <div className="grid gap-2">
+                    <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[rgba(25,98,77,0.14)] bg-[rgba(255,255,255,0.66)] px-3 py-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[rgba(24,52,47,0.66)]">
+                        <CalendarDays aria-hidden="true" size={14} />
+                        <span>{formatListDate(list.date)}</span>
+                    </div>
+                    <h4 className="m-0 text-[1.08rem] font-semibold leading-tight text-[#18342f] max-[720px]:text-[1rem]">{list.title}</h4>
                   </div>
-                  <h4 className="m-0 text-[1.08rem] font-semibold leading-tight text-[#18342f] max-[720px]:text-[1rem]">{list.title}</h4>
-                  <p className="m-0 text-[0.88rem] text-[rgba(24,52,47,0.6)]">
-                    Tippen zum Oeffnen. {getOpenItemCount(list)} von {list.items.length} Artikeln sind offen.
-                  </p>
-                </div>
-              </button>
+                </button>
 
-              <div className="mt-auto flex flex-wrap justify-end gap-2 max-[720px]:justify-stretch">
-                <AppButton
-                  type="button"
-                  variant="secondary"
-                  className="inline-flex items-center gap-2 max-[720px]:flex-1 max-[720px]:justify-center max-[720px]:px-3 max-[720px]:py-2.5"
-                  onClick={() => openEditDialog(list)}
-                >
-                  <Pencil aria-hidden="true" size={16} />
-                  Bearbeiten
-                </AppButton>
-                <AppButton
-                  type="button"
-                  variant="danger"
-                  className="inline-flex items-center gap-2 max-[720px]:flex-1 max-[720px]:justify-center max-[720px]:px-3 max-[720px]:py-2.5"
-                  onClick={() => setPendingDeleteListId(list.id)}
-                >
-                  <Trash2 aria-hidden="true" size={16} />
-                  Löschen
-                </AppButton>
+                <div className="relative shrink-0">
+                  <AppButton
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="inline-flex size-9 items-center justify-center border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.94)] text-[1.25rem] leading-none text-[#18342f]"
+                    aria-label={`Einkaufsliste ${list.title} Aktionen`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setMenuListId((current) => (current === list.id ? null : list.id));
+                    }}
+                  >
+                    ⋯
+                  </AppButton>
+
+                  {menuListId === list.id ? (
+                    <div className="absolute right-0 top-11 z-40 grid min-w-[12rem] gap-1 rounded-[18px] border border-[rgba(24,52,47,0.12)] bg-[rgba(255,250,244,0.98)] p-2 shadow-[0_18px_36px_rgba(24,52,47,0.14)]">
+                      <AppButton
+                        type="button"
+                        variant="secondary"
+                        className="justify-start gap-2 text-left"
+                        onClick={() => openEditDialog(list)}
+                      >
+                        <Pencil aria-hidden="true" size={16} />
+                        Bearbeiten
+                      </AppButton>
+                      <AppButton
+                        type="button"
+                        variant="danger"
+                        className="justify-start gap-2 text-left"
+                        onClick={() => {
+                          setPendingDeleteListId(list.id);
+                          setMenuListId(null);
+                        }}
+                      >
+                        <Trash2 aria-hidden="true" size={18} />
+                        Löschen
+                      </AppButton>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </AppCard>
           ))}
@@ -372,13 +417,9 @@ export function ShoppingModule({
           )}
         >
           <div className="grid gap-3">
-            <p className="m-0 rounded-[18px] bg-[rgba(25,98,77,0.08)] px-4 py-3 text-[rgba(24,52,47,0.72)]">
-              {getOpenItemCount(openList)} von {openList.items.length} Artikeln sind noch offen.
-            </p>
-
             <ul className="check-list">
               {openList.items.map((item) => (
-                <li key={item.id} className={item.checked ? '[&>label>span]:opacity-60 [&>label>span]:line-through [&_small]:opacity-60' : ''}>
+                <li key={item.id} className={item.checked ? '[&_.shopping-item-copy]:opacity-60 [&_.shopping-item-copy]:line-through' : ''}>
                   <label>
                     <input
                       type="checkbox"
@@ -386,9 +427,11 @@ export function ShoppingModule({
                       checked={item.checked}
                       onChange={() => void onToggleItem(openList.id, item.id, !item.checked)}
                     />
-                    <span>{item.name}</span>
+                    <span className="shopping-item-copy inline-flex items-center gap-2">
+                      {item.quantity ? <span>{item.quantity}</span> : null}
+                      <span>{item.name}</span>
+                    </span>
                   </label>
-                  {item.quantity ? <small>{item.quantity}</small> : null}
                 </li>
               ))}
             </ul>
@@ -400,7 +443,6 @@ export function ShoppingModule({
         <ModalDialog
           id="shopping-list-editor-title"
           title={editorState.mode === 'edit' ? 'Einkaufsliste bearbeiten' : 'Neue Einkaufsliste'}
-          eyebrow="Datum und Artikel"
           className="w-[min(640px,100%)]"
           actions={(
             <>
@@ -437,13 +479,6 @@ export function ShoppingModule({
             </div>
 
             <div className="grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.1)] bg-[rgba(255,255,255,0.62)] p-4 max-[720px]:p-3.5">
-              <div className="grid gap-1">
-                <h4 className="m-0 text-[1.05rem] font-semibold text-[#18342f]">Artikel schnell erfassen</h4>
-                <p className="m-0 text-[0.88rem] text-[rgba(24,52,47,0.62)]">
-                  Tippe einen Artikel ein und bestaetige mit Enter. Mengen werden vorne automatisch erkannt.
-                </p>
-              </div>
-
               <label className="grid gap-2">
                 <span className="text-[0.8rem] text-[rgba(24,52,47,0.62)]">Neuer Artikel</span>
                 <input
@@ -488,7 +523,7 @@ export function ShoppingModule({
                           onClick={() => removeDraftItem(item.id)}
                           aria-label={`Artikel ${item.text || 'ohne Namen'} entfernen`}
                         >
-                          <Trash2 aria-hidden="true" size={15} />
+                          <Trash2 aria-hidden="true" size={20} strokeWidth={2.3} />
                         </AppButton>
                       </div>
                     ))}
