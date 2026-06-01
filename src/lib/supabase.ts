@@ -81,7 +81,7 @@ type ShoppingListItemRow = {
   id: string;
   list_id: string;
   name: string;
-  quantity: string;
+  quantity: string | null;
   checked: boolean;
 };
 
@@ -898,7 +898,7 @@ function groupShoppingListItems(items: ShoppingListItemRow[]) {
     current.push({
       id: item.id,
       name: item.name,
-      quantity: item.quantity,
+      quantity: item.quantity ?? undefined,
       checked: item.checked,
     });
     grouped[item.list_id] = current;
@@ -922,7 +922,7 @@ async function insertShoppingListItems(
       family_id: familyId,
       list_id: listId,
       name: item.name,
-      quantity: item.quantity,
+      quantity: item.quantity ?? null,
       checked: item.checked,
     })))
     .select('id, list_id, name, quantity, checked');
@@ -934,7 +934,7 @@ async function insertShoppingListItems(
   return (data as ShoppingListItemRow[]).map((item) => ({
     id: item.id,
     name: item.name,
-    quantity: item.quantity,
+    quantity: item.quantity ?? undefined,
     checked: item.checked,
   }));
 }

@@ -50,8 +50,18 @@ describe('ShoppingModule', () => {
     await user.type(screen.getByPlaceholderText('z. B. Wocheneinkauf'), 'Supermarkt');
     await user.clear(screen.getByLabelText('Datum'));
     await user.type(screen.getByLabelText('Datum'), '2026-05-06');
-    await user.type(screen.getAllByPlaceholderText('Artikel')[0], 'Brot');
-    await user.type(screen.getByPlaceholderText('Anzahl'), '1');
+
+    const quickAddInput = screen.getByLabelText('Neuer Artikel');
+
+    await user.type(quickAddInput, '2 Brot{Enter}');
+    expect(quickAddInput).toHaveValue('');
+    expect(quickAddInput).toHaveFocus();
+
+    await user.type(quickAddInput, 'Wasser{Enter}');
+
+    expect(screen.getByDisplayValue('2 Brot')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Wasser')).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: 'Liste anlegen' }));
 
     expect(onCreateList).toHaveBeenCalledWith({
@@ -60,14 +70,19 @@ describe('ShoppingModule', () => {
       items: [
         expect.objectContaining({
           name: 'Brot',
-          quantity: '1',
+          quantity: '2',
+          checked: false,
+        }),
+        expect.objectContaining({
+          name: 'Wasser',
+          quantity: undefined,
           checked: false,
         }),
       ],
     });
 
     await user.click(screen.getByRole('button', { name: /Wocheneinkauf/i }));
-    expect(screen.getByRole('checkbox', { name: 'Milch' })).not.toHaveClass('app-switch');
+    expect(screen.getByRole('checkbox', { name: 'Milch' })).toHaveClass('app-checkbox', 'checkbox');
     await user.click(screen.getByRole('checkbox', { name: 'Milch' }));
 
     expect(onToggleItem).toHaveBeenCalledWith('shopping-list-1', 'shopping-1', true);

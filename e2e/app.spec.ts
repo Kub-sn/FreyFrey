@@ -525,8 +525,14 @@ test('shows the planner shell and lets the user open the shopping module', async
   await expect(page.getByRole('heading', { name: 'Neue Einkaufsliste' })).toBeVisible();
   await page.getByPlaceholder('z. B. Wocheneinkauf').fill('Markteinkauf');
   await page.getByLabel('Datum').fill('2026-05-08');
-  await page.getByPlaceholder('Artikel').fill('Brot');
-  await page.getByPlaceholder('Anzahl').fill('1');
+
+  const quickAddInput = page.getByLabel('Neuer Artikel');
+
+  await quickAddInput.fill('1 Brot');
+  await quickAddInput.press('Enter');
+  await expect(quickAddInput).toBeFocused();
+  await expect(quickAddInput).toHaveValue('');
+
   await page.getByRole('button', { name: 'Liste anlegen' }).click();
   await expect(page.getByRole('button', { name: /Markteinkauf/i })).toBeVisible();
   await page.getByRole('button', { name: /Markteinkauf/i }).click();

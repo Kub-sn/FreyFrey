@@ -53,7 +53,7 @@ create table public.shopping_items (
   family_id uuid not null references public.families(id) on delete cascade,
   list_id uuid not null references public.shopping_lists(id) on delete cascade,
   name text not null,
-  quantity text not null,
+  quantity text,
   checked boolean not null default false,
   created_at timestamptz not null default now()
 );

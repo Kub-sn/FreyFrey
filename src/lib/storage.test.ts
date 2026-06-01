@@ -113,6 +113,45 @@ describe('loadPlannerState', () => {
     ]);
   });
 
+  it('keeps shopping items without a quantity when loading planner state', () => {
+    window.localStorage.setItem(
+      'family-planner-state-v3',
+      JSON.stringify({
+        ...defaultPlannerState,
+        shoppingLists: [
+          {
+            id: 'shopping-list-1',
+            title: 'Kurzliste',
+            date: '2026-05-09',
+            items: [
+              {
+                id: 'shopping-1',
+                name: 'Wasser',
+                checked: false,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(loadPlannerState().shoppingLists).toEqual([
+      {
+        id: 'shopping-list-1',
+        title: 'Kurzliste',
+        date: '2026-05-09',
+        items: [
+          {
+            id: 'shopping-1',
+            name: 'Wasser',
+            quantity: undefined,
+            checked: false,
+          },
+        ],
+      },
+    ]);
+  });
+
   it('prefers the current storage key when both current and legacy state exist', () => {
     window.localStorage.setItem(
       'family-planner-state-v2',

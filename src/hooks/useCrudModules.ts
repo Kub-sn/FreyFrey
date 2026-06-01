@@ -34,15 +34,52 @@ export function useCrudModules({
   setCloudSync,
   updateState,
 }: UseCrudModulesParams) {
+  const applyShoppingItemChecked = (state: PlannerState, listId: string, itemId: string, checked: boolean) => ({
+    ...state,
+    shoppingLists: state.shoppingLists.map((entry) =>
+      entry.id === listId
+        ? {
+            ...entry,
+            items: entry.items.map((item) =>
+              item.id === itemId ? { ...item, checked } : item,
+            ),
+          }
+        : entry,
+    ),
+  });
+
+  const applyTaskSubtaskDone = (state: PlannerState, taskId: string, subtaskId: string, done: boolean, status: TaskStatus) => ({
+    ...state,
+    tasks: state.tasks.map((entry) =>
+      entry.id === taskId
+        ? {
+            ...entry,
+            status,
+            subtasks: entry.subtasks.map((subtask) =>
+              subtask.id === subtaskId ? { ...subtask, done } : subtask,
+            ),
+          }
+        : entry,
+    ),
+  });
+
   const normalizeShoppingItems = (items: ShoppingListItem[]) =>
     items
-      .map((item) => ({
-        ...item,
-        id: item.id || nextStringId(),
-        name: item.name.trim(),
-        quantity: item.quantity.trim(),
-      }))
-      .filter((item) => item.name && item.quantity);
+      .flatMap((item) => {
+        const name = item.name.trim();
+        const quantity = item.quantity?.trim();
+
+        if (!name) {
+          return [];
+        }
+
+        return [{
+          ...item,
+          id: item.id || nextStringId(),
+          name,
+          quantity: quantity || undefined,
+        }];
+      });
 
   const handleCreateShoppingList = async (payload: Omit<ShoppingList, 'id'>) => {
     const normalizedItems = normalizeShoppingItems(payload.items);
@@ -170,25 +207,14 @@ export function useCrudModules({
   };
 
   const handleToggleShoppingListItem = async (listId: string, itemId: string, checked: boolean) => {
+    updateState((current) => applyShoppingItemChecked(current, listId, itemId, checked));
+
     try {
       if (authState.family) {
         await updateShoppingListItemChecked(itemId, checked);
       }
-
-      updateState((current) => ({
-        ...current,
-        shoppingLists: current.shoppingLists.map((entry) =>
-          entry.id === listId
-            ? {
-                ...entry,
-                items: entry.items.map((item) =>
-                  item.id === itemId ? { ...item, checked } : item,
-                ),
-              }
-            : entry,
-        ),
-      }));
     } catch (error) {
+      updateState((current) => applyShoppingItemChecked(current, listId, itemId, !checked));
       setCloudSync({
         phase: 'error',
         message: humanizeAuthError(error),
@@ -327,19 +353,14 @@ export function useCrudModules({
     );
     const nextStatus = currentTask.status === 'done' && !done ? 'in-progress' : currentTask.status;
 
+    updateState((current) => applyTaskSubtaskDone(current, taskId, subtaskId, done, nextStatus));
+
     try {
       if (authState.family) {
         await updateTask(taskId, { subtasks: nextSubtasks, status: nextStatus });
       }
-      updateState((current) => ({
-        ...current,
-        tasks: current.tasks.map((entry) =>
-          entry.id === taskId
-            ? { ...entry, status: nextStatus, subtasks: nextSubtasks }
-            : entry,
-        ),
-      }));
     } catch (error) {
+      updateState((current) => applyTaskSubtaskDone(current, taskId, subtaskId, !done, currentTask.status));
       setCloudSync({
         phase: 'error',
         message: humanizeAuthError(error),

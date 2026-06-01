@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { AppButton, AppButtonLink } from './AppButton';
 import { AppCard } from './AppCard';
 import { AppDialogShell } from './AppDialogShell';
-import { appInputClassName, appSelectClassName, appTextareaClassName } from './AppField';
+import {
+  appCheckboxClassName,
+  appInputClassName,
+  appSelectClassName,
+  appTextareaClassName,
+  appToggleClassName,
+} from './AppField';
 
 describe('App primitives', () => {
   it('renders button variants with an explicit wrapper contract', () => {
@@ -51,5 +57,10 @@ describe('App primitives', () => {
     expect(appInputClassName()).toContain('app-input');
     expect(appTextareaClassName()).toContain('app-textarea');
     expect(appSelectClassName()).toContain('app-select');
+    expect(appCheckboxClassName()).toContain('app-checkbox');
+    expect(appCheckboxClassName()).toContain('checkbox');
+    expect(appCheckboxClassName()).toContain('checkbox-xl');
+    expect(appToggleClassName()).toContain('app-switch');
+    expect(appToggleClassName()).toContain('toggle');
   });
 });

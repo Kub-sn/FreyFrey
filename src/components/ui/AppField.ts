@@ -13,3 +13,17 @@ export function appTextareaClassName(className?: string) {
 export function appSelectClassName(className?: string) {
   return cn('app-select select select-bordered min-h-[3.45rem] px-4', baseFieldClassName, className);
 }
+
+export function appCheckboxClassName(className?: string) {
+  return cn(
+    'app-checkbox checkbox checkbox-xl shrink-0',
+    className,
+  );
+}
+
+export function appToggleClassName(className?: string) {
+  return cn(
+    'app-switch toggle',
+    className,
+  );
+}

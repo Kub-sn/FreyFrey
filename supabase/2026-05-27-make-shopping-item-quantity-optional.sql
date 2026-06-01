@@ -1,0 +1,1 @@
+alter table public.shopping_items alter column quantity drop not null;

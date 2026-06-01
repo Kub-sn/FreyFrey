@@ -95,13 +95,18 @@ describe('App', () => {
     await user.type(within(dialog).getByPlaceholderText('z. B. Wocheneinkauf'), 'Wocheneinkauf');
     await user.clear(within(dialog).getByLabelText('Datum'));
     await user.type(within(dialog).getByLabelText('Datum'), '2026-05-07');
-    await user.type(within(dialog).getByPlaceholderText('Artikel'), 'Milch');
-    await user.type(within(dialog).getByPlaceholderText('Anzahl'), '2');
+
+    const quickAddInput = within(dialog).getByLabelText('Neuer Artikel');
+
+    await user.type(quickAddInput, '2 Milch{Enter}');
+    expect(quickAddInput).toHaveValue('');
+    expect(quickAddInput).toHaveFocus();
+
     await user.click(within(dialog).getByRole('button', { name: 'Liste anlegen' }));
 
     await user.click(screen.getByRole('button', { name: /Wocheneinkauf/i }));
 
-    expect(screen.getByRole('checkbox', { name: 'Milch' })).not.toHaveClass('app-switch');
+    expect(screen.getByRole('checkbox', { name: 'Milch' })).toHaveClass('app-checkbox', 'checkbox');
   });
 
   it('allows switching to the notes module', async () => {

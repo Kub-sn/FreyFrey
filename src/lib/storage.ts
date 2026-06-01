@@ -61,14 +61,14 @@ function normalizeShoppingListItems(items: unknown): ShoppingListItem[] {
     const name = typeof candidate.name === 'string' ? candidate.name.trim() : '';
     const quantity = typeof candidate.quantity === 'string' ? candidate.quantity.trim() : '';
 
-    if (!id || !name || !quantity) {
+    if (!id || !name) {
       return [];
     }
 
     return [{
       id,
       name,
-      quantity,
+      quantity: quantity || undefined,
       checked: Boolean(candidate.checked),
     }];
   });

@@ -4,7 +4,7 @@ import type { PlannerState, UserRole } from '../../lib/planner-data';
 import type { AdminFamilyDirectoryFamily, SupabaseFamilyContext, SupabaseFamilyInvite, SupabaseProfile } from '../../lib/supabase';
 import { AppButton } from '../ui/AppButton';
 import { AppCard } from '../ui/AppCard';
-import { appInputClassName, appSelectClassName } from '../ui/AppField';
+import { appInputClassName, appSelectClassName, appToggleClassName } from '../ui/AppField';
 import { FamilyStatusBadges, getRoleChipClass, getRoleLabel, isFamilyOwnerMember } from './planner-shell-utils';
 import { useActiveTab } from '../../context/ActiveTabContext';
 
@@ -142,7 +142,7 @@ export function FamilyModule({
         </div>
         <input
           type="checkbox"
-          className="app-switch"
+          className={appToggleClassName()}
           aria-label="Freie Registrierung erlauben"
           name="allow-open-registration"
           checked={allowOpenRegistration}

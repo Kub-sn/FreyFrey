@@ -60,7 +60,7 @@ describe('TasksModule', () => {
     expect(screen.getByRole('heading', { level: 4, name: 'In Arbeit' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 4, name: 'Erledigt' })).toBeInTheDocument();
     expect(screen.getByText('1/2 erledigt')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: 'Hefte sortieren' })).not.toHaveClass('app-switch');
+    expect(screen.getByRole('checkbox', { name: 'Hefte sortieren' })).toHaveClass('app-checkbox', 'checkbox');
     const createButton = screen.getByRole('button', { name: 'Todo hinzufügen' });
     expect(createButton).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 4, name: 'Todo' }).closest('article')).not.toContainElement(createButton);

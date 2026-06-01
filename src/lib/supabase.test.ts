@@ -83,6 +83,31 @@ function buildTaskDeleteBuilder(result: { error: unknown }) {
   };
 }
 
+function buildShoppingListQueryBuilder(result: { data: unknown; error: unknown }) {
+  return {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockResolvedValue(result),
+  };
+}
+
+function buildShoppingListMutationBuilder(result: { data: unknown; error: unknown }) {
+  return {
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue(result),
+  };
+}
+
+function buildShoppingItemInsertBuilder(result: { data: unknown; error: unknown }) {
+  return {
+    insert: vi.fn().mockReturnThis(),
+    select: vi.fn().mockResolvedValue(result),
+  };
+}
+
 describe('auth email normalization', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -574,6 +599,148 @@ describe('bootstrapFamilyForUser', () => {
       allowOpenRegistration: true,
       isOwner: true,
       ownerUserId: 'user-boot',
+    });
+  });
+});
+
+describe('shopping list persistence', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'publishable-key');
+  });
+
+  it('maps null shopping item quantities from Supabase to undefined', async () => {
+    const shoppingListsBuilder = buildShoppingListQueryBuilder({
+      data: [
+        {
+          id: 'shopping-list-1',
+          title: 'Supermarkt',
+          shopping_date: '2026-05-06',
+        },
+      ],
+      error: null,
+    });
+    const shoppingItemsBuilder = buildShoppingListQueryBuilder({
+      data: [
+        {
+          id: 'shopping-item-1',
+          list_id: 'shopping-list-1',
+          name: 'Wasser',
+          quantity: null,
+          checked: false,
+        },
+      ],
+      error: null,
+    });
+    const fromMock = vi.fn((table: string) => {
+      if (table === 'shopping_lists') {
+        return shoppingListsBuilder;
+      }
+
+      if (table === 'shopping_items') {
+        return shoppingItemsBuilder;
+      }
+
+      throw new Error(`unexpected table ${table}`);
+    });
+
+    createClientMock.mockReturnValue({
+      from: fromMock,
+    });
+
+    const { fetchShoppingLists } = await import('./supabase');
+    const result = await fetchShoppingLists('family-1');
+
+    expect(result).toEqual([
+      {
+        id: 'shopping-list-1',
+        title: 'Supermarkt',
+        date: '2026-05-06',
+        items: [
+          {
+            id: 'shopping-item-1',
+            name: 'Wasser',
+            quantity: undefined,
+            checked: false,
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('stores missing shopping item quantities as null when creating lists', async () => {
+    const shoppingListsBuilder = buildShoppingListMutationBuilder({
+      data: {
+        id: 'shopping-list-1',
+        title: 'Supermarkt',
+        shopping_date: '2026-05-06',
+      },
+      error: null,
+    });
+    const shoppingItemsBuilder = buildShoppingItemInsertBuilder({
+      data: [
+        {
+          id: 'shopping-item-1',
+          list_id: 'shopping-list-1',
+          name: 'Wasser',
+          quantity: null,
+          checked: false,
+        },
+      ],
+      error: null,
+    });
+    const fromMock = vi.fn((table: string) => {
+      if (table === 'shopping_lists') {
+        return shoppingListsBuilder;
+      }
+
+      if (table === 'shopping_items') {
+        return shoppingItemsBuilder;
+      }
+
+      throw new Error(`unexpected table ${table}`);
+    });
+
+    createClientMock.mockReturnValue({
+      from: fromMock,
+    });
+
+    const { createShoppingList } = await import('./supabase');
+    const result = await createShoppingList('family-1', {
+      title: 'Supermarkt',
+      date: '2026-05-06',
+      items: [
+        {
+          id: 'shopping-item-draft',
+          name: 'Wasser',
+          checked: false,
+        },
+      ],
+    });
+
+    expect(shoppingItemsBuilder.insert).toHaveBeenCalledWith([
+      {
+        family_id: 'family-1',
+        list_id: 'shopping-list-1',
+        name: 'Wasser',
+        quantity: null,
+        checked: false,
+      },
+    ]);
+    expect(result).toEqual({
+      id: 'shopping-list-1',
+      title: 'Supermarkt',
+      date: '2026-05-06',
+      items: [
+        {
+          id: 'shopping-item-1',
+          name: 'Wasser',
+          quantity: undefined,
+          checked: false,
+        },
+      ],
     });
   });
 });

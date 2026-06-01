@@ -10,7 +10,7 @@ export type FamilyMember = {
 export type ShoppingListItem = {
   id: string;
   name: string;
-  quantity: string;
+  quantity?: string;
   checked: boolean;
 };
 

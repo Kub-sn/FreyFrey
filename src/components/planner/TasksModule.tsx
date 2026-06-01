@@ -12,7 +12,7 @@ import {
 } from '../../lib/tasks';
 import { AppButton } from '../ui/AppButton';
 import { AppCard } from '../ui/AppCard';
-import { appInputClassName, appSelectClassName } from '../ui/AppField';
+import { appCheckboxClassName, appInputClassName, appSelectClassName } from '../ui/AppField';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { FieldError } from './FieldError';
 import { ModalDialog } from './ModalDialog';
@@ -421,6 +421,7 @@ export function TasksModule({
                               <label key={subtask.id} className="flex items-center gap-3 text-[0.92rem] text-[rgba(24,52,47,0.84)] max-[720px]:gap-2 max-[720px]:text-[0.84rem]">
                                 <input
                                   type="checkbox"
+                                  className={appCheckboxClassName()}
                                   checked={subtask.done}
                                   onChange={() => void onToggleTaskSubtask(task.id, subtask.id, !subtask.done)}
                                 />
