@@ -670,7 +670,7 @@ describe('shopping list persistence', () => {
     ]);
   });
 
-  it('stores missing shopping item quantities as null when creating lists', async () => {
+  it('stores missing shopping item quantities as an empty string for backward-compatible inserts', async () => {
     const shoppingListsBuilder = buildShoppingListMutationBuilder({
       data: {
         id: 'shopping-list-1',
@@ -685,7 +685,7 @@ describe('shopping list persistence', () => {
           id: 'shopping-item-1',
           list_id: 'shopping-list-1',
           name: 'Wasser',
-          quantity: null,
+          quantity: '',
           checked: false,
         },
       ],
@@ -725,7 +725,7 @@ describe('shopping list persistence', () => {
         family_id: 'family-1',
         list_id: 'shopping-list-1',
         name: 'Wasser',
-        quantity: null,
+        quantity: '',
         checked: false,
       },
     ]);
@@ -742,6 +742,65 @@ describe('shopping list persistence', () => {
         },
       ],
     });
+  });
+
+  it('normalizes empty-string shopping item quantities to undefined when fetching lists', async () => {
+    const shoppingListsBuilder = buildShoppingListQueryBuilder({
+      data: [
+        {
+          id: 'shopping-list-1',
+          title: 'Supermarkt',
+          shopping_date: '2026-05-06',
+        },
+      ],
+      error: null,
+    });
+    const shoppingItemsBuilder = buildShoppingListQueryBuilder({
+      data: [
+        {
+          id: 'shopping-item-1',
+          list_id: 'shopping-list-1',
+          name: 'Wasser',
+          quantity: '',
+          checked: false,
+        },
+      ],
+      error: null,
+    });
+    const fromMock = vi.fn((table: string) => {
+      if (table === 'shopping_lists') {
+        return shoppingListsBuilder;
+      }
+
+      if (table === 'shopping_items') {
+        return shoppingItemsBuilder;
+      }
+
+      throw new Error(`unexpected table ${table}`);
+    });
+
+    createClientMock.mockReturnValue({
+      from: fromMock,
+    });
+
+    const { fetchShoppingLists } = await import('./supabase');
+    const result = await fetchShoppingLists('family-1');
+
+    expect(result).toEqual([
+      {
+        id: 'shopping-list-1',
+        title: 'Supermarkt',
+        date: '2026-05-06',
+        items: [
+          {
+            id: 'shopping-item-1',
+            name: 'Wasser',
+            quantity: undefined,
+            checked: false,
+          },
+        ],
+      },
+    ]);
   });
 });
 

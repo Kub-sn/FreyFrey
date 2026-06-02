@@ -494,7 +494,7 @@ export function ShoppingModule({
                     event.preventDefault();
                     handleQuickAddItem();
                   }}
-                  placeholder="z. B. 2 Wasser oder 200 gram Reis"
+                  placeholder="z. B. Toilettenpapier oder 2 Wasser"
                 />
               </label>
 

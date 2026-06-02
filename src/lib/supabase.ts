@@ -895,10 +895,12 @@ export async function bootstrapFamilyForUser(user: User, familyName: string) {
 function groupShoppingListItems(items: ShoppingListItemRow[]) {
   return items.reduce<Record<string, ShoppingListItem[]>>((grouped, item) => {
     const current = grouped[item.list_id] ?? [];
+    const normalizedQuantity = item.quantity?.trim();
+
     current.push({
       id: item.id,
       name: item.name,
-      quantity: item.quantity ?? undefined,
+      quantity: normalizedQuantity || undefined,
       checked: item.checked,
     });
     grouped[item.list_id] = current;
@@ -922,7 +924,8 @@ async function insertShoppingListItems(
       family_id: familyId,
       list_id: listId,
       name: item.name,
-      quantity: item.quantity ?? null,
+      // Keep old databases with a lingering NOT NULL constraint working.
+      quantity: item.quantity?.trim() || '',
       checked: item.checked,
     })))
     .select('id, list_id, name, quantity, checked');
@@ -934,7 +937,7 @@ async function insertShoppingListItems(
   return (data as ShoppingListItemRow[]).map((item) => ({
     id: item.id,
     name: item.name,
-    quantity: item.quantity ?? undefined,
+    quantity: item.quantity?.trim() || undefined,
     checked: item.checked,
   }));
 }

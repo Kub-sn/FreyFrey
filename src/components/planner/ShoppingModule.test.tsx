@@ -57,10 +57,10 @@ describe('ShoppingModule', () => {
     expect(quickAddInput).toHaveValue('');
     expect(quickAddInput).toHaveFocus();
 
-    await user.type(quickAddInput, 'Wasser{Enter}');
+    await user.type(quickAddInput, 'Toilettenpapier{Enter}');
 
     expect(screen.getByDisplayValue('2 Brot')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Wasser')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Toilettenpapier')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Liste anlegen' }));
 
@@ -74,7 +74,7 @@ describe('ShoppingModule', () => {
           checked: false,
         }),
         expect.objectContaining({
-          name: 'Wasser',
+          name: 'Toilettenpapier',
           quantity: undefined,
           checked: false,
         }),
