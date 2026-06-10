@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import type { PlannerState } from '../lib/planner-data';
 import type {
   AuthState,
@@ -9,6 +9,7 @@ import type {
 import { createNote, deleteNote, updateNote } from '../lib/supabase';
 import { humanizeAuthError } from '../lib/auth-errors';
 import { nextStringId } from '../lib/id';
+import { clearUiDraft, loadUiDraft, saveUiDraft } from '../lib/storage';
 
 type UseNoteManagerParams = {
   authState: AuthState;
@@ -17,30 +18,51 @@ type UseNoteManagerParams = {
   updateState: (updater: (current: PlannerState) => PlannerState) => void;
 };
 
+const NOTE_DIALOG_STORAGE_KEY = 'note-dialog-edit';
+
 export function useNoteManager({
   authState,
   plannerState,
   setCloudSync,
   updateState,
 }: UseNoteManagerParams) {
-  const [noteDialogState, setNoteDialogState] = useState<NoteDialogState | null>(null);
+  const [noteDialogState, setNoteDialogState] = useState<NoteDialogState | null>(() =>
+    loadUiDraft<NoteDialogState | null>(NOTE_DIALOG_STORAGE_KEY, null),
+  );
   const [pendingNoteDeletion, setPendingNoteDeletion] = useState<PendingNoteDeletionState | null>(null);
   const [noteDeletionBusy, setNoteDeletionBusy] = useState(false);
 
-  const handleAddNote = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    const title = String(form.get('title') || '').trim();
-    const text = String(form.get('text') || '').trim();
-
-    if (!text) {
+  useEffect(() => {
+    if (!noteDialogState?.isEditing) {
+      clearUiDraft(NOTE_DIALOG_STORAGE_KEY);
       return;
+    }
+
+    const currentNoteStillExists = plannerState.notes.some((note) => note.id === noteDialogState.id);
+
+    if (!currentNoteStillExists) {
+      setNoteDialogState(null);
+      clearUiDraft(NOTE_DIALOG_STORAGE_KEY);
+      return;
+    }
+
+    saveUiDraft(NOTE_DIALOG_STORAGE_KEY, noteDialogState);
+  }, [noteDialogState, plannerState.notes]);
+
+  const handleAddNote = async (title: string, text: string) => {
+    const normalizedTitle = title.trim();
+    const normalizedText = text.trim();
+
+    if (!normalizedText) {
+      return false;
     }
 
     try {
       if (authState.family) {
-        const createdNote = await createNote(authState.family.familyId, { title, text });
+        const createdNote = await createNote(authState.family.familyId, {
+          title: normalizedTitle,
+          text: normalizedText,
+        });
         updateState((current) => ({
           ...current,
           notes: [createdNote, ...current.notes],
@@ -52,15 +74,18 @@ export function useNoteManager({
       } else {
         updateState((current) => ({
           ...current,
-          notes: [{ id: nextStringId(), title, text }, ...current.notes],
+          notes: [{ id: nextStringId(), title: normalizedTitle, text: normalizedText }, ...current.notes],
         }));
       }
-      formElement.reset();
+
+      return true;
     } catch (error) {
       setCloudSync({
         phase: 'error',
         message: humanizeAuthError(error),
       });
+
+      return false;
     }
   };
 
@@ -140,6 +165,7 @@ export function useNoteManager({
         notes: current.notes.map((note) => (note.id === savedNote.id ? savedNote : note)),
       }));
       setNoteDialogState(null);
+      clearUiDraft(NOTE_DIALOG_STORAGE_KEY);
     } catch (error) {
       setCloudSync({
         phase: 'error',

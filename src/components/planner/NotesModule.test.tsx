@@ -8,7 +8,7 @@ import { NotesModule } from './NotesModule';
 describe('NotesModule', () => {
   it('renders notes, opens a note, deletes a note, and submits the note form', async () => {
     const user = userEvent.setup();
-    const onAddNote = vi.fn().mockResolvedValue(undefined);
+    const onAddNote = vi.fn().mockResolvedValue(true);
     const onDeleteNote = vi.fn().mockResolvedValue(undefined);
     const onOpenNote = vi.fn();
 
@@ -40,7 +40,7 @@ describe('NotesModule', () => {
 
   it('shows a validation message when content is empty and skips onAddNote', async () => {
     const user = userEvent.setup();
-    const onAddNote = vi.fn().mockResolvedValue(undefined);
+    const onAddNote = vi.fn().mockResolvedValue(true);
 
     render(
       <ActiveTabProvider activeTab="notes" setActiveTab={vi.fn()}>
@@ -61,7 +61,7 @@ describe('NotesModule', () => {
 
   it('saves a note when only the content is filled (title is optional)', async () => {
     const user = userEvent.setup();
-    const onAddNote = vi.fn().mockResolvedValue(undefined);
+    const onAddNote = vi.fn().mockResolvedValue(true);
 
     render(
       <ActiveTabProvider activeTab="notes" setActiveTab={vi.fn()}>

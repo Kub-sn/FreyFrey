@@ -117,12 +117,7 @@ export default function App() {
           mode={auth.authMode}
           busy={auth.authBusy}
           authDraft={auth.authDraft}
-          onDraftChange={(field, value) =>
-            auth.setAuthDraft((current) => ({
-              ...current,
-              [field]: value,
-            }))
-          }
+          onDraftChange={auth.handleAuthDraftChange}
           onSubmit={auth.handleAuthSubmit}
           onModeChange={auth.handleAuthModeChange}
         />

@@ -11,6 +11,12 @@
       "sourceType": "github",
       "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
     },
+    "react-useeffect-guide": {
+      "source": "theoklitosBam7/skills",
+      "sourceType": "github",
+      "skillPath": "react-useeffect-guide/SKILL.md",
+      "computedHash": "5d87efddfa1055cf09a63b70cc3037eb2ec115123f8f5088f2490b9681f273c8"
+    },
     "react:components": {
       "source": "google-labs-code/stitch-skills",
       "sourceType": "github",

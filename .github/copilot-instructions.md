@@ -28,4 +28,10 @@
 
 ## Frontend / React
 
-When working on frontend code (files under `src/`), also follow the guidelines in [REACT_BEST_PRACTICES.md](../REACT_BEST_PRACTICES.md).
+When working on frontend code (files under `src/`), use only the Vite-relevant guidance from [REACT_BEST_PRACTICES.md](../REACT_BEST_PRACTICES.md).
+- Default scope from [REACT_BEST_PRACTICES.md](../REACT_BEST_PRACTICES.md): client-side parts of Eliminating Waterfalls, Bundle Size Optimization, Client-Side Data Fetching, Re-render Optimization, Rendering Performance, JavaScript Performance, and Advanced Patterns that apply to React components/hooks in this repo.
+- Ignore Next.js, React Server Components, API route, server action, request-scoped caching, serialization, and other server-only guidance unless the task explicitly touches those surfaces.
+- For any React task that adds, reviews, refactors, or considers `useEffect`, always apply the guidance in [.agents/skills/react-useeffect-guide/SKILL.md](../.agents/skills/react-useeffect-guide/SKILL.md).
+- For frontend reviews of changed React/TSX/TS/JS files, always apply [.agents/skills/frontend-code-review/SKILL.md](../.agents/skills/frontend-code-review/SKILL.md) as the review checklist for the final review pass.
+- For tasks that translate designs or mocks into modular React components, apply [.agents/skills/react-components/SKILL.md](../.agents/skills/react-components/SKILL.md).
+- Default rule for `useEffect`: only use it to synchronize with external systems. Prefer render-time derivation, event handlers, lifted state, or small helper functions whenever those solve the problem.

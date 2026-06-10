@@ -1,12 +1,24 @@
 import { Trash2 } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import type { PlannerState } from '../../lib/planner-data';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { validateRequiredFields, type FieldErrors } from '../../lib/form-validation';
+import { clearUiDraft, loadUiDraft, saveUiDraft } from '../../lib/storage';
 import { AppButton } from '../ui/AppButton';
 import { AppCard } from '../ui/AppCard';
 import { appInputClassName, appTextareaClassName } from '../ui/AppField';
 import { FieldError } from './FieldError';
+
+type NoteCreateDraft = {
+  title: string;
+  text: string;
+};
+
+const NOTES_CREATE_STORAGE_KEY = 'notes-create';
+const EMPTY_NOTE_DRAFT: NoteCreateDraft = {
+  title: '',
+  text: '',
+};
 
 export function NotesModule({
   notes,
@@ -15,23 +27,45 @@ export function NotesModule({
   onOpenNote,
 }: {
   notes: PlannerState['notes'];
-  onAddNote: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  onAddNote: (title: string, text: string) => Promise<boolean>;
   onDeleteNote: (noteId: string) => Promise<void>;
   onOpenNote: (noteId: string) => void;
 }) {
   const { activeTab } = useActiveTab();
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [draft, setDraft] = useState<NoteCreateDraft>(() =>
+    loadUiDraft<NoteCreateDraft>(NOTES_CREATE_STORAGE_KEY, EMPTY_NOTE_DRAFT),
+  );
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    const form = new FormData(event.currentTarget);
-    const next = validateRequiredFields(form, [{ name: 'text', label: 'Inhalt' }]);
+  const updateDraft = (updater: (current: NoteCreateDraft) => NoteCreateDraft) => {
+    setDraft((current) => {
+      const next = updater(current);
+      saveUiDraft(NOTES_CREATE_STORAGE_KEY, next);
+      return next;
+    });
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const next = validateRequiredFields(new FormData(event.currentTarget), [{ name: 'text', label: 'Inhalt' }]);
     if (Object.keys(next).length > 0) {
-      event.preventDefault();
       setErrors(next);
       return;
     }
+
+    if (!draft.text.trim()) {
+      return;
+    }
+
     setErrors({});
-    void onAddNote(event);
+    const didSave = await onAddNote(draft.title, draft.text);
+
+    if (!didSave) {
+      return;
+    }
+
+    setDraft(EMPTY_NOTE_DRAFT);
+    clearUiDraft(NOTES_CREATE_STORAGE_KEY);
   };
 
   const clearFieldError = (name: string) =>
@@ -46,15 +80,29 @@ export function NotesModule({
       <div className="module-layout grid-cols-[minmax(320px,440px)_minmax(0,1fr)]">
         <AppCard as="form" className="form-panel min-w-0" onSubmit={handleSubmit} noValidate>
           <h4>Neue Notiz</h4>
-          <input className={appInputClassName()} name="title" placeholder="Titel" />
+          <input
+            className={appInputClassName()}
+            name="title"
+            placeholder="Titel"
+            value={draft.title}
+            onChange={(event) => {
+              const nextTitle = event.currentTarget.value;
+              updateDraft((current) => ({ ...current, title: nextTitle }));
+            }}
+          />
           <textarea
             className={appTextareaClassName()}
             name="text"
             placeholder="Inhalt"
             rows={5}
+            value={draft.text}
             aria-invalid={errors.text ? 'true' : undefined}
             aria-describedby={errors.text ? 'text-error' : undefined}
-            onInput={() => clearFieldError('text')}
+            onInput={(event) => {
+              const nextText = event.currentTarget.value;
+              updateDraft((current) => ({ ...current, text: nextText }));
+              clearFieldError('text');
+            }}
           />
           <FieldError fieldName="text" message={errors.text} />
           <AppButton type="submit" variant="primary">Notiz speichern</AppButton>

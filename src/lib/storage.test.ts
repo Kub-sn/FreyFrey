@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultPlannerState } from './planner-data';
-import { loadActiveTab, loadPlannerState, saveActiveTab } from './storage';
+import {
+  clearUiDraft,
+  loadActiveTab,
+  loadPlannerState,
+  loadUiDraft,
+  saveActiveTab,
+  saveUiDraft,
+} from './storage';
 
 describe('loadPlannerState', () => {
   beforeEach(() => {
@@ -232,5 +239,33 @@ describe('loadPlannerState', () => {
     window.localStorage.setItem('family-planner-active-tab-v1', 'not-a-real-tab');
 
     expect(loadActiveTab()).toBeNull();
+  });
+
+  it('loads a stored UI draft value', () => {
+    saveUiDraft('notes-create', { title: 'Entwurf', text: 'Noch nicht gespeichert' });
+
+    expect(loadUiDraft('notes-create', { title: '', text: '' })).toEqual({
+      title: 'Entwurf',
+      text: 'Noch nicht gespeichert',
+    });
+  });
+
+  it('falls back when a stored UI draft is invalid JSON', () => {
+    window.localStorage.setItem('family-planner-ui-draft-v1:notes-create', '{kaputt');
+
+    expect(loadUiDraft('notes-create', { title: '', text: '' })).toEqual({
+      title: '',
+      text: '',
+    });
+  });
+
+  it('clears a stored UI draft', () => {
+    saveUiDraft('notes-create', { title: 'Entwurf', text: 'Noch nicht gespeichert' });
+    clearUiDraft('notes-create');
+
+    expect(loadUiDraft('notes-create', { title: '', text: '' })).toEqual({
+      title: '',
+      text: '',
+    });
   });
 });

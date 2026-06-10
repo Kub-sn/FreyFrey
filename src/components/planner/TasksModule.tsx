@@ -1,9 +1,10 @@
 import { Plus } from 'lucide-react';
-import { useState, type DragEvent, type FormEvent } from 'react';
+import { useEffect, useState, type DragEvent, type FormEvent } from 'react';
 import type { PlannerState, TaskItem, TaskStatus } from '../../lib/planner-data';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { validateRequiredFields, type FieldErrors } from '../../lib/form-validation';
 import { nextStringId } from '../../lib/id';
+import { clearUiDraft, loadUiDraft, saveUiDraft } from '../../lib/storage';
 import {
   formatTaskDueLabel,
   getTaskDueState,
@@ -38,6 +39,31 @@ const columns: Array<{
     panelClassName: 'border-[rgba(25,98,77,0.18)] bg-[linear-gradient(180deg,rgba(242,249,245,0.98),rgba(229,242,236,0.98))]',
   },
 ];
+
+type TaskDialogState = { mode: 'create' } | { mode: 'edit'; taskId: string };
+
+type TaskDialogDraft = {
+  title: string;
+  owner: string;
+  due: string;
+  subtasks: PlannerState['tasks'][number]['subtasks'];
+};
+
+type PersistedTaskDialogDraft = {
+  dialogState: TaskDialogState;
+  draft: TaskDialogDraft;
+};
+
+const TASK_DIALOG_STORAGE_KEY = 'tasks-dialog';
+
+function createTaskDialogDraft(ownerDefaultValue: string): TaskDialogDraft {
+  return {
+    title: '',
+    owner: ownerDefaultValue.trim(),
+    due: '',
+    subtasks: [],
+  };
+}
 
 function getDueBadgeClassName(due: string) {
   const state = getTaskDueState(due);
@@ -85,11 +111,18 @@ export function TasksModule({
   onToggleTaskSubtask: (taskId: string, subtaskId: string, done: boolean) => Promise<void>;
 }) {
   const { activeTab } = useActiveTab();
+  const [initialDialogDraft] = useState<PersistedTaskDialogDraft | null>(() =>
+    loadUiDraft<PersistedTaskDialogDraft | null>(TASK_DIALOG_STORAGE_KEY, null),
+  );
   const [errors, setErrors] = useState<FieldErrors>({});
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<TaskStatus | null>(null);
-  const [draftSubtasks, setDraftSubtasks] = useState<PlannerState['tasks'][number]['subtasks']>([]);
-  const [taskDialogState, setTaskDialogState] = useState<{ mode: 'create' } | { mode: 'edit'; taskId: string } | null>(null);
+  const [taskDraft, setTaskDraft] = useState<TaskDialogDraft>(() =>
+    initialDialogDraft?.draft ?? createTaskDialogDraft(ownerDefaultValue),
+  );
+  const [taskDialogState, setTaskDialogState] = useState<TaskDialogState | null>(
+    initialDialogDraft?.dialogState ?? null,
+  );
   const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
   const [statusDialogTaskId, setStatusDialogTaskId] = useState<string | null>(null);
   const [pendingDeleteTaskId, setPendingDeleteTaskId] = useState<string | null>(null);
@@ -110,18 +143,49 @@ export function TasksModule({
     ? tasks.find((task) => task.id === menuTaskId) ?? null
     : null;
 
-  const buildTaskPayload = (form: FormData) => ({
-    title: String(form.get('title') || '').trim(),
-    owner: String(form.get('owner') || '').trim(),
-    due: String(form.get('due') || '').trim(),
-    subtasks: draftSubtasks
+  const buildTaskPayload = () => ({
+    title: taskDraft.title.trim(),
+    owner: taskDraft.owner.trim(),
+    due: taskDraft.due.trim(),
+    subtasks: taskDraft.subtasks
       .map((subtask) => ({ ...subtask, title: subtask.title.trim() }))
       .filter((subtask) => subtask.title.length > 0),
   });
 
+  const persistTaskDialogDraft = (nextDialogState: TaskDialogState | null, nextDraft: TaskDialogDraft) => {
+    if (!nextDialogState) {
+      clearUiDraft(TASK_DIALOG_STORAGE_KEY);
+      return;
+    }
+
+    saveUiDraft(TASK_DIALOG_STORAGE_KEY, {
+      dialogState: nextDialogState,
+      draft: nextDraft,
+    });
+  };
+
+  const updateTaskDraft = (updater: (current: TaskDialogDraft) => TaskDialogDraft) => {
+    setTaskDraft((current) => {
+      const next = updater(current);
+      persistTaskDialogDraft(taskDialogState, next);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (taskDialogState?.mode === 'edit' && !editingTask) {
+      setTaskDialogState(null);
+      setTaskDraft(createTaskDialogDraft(ownerDefaultValue));
+      clearUiDraft(TASK_DIALOG_STORAGE_KEY);
+    }
+  }, [editingTask, ownerDefaultValue, taskDialogState]);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const form = new FormData();
+    form.set('title', taskDraft.title);
+    form.set('owner', taskDraft.owner);
+    form.set('due', taskDraft.due);
     const next = validateRequiredFields(form, [
       { name: 'title', label: 'Aufgabe' },
       { name: 'owner', label: 'Verantwortlich' },
@@ -132,7 +196,7 @@ export function TasksModule({
       return;
     }
 
-    const payload = buildTaskPayload(form);
+    const payload = buildTaskPayload();
 
     setErrors({});
     const didSave = taskDialogState?.mode === 'edit' && editingTask
@@ -152,28 +216,42 @@ export function TasksModule({
       return;
     }
 
-    setDraftSubtasks([]);
+    setTaskDraft(createTaskDialogDraft(ownerDefaultValue));
     setTaskDialogState(null);
+    clearUiDraft(TASK_DIALOG_STORAGE_KEY);
   };
 
   const closeTaskDialog = () => {
+    const nextDraft = createTaskDialogDraft(ownerDefaultValue);
     setTaskDialogState(null);
     setErrors({});
-    setDraftSubtasks([]);
+    setTaskDraft(nextDraft);
+    persistTaskDialogDraft(null, nextDraft);
   };
 
   const openCreateDialog = () => {
-    setTaskDialogState({ mode: 'create' });
+    const nextDialogState: TaskDialogState = { mode: 'create' };
+    const nextDraft = createTaskDialogDraft(ownerDefaultValue);
+    setTaskDialogState(nextDialogState);
     setErrors({});
-    setDraftSubtasks([]);
+    setTaskDraft(nextDraft);
     setMenuTaskId(null);
+    persistTaskDialogDraft(nextDialogState, nextDraft);
   };
 
   const openEditDialog = (task: PlannerState['tasks'][number]) => {
-    setTaskDialogState({ mode: 'edit', taskId: task.id });
+    const nextDialogState: TaskDialogState = { mode: 'edit', taskId: task.id };
+    const nextDraft = {
+      title: task.title,
+      owner: task.owner,
+      due: task.due,
+      subtasks: task.subtasks.map((subtask) => ({ ...subtask })),
+    };
+    setTaskDialogState(nextDialogState);
     setErrors({});
-    setDraftSubtasks(task.subtasks.map((subtask) => ({ ...subtask })));
+    setTaskDraft(nextDraft);
     setMenuTaskId(null);
+    persistTaskDialogDraft(nextDialogState, nextDraft);
   };
 
   const clearFieldError = (name: string) =>
@@ -184,17 +262,26 @@ export function TasksModule({
     });
 
   const handleAddDraftSubtask = () => {
-    setDraftSubtasks((current) => [...current, { id: nextStringId(), title: '', done: false }]);
+    updateTaskDraft((current) => ({
+      ...current,
+      subtasks: [...current.subtasks, { id: nextStringId(), title: '', done: false }],
+    }));
   };
 
   const handleDraftSubtaskChange = (subtaskId: string, title: string) => {
-    setDraftSubtasks((current) => current.map((subtask) => (
-      subtask.id === subtaskId ? { ...subtask, title } : subtask
-    )));
+    updateTaskDraft((current) => ({
+      ...current,
+      subtasks: current.subtasks.map((subtask) => (
+        subtask.id === subtaskId ? { ...subtask, title } : subtask
+      )),
+    }));
   };
 
   const handleRemoveDraftSubtask = (subtaskId: string) => {
-    setDraftSubtasks((current) => current.filter((subtask) => subtask.id !== subtaskId));
+    updateTaskDraft((current) => ({
+      ...current,
+      subtasks: current.subtasks.filter((subtask) => subtask.id !== subtaskId),
+    }));
   };
 
   const handleCardDragStart = (event: DragEvent<HTMLElement>, taskId: string) => {
@@ -463,20 +550,28 @@ export function TasksModule({
               className={appInputClassName()}
               name="title"
               placeholder="Aufgabe"
-                defaultValue={editingTask?.title ?? ''}
+              value={taskDraft.title}
               aria-invalid={errors.title ? 'true' : undefined}
               aria-describedby={errors.title ? 'title-error' : undefined}
-              onInput={() => clearFieldError('title')}
+              onInput={(event) => {
+                const nextTitle = event.currentTarget.value;
+                updateTaskDraft((current) => ({ ...current, title: nextTitle }));
+                clearFieldError('title');
+              }}
             />
             <FieldError fieldName="title" message={errors.title} />
             <select
               className={appSelectClassName()}
               name="owner"
               aria-label="Verantwortlich"
-              defaultValue={editingTask?.owner ?? ownerDefaultValue}
+              value={taskDraft.owner}
               aria-invalid={errors.owner ? 'true' : undefined}
               aria-describedby={errors.owner ? 'owner-error' : undefined}
-              onInput={() => clearFieldError('owner')}
+              onInput={(event) => {
+                const nextOwner = event.currentTarget.value;
+                updateTaskDraft((current) => ({ ...current, owner: nextOwner }));
+                clearFieldError('owner');
+              }}
             >
               {ownerOptions.map((member) => (
                 <option key={member} value={member}>
@@ -490,10 +585,14 @@ export function TasksModule({
               name="due"
               type="date"
               aria-label="Fälligkeitsdatum"
-              defaultValue={editingTask?.due ?? ''}
+              value={taskDraft.due}
               aria-invalid={errors.due ? 'true' : undefined}
               aria-describedby={errors.due ? 'due-error' : undefined}
-              onInput={() => clearFieldError('due')}
+              onInput={(event) => {
+                const nextDue = event.currentTarget.value;
+                updateTaskDraft((current) => ({ ...current, due: nextDue }));
+                clearFieldError('due');
+              }}
             />
             <FieldError fieldName="due" message={errors.due} />
             <div className="grid gap-3 rounded-[22px] border border-[rgba(24,52,47,0.1)] bg-[rgba(248,243,235,0.62)] p-4">
@@ -503,14 +602,17 @@ export function TasksModule({
                   Subtask hinzufügen
                 </AppButton>
               </div>
-              {draftSubtasks.length > 0 ? (
+              {taskDraft.subtasks.length > 0 ? (
                 <div className="grid gap-2">
-                  {draftSubtasks.map((subtask, index) => (
+                  {taskDraft.subtasks.map((subtask, index) => (
                     <div key={subtask.id} className="flex items-center gap-2 max-[560px]:items-stretch">
                       <input
                         className={appInputClassName()}
                         value={subtask.title}
-                        onChange={(event) => handleDraftSubtaskChange(subtask.id, event.currentTarget.value)}
+                        onChange={(event) => {
+                          const nextTitle = event.currentTarget.value;
+                          handleDraftSubtaskChange(subtask.id, nextTitle);
+                        }}
                         placeholder={`Subtask ${index + 1}`}
                         aria-label={`Subtask ${index + 1}`}
                       />

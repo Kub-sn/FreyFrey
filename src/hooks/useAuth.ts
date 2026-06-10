@@ -7,6 +7,7 @@ import {
   getAuthRedirectMessage,
   getAuthRedirectMode,
 } from '../lib/auth-redirect';
+import { clearUiDraft, loadUiDraft, saveUiDraft } from '../lib/storage';
 import {
   acceptPendingFamilyInvite,
   bootstrapFamilyForUser,
@@ -43,6 +44,22 @@ type UseAuthParams = {
   setFamilyInvites: Dispatch<SetStateAction<SupabaseFamilyInvite[]>>;
 };
 
+type PersistedAuthDraft = Pick<AuthDraft, 'displayName' | 'email'>;
+
+const AUTH_DRAFT_STORAGE_KEY = 'auth-form';
+const AUTH_DEFAULT_DRAFT: PersistedAuthDraft = {
+  displayName: '',
+  email: '',
+};
+const AUTH_MODE_STORAGE_KEY = 'auth-mode';
+
+function toPersistedAuthDraft(draft: AuthDraft): PersistedAuthDraft {
+  return {
+    displayName: draft.displayName,
+    email: draft.email,
+  };
+}
+
 export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
   const [redirectAuthMessage] = useState(() =>
     typeof window === 'undefined' ? null : getAuthRedirectMessage(window.location.href),
@@ -53,8 +70,18 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
   const [redirectAuthMode] = useState<AuthMode | null>(() =>
     typeof window === 'undefined' ? null : getAuthRedirectMode(window.location.href),
   );
-  const [authDraft, setAuthDraft] = useState(EMPTY_AUTH_DRAFT);
-  const [authMode, setAuthMode] = useState<AuthMode>(redirectAuthMode ?? 'sign-in');
+  const [authDraft, setAuthDraft] = useState(() => {
+    const persistedDraft = loadUiDraft<PersistedAuthDraft>(AUTH_DRAFT_STORAGE_KEY, AUTH_DEFAULT_DRAFT);
+
+    return {
+      ...EMPTY_AUTH_DRAFT,
+      ...persistedDraft,
+    };
+  });
+  const [authMode, setAuthMode] = useState<AuthMode>(() => (
+    redirectAuthMode
+    ?? loadUiDraft<AuthMode>(AUTH_MODE_STORAGE_KEY, 'sign-in')
+  ));
   const [authBusy, setAuthBusy] = useState(false);
   const [registrationGatePreview, setRegistrationGatePreview] = useState<SupabaseRegistrationGate | null>(null);
   const blocksSessionHydrationAfterRecovery = useRef(redirectAuthMode === 'reset-password');
@@ -66,6 +93,58 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
     error: null,
     message: null,
   });
+
+  useEffect(() => {
+    if (
+      authState.stage === 'authenticated'
+      || authState.stage === 'onboarding'
+      || authState.stage === 'disabled'
+    ) {
+      clearUiDraft(AUTH_DRAFT_STORAGE_KEY);
+      clearUiDraft(AUTH_MODE_STORAGE_KEY);
+    }
+  }, [authState.stage]);
+
+  const updateAuthDraft = (updater: (current: AuthDraft) => AuthDraft) => {
+    setAuthDraft((current) => {
+      const next = updater(current);
+
+      if (authState.stage === 'signed-out') {
+        saveUiDraft<PersistedAuthDraft>(AUTH_DRAFT_STORAGE_KEY, toPersistedAuthDraft(next));
+      }
+
+      return next;
+    });
+  };
+
+  const replaceAuthDraft = (next: AuthDraft) => {
+    setAuthDraft(next);
+
+    if (authState.stage === 'signed-out') {
+      saveUiDraft<PersistedAuthDraft>(AUTH_DRAFT_STORAGE_KEY, toPersistedAuthDraft(next));
+      return;
+    }
+
+    clearUiDraft(AUTH_DRAFT_STORAGE_KEY);
+  };
+
+  const replaceAuthMode = (nextMode: AuthMode) => {
+    setAuthMode(nextMode);
+
+    if (authState.stage === 'signed-out') {
+      saveUiDraft<AuthMode>(AUTH_MODE_STORAGE_KEY, nextMode);
+      return;
+    }
+
+    clearUiDraft(AUTH_MODE_STORAGE_KEY);
+  };
+
+  const handleAuthDraftChange = (field: keyof AuthDraft, value: string) => {
+    updateAuthDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
 
   // --- Registration gate preview ---
 
@@ -300,7 +379,7 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
           stage: 'signed-out',
           message: 'Wenn ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen verschickt.',
         }));
-        setAuthMode('sign-in');
+        replaceAuthMode('sign-in');
       } else {
         if (password !== confirmPassword) {
           throw new Error('Die neuen Passwörter stimmen nicht überein.');
@@ -323,10 +402,10 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
           error: null,
           message: 'Passwort erfolgreich aktualisiert.',
         }));
-        setAuthMode('sign-in');
+        replaceAuthMode('sign-in');
       }
 
-      setAuthDraft(EMPTY_AUTH_DRAFT);
+      replaceAuthDraft(EMPTY_AUTH_DRAFT);
       formElement.reset();
     } catch (error) {
       setAuthState((current) => ({
@@ -425,8 +504,8 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
       }
 
       blocksSessionHydrationAfterRecovery.current = false;
-      setAuthMode('sign-in');
-      setAuthDraft(EMPTY_AUTH_DRAFT);
+      replaceAuthMode('sign-in');
+      replaceAuthDraft(EMPTY_AUTH_DRAFT);
       setAuthState({
         stage: 'signed-out',
         session: null,
@@ -473,8 +552,8 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
     }
 
     blocksSessionHydrationAfterRecovery.current = false;
-    setAuthMode('sign-in');
-    setAuthDraft(EMPTY_AUTH_DRAFT);
+    replaceAuthMode('sign-in');
+    replaceAuthDraft(EMPTY_AUTH_DRAFT);
     setAuthState({
       stage: 'signed-out',
       session: null,
@@ -518,20 +597,20 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
       blocksSessionHydrationAfterRecovery.current = false;
     }
 
-    setAuthMode(mode);
-    setAuthDraft((current) => ({
+    replaceAuthMode(mode);
+    replaceAuthDraft({
       ...EMPTY_AUTH_DRAFT,
       email:
         mode === 'forgot-password' || (mode === 'sign-in' && authMode === 'forgot-password')
-          ? current.email
+          ? authDraft.email
           : '',
-    }));
+    });
   };
 
   return {
     authState,
     authDraft,
-    setAuthDraft,
+    handleAuthDraftChange,
     authMode,
     authBusy,
     registrationGatePreview,

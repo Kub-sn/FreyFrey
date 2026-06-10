@@ -1,8 +1,9 @@
 import { CalendarDays, Pencil, Plus, ShoppingCart, Trash2 } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PlannerState, ShoppingList, ShoppingListItem } from '../../lib/planner-data';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { nextStringId } from '../../lib/id';
+import { clearUiDraft, loadUiDraft, saveUiDraft } from '../../lib/storage';
 import { AppButton } from '../ui/AppButton';
 import { AppCard } from '../ui/AppCard';
 import { appCheckboxClassName, appInputClassName } from '../ui/AppField';
@@ -20,6 +21,14 @@ type ShoppingListDraft = {
   date: string;
   items: ShoppingListDraftItem[];
 };
+
+type PersistedShoppingEditorDraft = {
+  editorState: { mode: 'create' } | { mode: 'edit'; listId: string };
+  draftList: ShoppingListDraft;
+  quickAddItemText: string;
+};
+
+const SHOPPING_EDITOR_STORAGE_KEY = 'shopping-editor';
 
 function normalizeDraftItemText(text: string) {
   return text.trim().replace(/\s+/g, ' ');
@@ -115,13 +124,20 @@ export function ShoppingModule({
   onUpdateList: (id: string, payload: Omit<ShoppingList, 'id'>) => Promise<boolean>;
 }) {
   const { activeTab } = useActiveTab();
-  const [editorState, setEditorState] = useState<{ mode: 'create' } | { mode: 'edit'; listId: string } | null>(null);
+  const [initialEditorDraft] = useState<PersistedShoppingEditorDraft | null>(() =>
+    loadUiDraft<PersistedShoppingEditorDraft | null>(SHOPPING_EDITOR_STORAGE_KEY, null),
+  );
+  const [editorState, setEditorState] = useState<{ mode: 'create' } | { mode: 'edit'; listId: string } | null>(
+    initialEditorDraft?.editorState ?? null,
+  );
   const [openListId, setOpenListId] = useState<string | null>(null);
   const [menuListId, setMenuListId] = useState<string | null>(null);
   const [pendingDeleteListId, setPendingDeleteListId] = useState<string | null>(null);
-  const [draftList, setDraftList] = useState<ShoppingListDraft>(createDraftList);
+  const [draftList, setDraftList] = useState<ShoppingListDraft>(
+    () => initialEditorDraft?.draftList ?? createDraftList(),
+  );
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
-  const [quickAddItemText, setQuickAddItemText] = useState('');
+  const [quickAddItemText, setQuickAddItemText] = useState(initialEditorDraft?.quickAddItemText ?? '');
   const quickAddInputRef = useRef<HTMLInputElement | null>(null);
 
   const openList = useMemo(
@@ -141,23 +157,72 @@ export function ShoppingModule({
     [editorState, lists],
   );
 
+  const persistShoppingEditorDraft = (
+    nextEditorState: { mode: 'create' } | { mode: 'edit'; listId: string } | null,
+    nextDraftList: ShoppingListDraft,
+    nextQuickAddItemText: string,
+  ) => {
+    if (!nextEditorState) {
+      clearUiDraft(SHOPPING_EDITOR_STORAGE_KEY);
+      return;
+    }
+
+    saveUiDraft(SHOPPING_EDITOR_STORAGE_KEY, {
+      editorState: nextEditorState,
+      draftList: nextDraftList,
+      quickAddItemText: nextQuickAddItemText,
+    });
+  };
+
+  const updateDraftList = (updater: (current: ShoppingListDraft) => ShoppingListDraft) => {
+    setDraftList((current) => {
+      const next = updater(current);
+      persistShoppingEditorDraft(editorState, next, quickAddItemText);
+      return next;
+    });
+  };
+
+  const updateQuickAddItemText = (
+    value: string,
+    editorStateOverride: { mode: 'create' } | { mode: 'edit'; listId: string } | null = editorState,
+    draftListOverride: ShoppingListDraft = draftList,
+  ) => {
+    setQuickAddItemText(value);
+    persistShoppingEditorDraft(editorStateOverride, draftListOverride, value);
+  };
+
+  useEffect(() => {
+    if (editorState?.mode === 'edit' && !editedList) {
+      const nextDraftList = createDraftList();
+      setEditorState(null);
+      setDraftList(nextDraftList);
+      setQuickAddItemText('');
+      persistShoppingEditorDraft(null, nextDraftList, '');
+    }
+  }, [editedList, editorState]);
+
   const resetEditor = () => {
-    setDraftList(createDraftList());
+    const nextDraftList = createDraftList();
+    setDraftList(nextDraftList);
     setQuickAddItemText('');
     setValidationMessage(null);
     setEditorState(null);
+    persistShoppingEditorDraft(null, nextDraftList, '');
   };
 
   const openCreateDialog = () => {
-    setDraftList(createDraftList());
+    const nextDraftList = createDraftList();
+    const nextEditorState = { mode: 'create' } as const;
+    setDraftList(nextDraftList);
     setQuickAddItemText('');
     setValidationMessage(null);
     setMenuListId(null);
-    setEditorState({ mode: 'create' });
+    setEditorState(nextEditorState);
+    persistShoppingEditorDraft(nextEditorState, nextDraftList, '');
   };
 
   const openEditDialog = (list: ShoppingList) => {
-    setDraftList({
+    const nextDraftList = {
       title: list.title,
       date: list.date,
       items: list.items.map((item) => ({
@@ -165,19 +230,22 @@ export function ShoppingModule({
         text: formatDraftItemText(item),
         checked: item.checked,
       })),
-    });
+    };
+    const nextEditorState = { mode: 'edit', listId: list.id } as const;
+    setDraftList(nextDraftList);
     setQuickAddItemText('');
     setValidationMessage(null);
     setMenuListId(null);
-    setEditorState({ mode: 'edit', listId: list.id });
+    setEditorState(nextEditorState);
+    persistShoppingEditorDraft(nextEditorState, nextDraftList, '');
   };
 
   const updateDraftField = (field: keyof Omit<ShoppingListDraft, 'items'>, value: string) => {
-    setDraftList((current) => ({ ...current, [field]: value }));
+    updateDraftList((current) => ({ ...current, [field]: value }));
   };
 
   const updateDraftItemText = (itemId: string, value: string) => {
-    setDraftList((current) => ({
+    updateDraftList((current) => ({
       ...current,
       items: current.items.map((item) =>
         item.id === itemId ? { ...item, text: value } : item,
@@ -198,18 +266,19 @@ export function ShoppingModule({
       return false;
     }
 
-    setDraftList((current) => ({
-      ...current,
-      items: [
-        ...current.items,
-        {
-          id: nextStringId(),
-          text: normalizedText,
-          checked: false,
-        },
-      ],
-    }));
-    setQuickAddItemText('');
+    const nextItem: ShoppingListDraftItem = {
+      id: nextStringId(),
+      text: normalizedText,
+      checked: false,
+    };
+
+    const nextDraftList: ShoppingListDraft = {
+      ...draftList,
+      items: [...draftList.items, nextItem],
+    };
+
+    setDraftList(nextDraftList);
+    updateQuickAddItemText('', editorState, nextDraftList);
     setValidationMessage(null);
     focusQuickAddInput();
 
@@ -217,7 +286,7 @@ export function ShoppingModule({
   };
 
   const removeDraftItem = (itemId: string) => {
-    setDraftList((current) => {
+    updateDraftList((current) => {
       return {
         ...current,
         items: current.items.filter((item) => item.id !== itemId),
@@ -485,7 +554,7 @@ export function ShoppingModule({
                   ref={quickAddInputRef}
                   className={appInputClassName()}
                   value={quickAddItemText}
-                  onChange={(event) => setQuickAddItemText(event.currentTarget.value)}
+                  onChange={(event) => updateQuickAddItemText(event.currentTarget.value)}
                   onKeyDown={(event) => {
                     if (event.key !== 'Enter') {
                       return;

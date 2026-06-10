@@ -12,6 +12,7 @@ import { isDateKey, resolveLegacyMealDate } from './meals';
 const STORAGE_KEY = 'family-planner-state-v3';
 const LEGACY_STORAGE_KEYS = ['family-planner-state-v2'];
 const ACTIVE_TAB_STORAGE_KEY = 'family-planner-active-tab-v1';
+const UI_DRAFT_STORAGE_PREFIX = 'family-planner-ui-draft-v1:';
 
 function isTabId(value: unknown): value is TabId {
   return typeof value === 'string' && tabs.some((tab) => tab.id === value);
@@ -262,4 +263,38 @@ export function saveActiveTab(tab: TabId) {
   }
 
   window.localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tab);
+}
+
+export function loadUiDraft<T>(key: string, fallbackValue: T): T {
+  if (typeof window === 'undefined') {
+    return fallbackValue;
+  }
+
+  const rawValue = window.localStorage.getItem(`${UI_DRAFT_STORAGE_PREFIX}${key}`);
+
+  if (!rawValue) {
+    return fallbackValue;
+  }
+
+  try {
+    return JSON.parse(rawValue) as T;
+  } catch {
+    return fallbackValue;
+  }
+}
+
+export function saveUiDraft<T>(key: string, value: T) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.setItem(`${UI_DRAFT_STORAGE_PREFIX}${key}`, JSON.stringify(value));
+}
+
+export function clearUiDraft(key: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.removeItem(`${UI_DRAFT_STORAGE_PREFIX}${key}`);
 }

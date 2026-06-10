@@ -13,9 +13,9 @@ describe('TasksModule', () => {
           familyMemberOptions={plannerFixture.members.map((member) => member.name)}
           ownerDefaultValue="Alex"
           tasks={plannerFixture.tasks}
-          onAddTask={vi.fn().mockResolvedValue(undefined)}
-          onUpdateTask={vi.fn().mockResolvedValue(undefined)}
-          onDeleteTask={vi.fn().mockResolvedValue(undefined)}
+          onAddTask={vi.fn().mockResolvedValue(true)}
+          onUpdateTask={vi.fn().mockResolvedValue(true)}
+          onDeleteTask={vi.fn().mockResolvedValue(true)}
           onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
           onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
         />
@@ -35,9 +35,9 @@ describe('TasksModule', () => {
 
   it('renders kanban columns, submits the form, changes status via dialog, and toggles a subtask', async () => {
     const user = userEvent.setup();
-    const onAddTask = vi.fn().mockResolvedValue(undefined);
-    const onUpdateTask = vi.fn().mockResolvedValue(undefined);
-    const onDeleteTask = vi.fn().mockResolvedValue(undefined);
+    const onAddTask = vi.fn().mockResolvedValue(true);
+    const onUpdateTask = vi.fn().mockResolvedValue(true);
+    const onDeleteTask = vi.fn().mockResolvedValue(true);
     const onSetTaskStatus = vi.fn().mockResolvedValue(undefined);
     const onToggleTaskSubtask = vi.fn().mockResolvedValue(undefined);
 
@@ -118,9 +118,9 @@ describe('TasksModule', () => {
               subtasks: [],
             },
           ]}
-          onAddTask={vi.fn().mockResolvedValue(undefined)}
-          onUpdateTask={vi.fn().mockResolvedValue(undefined)}
-          onDeleteTask={vi.fn().mockResolvedValue(undefined)}
+          onAddTask={vi.fn().mockResolvedValue(true)}
+          onUpdateTask={vi.fn().mockResolvedValue(true)}
+          onDeleteTask={vi.fn().mockResolvedValue(true)}
           onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
           onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
         />
@@ -162,9 +162,9 @@ describe('TasksModule', () => {
               subtasks: [],
             },
           ]}
-          onAddTask={vi.fn().mockResolvedValue(undefined)}
-          onUpdateTask={vi.fn().mockResolvedValue(undefined)}
-          onDeleteTask={vi.fn().mockResolvedValue(undefined)}
+          onAddTask={vi.fn().mockResolvedValue(true)}
+          onUpdateTask={vi.fn().mockResolvedValue(true)}
+          onDeleteTask={vi.fn().mockResolvedValue(true)}
           onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
           onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
         />
@@ -187,7 +187,7 @@ describe('TasksModule', () => {
           familyMemberOptions={plannerFixture.members.map((member) => member.name)}
           ownerDefaultValue="Alex"
           tasks={plannerFixture.tasks}
-          onAddTask={vi.fn().mockResolvedValue(undefined)}
+          onAddTask={vi.fn().mockResolvedValue(true)}
           onUpdateTask={onUpdateTask}
           onDeleteTask={onDeleteTask}
           onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}

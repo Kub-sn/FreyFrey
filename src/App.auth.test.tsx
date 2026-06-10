@@ -167,6 +167,7 @@ function getAdminDirectoryCard() {
 describe('App auth flow', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/');
+    window.localStorage.clear();
     acceptPendingFamilyInvite.mockReset();
     fetchRegistrationGate.mockReset();
     createFamilyInvite.mockReset();
@@ -236,6 +237,7 @@ describe('App auth flow', () => {
   });
 
   afterEach(() => {
+    window.localStorage.clear();
     vi.useRealTimers();
   });
 
@@ -277,6 +279,28 @@ describe('App auth flow', () => {
 
     expect(signUpWithPassword).toHaveBeenCalledWith('alex@example.com', 'supersecret', 'Alex');
     expect(screen.queryByText(/can't access property "reset"/i)).not.toBeInTheDocument();
+  });
+
+  it('restores non-sensitive auth drafts after a reload without persisting the password', async () => {
+    const user = userEvent.setup();
+    const firstRender = render(<App />);
+
+    await screen.findByRole('heading', {
+      level: 1,
+      name: 'Frey Frey',
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Registrieren' }));
+    await user.type(screen.getByPlaceholderText('Anzeigename'), 'Alex');
+    await user.type(screen.getByPlaceholderText('E-Mail'), 'alex@example.com');
+    await user.type(screen.getByPlaceholderText('Passwort'), 'supersecret');
+
+    firstRender.unmount();
+    render(<App />);
+
+    expect(await screen.findByPlaceholderText('Anzeigename')).toHaveValue('Alex');
+    expect(screen.getByPlaceholderText('E-Mail')).toHaveValue('alex@example.com');
+    expect(screen.getByPlaceholderText('Passwort')).toHaveValue('');
   });
 
   it(

@@ -12,11 +12,24 @@ import {
 } from '../../lib/meals';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { validateRequiredFields, type FieldErrors } from '../../lib/form-validation';
+import { clearUiDraft, loadUiDraft, saveUiDraft } from '../../lib/storage';
 import { AppButton } from '../ui/AppButton';
 import { AppCard } from '../ui/AppCard';
 import { appInputClassName, appTextareaClassName } from '../ui/AppField';
 import { FieldError } from './FieldError';
 import { ModalDialog } from './ModalDialog';
+
+type MealDialogDraft = {
+  selectedDate: string | null;
+  name: string;
+  recipe: string;
+};
+
+const MEAL_DIALOG_STORAGE_KEY = 'meals-dialog';
+const EMPTY_MEAL_DIALOG_DRAFT = {
+  name: '',
+  recipe: '',
+};
 
 const weekdayHeaders = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -219,8 +232,14 @@ export function MealsModule({
   isMobileOverride?: boolean;
 }) {
   const { activeTab } = useActiveTab();
+  const [initialMealDraft] = useState<MealDialogDraft>(() =>
+    loadUiDraft<MealDialogDraft>(MEAL_DIALOG_STORAGE_KEY, {
+      selectedDate: null,
+      ...EMPTY_MEAL_DIALOG_DRAFT,
+    }),
+  );
   const [calendarView, setCalendarView] = useState<MealCalendarView>('two-weeks');
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(initialMealDraft.selectedDate);
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
     isMobileOverride
     ?? (typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 720px)').matches),
@@ -228,6 +247,10 @@ export function MealsModule({
   const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
   const [deletingMealId, setDeletingMealId] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [mealDraft, setMealDraft] = useState(() => ({
+    name: initialMealDraft.name,
+    recipe: initialMealDraft.recipe,
+  }));
 
   useEffect(() => {
     if (isMobileOverride !== undefined || typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -283,6 +306,27 @@ export function MealsModule({
     [mealsByDate, selectedDate],
   );
 
+  const persistMealDialogDraft = (nextSelectedDate: string | null, nextMealDraft: typeof mealDraft) => {
+    if (!nextSelectedDate) {
+      clearUiDraft(MEAL_DIALOG_STORAGE_KEY);
+      return;
+    }
+
+    saveUiDraft(MEAL_DIALOG_STORAGE_KEY, {
+      selectedDate: nextSelectedDate,
+      name: nextMealDraft.name,
+      recipe: nextMealDraft.recipe,
+    });
+  };
+
+  const updateMealDraft = (updater: (current: typeof mealDraft) => typeof mealDraft) => {
+    setMealDraft((current) => {
+      const next = updater(current);
+      persistMealDialogDraft(selectedDate, next);
+      return next;
+    });
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -290,8 +334,8 @@ export function MealsModule({
       return;
     }
 
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
+    const form = new FormData();
+    form.set('name', mealDraft.name);
     const next = validateRequiredFields(form, [
       { name: 'name', label: 'Gerichtname' },
     ]);
@@ -305,15 +349,16 @@ export function MealsModule({
 
     const didSave = await onCreateMeal({
       date: selectedDate,
-      name: String(form.get('name') || '').trim(),
-      recipe: String(form.get('recipe') || '').trim(),
+      name: mealDraft.name.trim(),
+      recipe: mealDraft.recipe.trim(),
     });
 
     if (!didSave) {
       return;
     }
 
-    formElement.reset();
+    setMealDraft(EMPTY_MEAL_DIALOG_DRAFT);
+    clearUiDraft(MEAL_DIALOG_STORAGE_KEY);
   };
 
   const clearFieldError = (name: string) =>
@@ -324,13 +369,19 @@ export function MealsModule({
     });
 
   const handleOpenDate = (date: string) => {
+    const nextMealDraft = { ...EMPTY_MEAL_DIALOG_DRAFT };
     setSelectedDate(date);
     setErrors({});
+    setMealDraft(nextMealDraft);
+    persistMealDialogDraft(date, nextMealDraft);
   };
 
   const handleCloseDialog = () => {
+    const nextMealDraft = { ...EMPTY_MEAL_DIALOG_DRAFT };
     setSelectedDate(null);
     setErrors({});
+    setMealDraft(nextMealDraft);
+    persistMealDialogDraft(null, nextMealDraft);
   };
 
   const handleShiftMobileWeek = (direction: -1 | 1) => {
@@ -484,9 +535,14 @@ export function MealsModule({
                   className={appInputClassName()}
                   name="name"
                   placeholder="Gerichtname"
+                  value={mealDraft.name}
                   aria-invalid={errors.name ? 'true' : undefined}
                   aria-describedby={errors.name ? 'name-error' : undefined}
-                  onInput={() => clearFieldError('name')}
+                  onInput={(event) => {
+                    const nextName = event.currentTarget.value;
+                    updateMealDraft((current) => ({ ...current, name: nextName }));
+                    clearFieldError('name');
+                  }}
                 />
                 <FieldError fieldName="name" message={errors.name} />
               </div>
@@ -495,6 +551,11 @@ export function MealsModule({
                 className={appTextareaClassName('min-h-[8rem]')}
                 name="recipe"
                 placeholder="Rezept"
+                value={mealDraft.recipe}
+                onChange={(event) => {
+                  const nextRecipe = event.currentTarget.value;
+                  updateMealDraft((current) => ({ ...current, recipe: nextRecipe }));
+                }}
               />
             </form>
           </div>

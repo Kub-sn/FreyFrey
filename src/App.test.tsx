@@ -193,6 +193,93 @@ describe('App', () => {
     expect(reloadedOverviewSection).not.toHaveClass('is-visible');
   });
 
+  it('restores an unsaved note draft after a reload', async () => {
+    const user = userEvent.setup();
+    const firstRender = render(<App />);
+
+    const moduleNav = screen.getByRole('navigation', { name: 'Module' });
+
+    await user.click(within(moduleNav).getByRole('button', { name: 'Notizen' }));
+    await user.type(screen.getByPlaceholderText('Titel'), 'Einkaufsidee');
+    await user.type(screen.getByPlaceholderText('Inhalt'), 'Blaubeeren nicht vergessen');
+
+    firstRender.unmount();
+    render(<App />);
+
+    expect(screen.getByRole('heading', { level: 4, name: 'Neue Notiz' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Einkaufsidee')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Blaubeeren nicht vergessen')).toBeInTheDocument();
+  });
+
+  it('restores an unsaved shopping draft dialog after a reload', async () => {
+    const user = userEvent.setup();
+    const firstRender = render(<App />);
+
+    const moduleNav = screen.getByRole('navigation', { name: 'Module' });
+
+    await user.click(within(moduleNav).getByRole('button', { name: 'Einkauf' }));
+    await user.click(screen.getByRole('button', { name: 'Liste erstellen' }));
+
+    const firstDialog = screen.getByRole('dialog', { name: 'Neue Einkaufsliste' });
+    await user.type(within(firstDialog).getByPlaceholderText('z. B. Wocheneinkauf'), 'Samstag');
+    await user.type(within(firstDialog).getByLabelText('Neuer Artikel'), 'Hafermilch{Enter}');
+
+    firstRender.unmount();
+    render(<App />);
+
+    const secondDialog = screen.getByRole('dialog', { name: 'Neue Einkaufsliste' });
+
+    expect(within(secondDialog).getByDisplayValue('Samstag')).toBeInTheDocument();
+    expect(within(secondDialog).getByDisplayValue('Hafermilch')).toBeInTheDocument();
+  });
+
+  it('restores an unsaved task draft dialog after a reload', async () => {
+    const user = userEvent.setup();
+    const firstRender = render(<App />);
+
+    const moduleNav = screen.getByRole('navigation', { name: 'Module' });
+
+    await user.click(within(moduleNav).getByRole('button', { name: 'To-dos' }));
+    await user.click(screen.getByRole('button', { name: 'Todo hinzufügen' }));
+
+    const firstDialog = screen.getByRole('dialog', { name: 'Neue Aufgabe' });
+    await user.type(within(firstDialog).getByPlaceholderText('Aufgabe'), 'Kinderzimmer aufräumen');
+    await user.type(within(firstDialog).getByLabelText('Fälligkeitsdatum'), '2026-05-12');
+    await user.click(within(firstDialog).getByRole('button', { name: 'Subtask hinzufügen' }));
+    await user.type(within(firstDialog).getByLabelText('Subtask 1'), 'Bücher einsortieren');
+
+    firstRender.unmount();
+    render(<App />);
+
+    const secondDialog = screen.getByRole('dialog', { name: 'Neue Aufgabe' });
+
+    expect(within(secondDialog).getByDisplayValue('Kinderzimmer aufräumen')).toBeInTheDocument();
+    expect(within(secondDialog).getByDisplayValue('2026-05-12')).toBeInTheDocument();
+    expect(within(secondDialog).getByDisplayValue('Bücher einsortieren')).toBeInTheDocument();
+  });
+
+  it('restores an unsaved meal draft dialog after a reload', async () => {
+    const user = userEvent.setup();
+    const firstRender = render(<App />);
+
+    const moduleNav = screen.getByRole('navigation', { name: 'Module' });
+
+    await user.click(within(moduleNav).getByRole('button', { name: 'Essensplan' }));
+    await user.click(screen.getAllByRole('button', { name: /Essensplan für .* öffnen/ })[0]);
+
+    const firstDialog = screen.getByRole('dialog', { name: /Gerichte für .*/ });
+    await user.type(within(firstDialog).getByPlaceholderText('Gerichtname'), 'Kartoffelsuppe');
+    await user.type(within(firstDialog).getByPlaceholderText('Rezept'), 'Mit Lauch und Karotten');
+
+    firstRender.unmount();
+    render(<App />);
+
+    const secondDialog = screen.getByRole('dialog', { name: /Gerichte für .*/ });
+
+    expect(within(secondDialog).getByDisplayValue('Kartoffelsuppe')).toBeInTheDocument();
+    expect(within(secondDialog).getByDisplayValue('Mit Lauch und Karotten')).toBeInTheDocument();
+  });
+
   it('shows an upload-only document form in the documents module', async () => {
     const user = userEvent.setup();
     render(<App />);
