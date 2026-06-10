@@ -26,7 +26,7 @@ export function AccountCard({
   return (
     <div className={className}>
       <div className="grid gap-[0.25rem] pb-1 border-b border-[rgba(246,239,226,0.1)]">
-        <strong className="max-[720px]:text-[1.3rem]">Familie: {authState.family?.familyName ?? plannerState.familyName}</strong>
+        <strong className="max-mobile:text-[1.3rem]">Familie: {authState.family?.familyName ?? plannerState.familyName}</strong>
         <div className="flex flex-wrap gap-[0.45rem]">
           {authState.profile ? (
             <FamilyStatusBadges role={authState.profile.role} isOwner={authState.family?.isOwner} />

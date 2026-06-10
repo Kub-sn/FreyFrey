@@ -304,12 +304,12 @@ export function AuthLoadingScreen() {
       >
         <span className="sr-only">Lädt deine Familiendaten</span>
         <div
-          className="relative grid place-items-center isolate size-[10.5rem] max-[720px]:size-[9.3rem] max-[560px]:size-[8.25rem] before:content-[''] before:absolute before:inset-[1.55rem] before:rounded-full before:bg-[radial-gradient(circle,rgba(244,111,58,0.2),rgba(244,111,58,0))] before:blur-[14px] before:z-0"
+          className="relative grid place-items-center isolate size-[10.5rem] max-mobile:size-[9.3rem] max-compact:size-[8.25rem] before:content-[''] before:absolute before:inset-[1.55rem] before:rounded-full before:bg-[radial-gradient(circle,rgba(244,111,58,0.2),rgba(244,111,58,0))] before:blur-[14px] before:z-0"
           aria-hidden="true"
         >
           <span className="absolute rounded-full border-solid z-[1] inset-0 border-2 border-[rgba(24,52,47,0.08)] border-t-[rgba(244,111,58,0.96)] border-r-[rgba(24,52,47,0.3)] animate-loader-spin" />
-          <span className="absolute rounded-full border-solid z-[1] inset-[0.82rem] border-[1.5px] border-[rgba(24,52,47,0.08)] border-b-[rgba(24,52,47,0.8)] border-l-[rgba(99,155,133,0.72)] animate-loader-spin-reverse max-[560px]:inset-[0.68rem]" />
-          <span className="relative z-[2] inline-flex size-20 items-center justify-center shrink-0 p-[0.58rem] rounded-[1.25rem] bg-linear-to-b from-[rgba(255,248,240,0.98)] to-[rgba(246,239,226,0.95)] shadow-[0_18px_36px_rgba(35,27,17,0.12),inset_0_1px_0_rgba(255,255,255,0.84)] max-[720px]:size-[4.55rem] max-[720px]:p-2 max-[720px]:rounded-[1.12rem] max-[560px]:w-16 max-[560px]:p-[0.44rem] max-[560px]:rounded-[1rem]">
+          <span className="absolute rounded-full border-solid z-[1] inset-[0.82rem] border-[1.5px] border-[rgba(24,52,47,0.08)] border-b-[rgba(24,52,47,0.8)] border-l-[rgba(99,155,133,0.72)] animate-loader-spin-reverse max-compact:inset-[0.68rem]" />
+          <span className="relative z-[2] inline-flex size-20 items-center justify-center shrink-0 p-[0.58rem] rounded-[1.25rem] bg-linear-to-b from-[rgba(255,248,240,0.98)] to-[rgba(246,239,226,0.95)] shadow-[0_18px_36px_rgba(35,27,17,0.12),inset_0_1px_0_rgba(255,255,255,0.84)] max-mobile:size-[4.55rem] max-mobile:p-2 max-mobile:rounded-[1.12rem] max-compact:w-16 max-compact:p-[0.44rem] max-compact:rounded-[1rem]">
             <img src="/freyLogo.svg" alt="" className="w-full h-full block object-contain" />
           </span>
         </div>

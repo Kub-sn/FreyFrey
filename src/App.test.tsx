@@ -69,7 +69,7 @@ describe('App', () => {
     const brandImages = Array.from(container.querySelectorAll('.brand-mark img'));
 
     expect(plannerHeadings).toHaveLength(2);
-    expect(demoModeBadges).toHaveLength(2);
+    expect(demoModeBadges).toHaveLength(1);
     expect(brandImages).toHaveLength(2);
     expect(brandImages.every((image) => image.getAttribute('src') === '/freyLogo.svg')).toBe(true);
     expect(screen.queryByRole('button', { name: 'Einstellungen' })).not.toBeInTheDocument();
@@ -117,13 +117,12 @@ describe('App', () => {
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Notizen' }));
 
-    const notesHeading = screen.getByRole('heading', { level: 4, name: 'Neue Notiz' });
-    const notesModule = notesHeading.closest('section');
+    const createButton = screen.getByRole('button', { name: 'Neue Notiz erstellen' });
+    const notesModule = createButton.closest('section');
 
-    expect(notesHeading).toBeInTheDocument();
+    expect(createButton).toBeInTheDocument();
     expect(notesModule).not.toBeNull();
     expect(within(notesModule as HTMLElement).queryByPlaceholderText('Kategorie')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Notiz speichern' })).toBeInTheDocument();
   });
 
   it('allows deleting a note from the notes overview', async () => {
@@ -133,19 +132,13 @@ describe('App', () => {
     const moduleNav = screen.getByRole('navigation', { name: 'Module' });
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Notizen' }));
+    await user.click(screen.getByRole('button', { name: 'Neue Notiz erstellen' }));
 
-    const notesHeading = screen.getByRole('heading', { level: 4, name: 'Neue Notiz' });
-    const notesForm = notesHeading.closest('form');
+    const dialog = screen.getByRole('dialog', { name: 'Neue Notiz' });
 
-    if (!notesForm) {
-      throw new Error('Notizformular wurde nicht gefunden.');
-    }
-
-    const form = within(notesForm);
-
-    await user.type(form.getByPlaceholderText('Titel'), 'Lösch mich');
-    await user.type(form.getByPlaceholderText('Inhalt'), 'Diese Notiz wird direkt wieder entfernt.');
-    await user.click(form.getByRole('button', { name: 'Notiz speichern' }));
+    await user.type(within(dialog).getByPlaceholderText('Titel'), 'Lösch mich');
+    await user.type(within(dialog).getByPlaceholderText('Inhalt'), 'Diese Notiz wird direkt wieder entfernt.');
+    await user.click(within(dialog).getByRole('button', { name: 'Notiz speichern' }));
 
     expect(screen.getByRole('button', { name: 'Notiz Lösch mich öffnen' })).toBeInTheDocument();
 
@@ -179,16 +172,16 @@ describe('App', () => {
     const moduleNav = screen.getByRole('navigation', { name: 'Module' });
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Notizen' }));
-    expect(screen.getByRole('heading', { level: 4, name: 'Neue Notiz' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Neue Notiz erstellen' })).toBeInTheDocument();
 
     firstRender.unmount();
     const secondRender = render(<App />);
 
-    const reloadedNotesHeading = screen.getByRole('heading', { level: 4, name: 'Neue Notiz' });
-    const reloadedNotesSection = reloadedNotesHeading.closest('section');
+    const reloadedCreateButton = screen.getByRole('button', { name: 'Neue Notiz erstellen' });
+    const reloadedNotesSection = reloadedCreateButton.closest('section');
     const reloadedOverviewSection = secondRender.container.querySelector('.overview-stack');
 
-    expect(reloadedNotesHeading).toBeInTheDocument();
+    expect(reloadedCreateButton).toBeInTheDocument();
     expect(reloadedNotesSection).toHaveClass('is-visible');
     expect(reloadedOverviewSection).not.toHaveClass('is-visible');
   });
@@ -200,15 +193,21 @@ describe('App', () => {
     const moduleNav = screen.getByRole('navigation', { name: 'Module' });
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Notizen' }));
-    await user.type(screen.getByPlaceholderText('Titel'), 'Einkaufsidee');
-    await user.type(screen.getByPlaceholderText('Inhalt'), 'Blaubeeren nicht vergessen');
+    await user.click(screen.getByRole('button', { name: 'Neue Notiz erstellen' }));
+
+    const firstDialog = screen.getByRole('dialog', { name: 'Neue Notiz' });
+
+    await user.type(within(firstDialog).getByPlaceholderText('Titel'), 'Einkaufsidee');
+    await user.type(within(firstDialog).getByPlaceholderText('Inhalt'), 'Blaubeeren nicht vergessen');
 
     firstRender.unmount();
     render(<App />);
 
-    expect(screen.getByRole('heading', { level: 4, name: 'Neue Notiz' })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Einkaufsidee')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Blaubeeren nicht vergessen')).toBeInTheDocument();
+    const secondDialog = screen.getByRole('dialog', { name: 'Neue Notiz' });
+
+    expect(screen.getByRole('button', { name: 'Neue Notiz erstellen' })).toBeInTheDocument();
+    expect(within(secondDialog).getByDisplayValue('Einkaufsidee')).toBeInTheDocument();
+    expect(within(secondDialog).getByDisplayValue('Blaubeeren nicht vergessen')).toBeInTheDocument();
   });
 
   it('restores an unsaved shopping draft dialog after a reload', async () => {

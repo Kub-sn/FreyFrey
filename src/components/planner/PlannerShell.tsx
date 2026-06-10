@@ -295,6 +295,7 @@ export default function PlannerShell({
           selectedInviteFamilyId={adminDir.selectedInviteFamily?.familyId ?? null}
           onAddMember={adminDir.handleAddMember}
           onOpenDeleteAccount={() => deletions.setIsDeleteAccountDialogOpen(true)}
+          onSignOut={onSignOut}
           onRegistrationAccessChange={(nextValue) => adminDir.handleRegistrationAccessChange(nextValue, onUpdateFamilyRegistration)}
           onRemoveInvite={adminDir.handleRemoveInvite}
           onSelectAdminFamily={adminDir.setSelectedAdminFamilyId}
@@ -406,7 +407,7 @@ export default function PlannerShell({
             <AppButton
               type="button"
               variant="danger"
-              className="max-[560px]:w-full"
+              className="max-compact:w-full"
               onClick={() => setPlannerState(defaultPlannerState)}
             >
               Lokale Daten zurücksetzen
@@ -414,7 +415,7 @@ export default function PlannerShell({
           </section>
         ) : null}
 
-        <AccountCard
+        {/* <AccountCard
           authDriven={authDriven}
           authState={authState}
           className="account-card mobile-account-card"
@@ -422,7 +423,7 @@ export default function PlannerShell({
           onSelectMember={handleSelectMember}
           onSignOut={onSignOut}
           showPermissionNote
-        />
+        /> */}
       </main>
     </div>
     </ActiveTabProvider>

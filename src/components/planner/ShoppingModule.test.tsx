@@ -24,7 +24,7 @@ describe('ShoppingModule', () => {
     const cardsGrid = screen.getByText('Wocheneinkauf').closest('button')?.closest('article')?.parentElement;
 
     expect(moduleStack).toHaveClass('content-start', 'gap-4');
-    expect(cardsGrid).toHaveClass('gap-4', 'max-[720px]:gap-3');
+    expect(cardsGrid).toHaveClass('gap-4', 'max-mobile:gap-3');
   });
 
   it('creates a list, opens a list dialog, and toggles an item', async () => {

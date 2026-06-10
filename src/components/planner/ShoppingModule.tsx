@@ -377,12 +377,12 @@ export function ShoppingModule({
 
   return (
     <section className={activeTab === 'shopping' ? 'module is-visible' : 'module'}>
-      <div className="grid content-start gap-4 max-[720px]:gap-3">
-        <div className="flex items-start max-[720px]:w-full">
+      <div className="grid content-start gap-4 max-mobile:gap-3">
+        <div className="flex items-start max-mobile:w-full">
           <AppButton
             type="button"
             variant="secondary"
-            className="inline-flex items-center gap-2.5 border-[rgba(25,98,77,0.18)] bg-[rgba(255,250,244,0.96)] text-[#19624d] shadow-[0_16px_32px_rgba(24,52,47,0.08)] hover:bg-[rgba(243,249,246,0.98)] max-[720px]:w-full max-[720px]:justify-center"
+            className="inline-flex items-center gap-2.5 border-[rgba(25,98,77,0.18)] bg-[rgba(255,250,244,0.96)] text-[#19624d] shadow-[0_16px_32px_rgba(24,52,47,0.08)] hover:bg-[rgba(243,249,246,0.98)] max-mobile:w-full max-mobile:justify-center"
             onClick={openCreateDialog}
           >
             <Plus aria-hidden="true" size={18} strokeWidth={2.4} />
@@ -390,12 +390,12 @@ export function ShoppingModule({
           </AppButton>
         </div>
 
-        <div className="grid gap-4 max-[720px]:gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 max-mobile:gap-3 md:grid-cols-2 xl:grid-cols-3">
           {lists.map((list) => (
             <AppCard
               key={list.id}
               className={[
-                'panel relative flex min-h-0 flex-col gap-3 border border-[rgba(24,52,47,0.1)] bg-[linear-gradient(180deg,rgba(255,252,246,0.98),rgba(247,241,231,0.96))] p-4 max-[720px]:gap-2.5 max-[720px]:p-3.5',
+                'panel relative flex min-h-0 flex-col gap-3 border border-[rgba(24,52,47,0.1)] bg-[linear-gradient(180deg,rgba(255,252,246,0.98),rgba(247,241,231,0.96))] p-4 max-mobile:gap-2.5 max-mobile:p-3.5',
                 menuListId === list.id ? 'z-30' : 'z-0',
               ].join(' ')}
             >
@@ -413,7 +413,7 @@ export function ShoppingModule({
                         <CalendarDays aria-hidden="true" size={14} />
                         <span>{formatListDate(list.date)}</span>
                     </div>
-                    <h4 className="m-0 text-[1.08rem] font-semibold leading-tight text-[#18342f] max-[720px]:text-[1rem]">{list.title}</h4>
+                    <h4 className="m-0 text-[1.08rem] font-semibold leading-tight text-[#18342f] max-mobile:text-[1rem]">{list.title}</h4>
                   </div>
                 </button>
 
@@ -524,7 +524,7 @@ export function ShoppingModule({
             </>
           )}
         >
-          <div className="grid gap-4 max-[720px]:gap-3">
+          <div className="grid gap-4 max-mobile:gap-3">
             <div className="grid gap-3 md:grid-cols-2">
               <label className="grid gap-2">
                 <span className="text-[0.82rem] font-semibold uppercase tracking-[0.08em] text-[rgba(24,52,47,0.62)]">Listenname</span>
@@ -547,7 +547,7 @@ export function ShoppingModule({
               </label>
             </div>
 
-            <div className="grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.1)] bg-[rgba(255,255,255,0.62)] p-4 max-[720px]:p-3.5">
+            <div className="grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.1)] bg-[rgba(255,255,255,0.62)] p-4 max-mobile:p-3.5">
               <label className="grid gap-2">
                 <span className="text-[0.8rem] text-[rgba(24,52,47,0.62)]">Neuer Artikel</span>
                 <input

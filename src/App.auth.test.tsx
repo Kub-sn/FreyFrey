@@ -868,16 +868,15 @@ describe('App auth flow', () => {
     expect(configCard.parentElement).toBe(bottomRow);
 
     const directoryCard = getAdminDirectoryCard();
-    const familySwitcherButtons = directoryCard
-      .getAllByRole('button')
-      .filter((button) => button.getAttribute('aria-pressed') !== null);
+    const familySelect = directoryCard.getByRole('combobox', { name: 'Familie in der Übersicht auswählen' });
+    const familyOptions = within(familySelect).getAllByRole('option');
 
-    expect(familySwitcherButtons).toHaveLength(2);
-    expect(familySwitcherButtons[0]).toHaveTextContent('Familie Admin');
-    expect(familySwitcherButtons[1]).toHaveTextContent('Familie Zweig');
+    expect(familyOptions).toHaveLength(2);
+    expect(familyOptions[0]).toHaveTextContent('Familie Admin');
+    expect(familyOptions[1]).toHaveTextContent('Familie Zweig');
     expect(directoryCard.getByText('admin@example.com')).toBeInTheDocument();
 
-    await user.click(familySwitcherButtons[1]);
+    await user.selectOptions(familySelect, 'family-4');
 
     expect(directoryCard.getByText('lea@example.com')).toBeInTheDocument();
     expect(directoryCard.getByText('tom@example.com')).toBeInTheDocument();
@@ -959,8 +958,9 @@ describe('App auth flow', () => {
     await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
 
     const directoryCard = getAdminDirectoryCard();
+    const familySelect = directoryCard.getByRole('combobox', { name: 'Familie in der Übersicht auswählen' });
 
-    await user.click(directoryCard.getByRole('button', { name: /Familie Zweig/i }));
+    await user.selectOptions(familySelect, 'family-11');
     await user.click(
       directoryCard.getByRole('button', {
         name: 'Mitglied tom@example.com aus Familie Zweig löschen',
@@ -1046,8 +1046,9 @@ describe('App auth flow', () => {
     await user.click(screen.getByRole('button', { name: 'Einstellungen' }));
 
     const directoryCard = getAdminDirectoryCard();
+    const familySelect = directoryCard.getByRole('combobox', { name: 'Familie in der Übersicht auswählen' });
 
-    await user.click(directoryCard.getByRole('button', { name: /Familie Archiv/i }));
+    await user.selectOptions(familySelect, 'family-21');
     await user.click(
       directoryCard.getByRole('button', {
         name: 'Familie Familie Archiv löschen',
@@ -1062,7 +1063,7 @@ describe('App auth flow', () => {
 
     expect(deleteFamily).toHaveBeenCalledWith('family-21');
     expect(await screen.findByText('Die Familie Familie Archiv wurde gelöscht.')).toBeInTheDocument();
-    expect(directoryCard.queryByRole('button', { name: /Familie Archiv/i })).not.toBeInTheDocument();
+    expect(within(familySelect).queryByRole('option', { name: /Familie Archiv/i })).not.toBeInTheDocument();
   });
 
   it('lets admins switch registration between open and invite-only in the configuration card', async () => {

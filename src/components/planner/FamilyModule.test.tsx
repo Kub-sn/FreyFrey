@@ -11,6 +11,8 @@ describe('FamilyModule', () => {
     const onRemoveInvite = vi.fn().mockResolvedValue(undefined);
     const onRegistrationAccessChange = vi.fn().mockResolvedValue(undefined);
     const onOpenDeleteAccount = vi.fn();
+    const onSignOut = vi.fn().mockResolvedValue(undefined);
+    const onSelectAdminFamily = vi.fn();
     const onSetPendingFamilyDeletion = vi.fn();
 
     render(
@@ -60,9 +62,10 @@ describe('FamilyModule', () => {
           selectedInviteFamilyId="family-1"
           onAddMember={vi.fn().mockResolvedValue(undefined)}
           onOpenDeleteAccount={onOpenDeleteAccount}
+          onSignOut={onSignOut}
           onRegistrationAccessChange={onRegistrationAccessChange}
           onRemoveInvite={onRemoveInvite}
-          onSelectAdminFamily={vi.fn()}
+          onSelectAdminFamily={onSelectAdminFamily}
           onSelectInviteFamily={vi.fn()}
           onSetPendingFamilyDeletion={onSetPendingFamilyDeletion}
           onSetPendingMemberDeletion={vi.fn()}
@@ -74,11 +77,18 @@ describe('FamilyModule', () => {
     expect(screen.getByText('neu@example.com')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /zurückziehen/i }));
     await user.click(screen.getByLabelText('Freie Registrierung erlauben'));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Familie in der Übersicht auswählen' }), 'family-1');
+    const signOutButton = screen.getByRole('button', { name: 'Ausloggen' });
+
+    expect(signOutButton).toHaveAttribute('data-app-button-variant', 'primary');
+    await user.click(signOutButton);
     await user.click(screen.getByRole('button', { name: 'Account löschen' }));
     await user.click(screen.getByRole('button', { name: /Familie Familie Test löschen/i }));
 
     expect(onRemoveInvite).toHaveBeenCalledWith('invite-1');
     expect(onRegistrationAccessChange).toHaveBeenCalledWith(false);
+    expect(onSelectAdminFamily).toHaveBeenCalledWith('family-1');
+    expect(onSignOut).toHaveBeenCalledTimes(1);
     expect(onOpenDeleteAccount).toHaveBeenCalled();
     expect(onSetPendingFamilyDeletion).toHaveBeenCalled();
   });
@@ -109,6 +119,7 @@ describe('FamilyModule', () => {
           selectedInviteFamilyId={null}
           onAddMember={vi.fn().mockResolvedValue(undefined)}
           onOpenDeleteAccount={vi.fn()}
+          onSignOut={vi.fn().mockResolvedValue(undefined)}
           onRegistrationAccessChange={vi.fn().mockResolvedValue(undefined)}
           onRemoveInvite={vi.fn().mockResolvedValue(undefined)}
           onSelectAdminFamily={vi.fn()}
@@ -133,6 +144,7 @@ describe('FamilyModule', () => {
     expect(topRow?.parentElement).toBe(settingsLayout);
     expect(secondaryStack?.parentElement).toBe(topRow);
     expect(invitePanel?.parentElement).toBe(secondaryStack);
+    expect(invitePanel).toHaveClass('w-full');
     expect(accountPanel?.parentElement).toBe(settingsLayout);
   });
 
@@ -177,6 +189,7 @@ describe('FamilyModule', () => {
           selectedInviteFamilyId="family-1"
           onAddMember={vi.fn().mockResolvedValue(undefined)}
           onOpenDeleteAccount={vi.fn()}
+          onSignOut={vi.fn().mockResolvedValue(undefined)}
           onRegistrationAccessChange={vi.fn().mockResolvedValue(undefined)}
           onRemoveInvite={vi.fn().mockResolvedValue(undefined)}
           onSelectAdminFamily={vi.fn()}
@@ -216,6 +229,7 @@ describe('FamilyModule', () => {
           selectedInviteFamilyId={null}
           onAddMember={vi.fn().mockResolvedValue(undefined)}
           onOpenDeleteAccount={vi.fn()}
+          onSignOut={vi.fn().mockResolvedValue(undefined)}
           onRegistrationAccessChange={vi.fn().mockResolvedValue(undefined)}
           onRemoveInvite={vi.fn().mockResolvedValue(undefined)}
           onSelectAdminFamily={vi.fn()}
@@ -274,6 +288,7 @@ describe('FamilyModule', () => {
           selectedInviteFamilyId="family-1"
           onAddMember={vi.fn().mockResolvedValue(undefined)}
           onOpenDeleteAccount={vi.fn()}
+          onSignOut={vi.fn().mockResolvedValue(undefined)}
           onRegistrationAccessChange={vi.fn().mockResolvedValue(undefined)}
           onRemoveInvite={vi.fn().mockResolvedValue(undefined)}
           onSelectAdminFamily={vi.fn()}
@@ -287,13 +302,19 @@ describe('FamilyModule', () => {
     const inviteForm = screen.getByRole('heading', { level: 4, name: 'Familienmitglied einladen' }).closest('.family-invite-panel');
     const topRow = inviteForm?.parentElement?.parentElement;
     const adminDirectoryPanel = screen.getByRole('heading', { level: 4, name: 'Alle Familien' }).closest('.admin-directory-panel');
+    const familySelect = screen.getByRole('combobox', { name: 'Familie in der Übersicht auswählen' });
     const bottomRow = adminDirectoryPanel?.nextElementSibling;
     const configPanel = screen.getByRole('heading', { level: 4, name: 'Registrierungeinstellung' }).closest('article');
     const accountPanel = screen.getByRole('heading', { level: 4, name: 'Konto' }).closest('.family-account-panel');
+    const openInvitesHeading = screen.getByRole('heading', { level: 4, name: 'Offene Einladungen' }).closest('.family-inline-heading');
+    const memberHeading = screen.getByRole('heading', { level: 4, name: 'Familienmitglieder' }).closest('.family-inline-heading');
 
     expect(topRow).not.toBeNull();
     expect(adminDirectoryPanel).not.toBeNull();
+    expect(familySelect).toHaveValue('family-1');
     expect(bottomRow).not.toBeNull();
+    expect(openInvitesHeading).toHaveClass('mb-2');
+    expect(memberHeading).not.toBeNull();
     expect(configPanel?.parentElement).toBe(bottomRow);
     expect(accountPanel?.parentElement).toBe(bottomRow);
     expect(adminDirectoryPanel?.nextElementSibling).toBe(bottomRow);

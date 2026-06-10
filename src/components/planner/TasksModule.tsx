@@ -358,7 +358,7 @@ export function TasksModule({
 
   return (
     <section className={activeTab === 'tasks' ? 'module is-visible' : 'module'}>
-      <div className="grid content-start gap-4 max-[720px]:gap-3">
+      <div className="grid content-start gap-4 max-mobile:gap-3">
         <div className="flex items-start">
           <AppButton
             type="button"
@@ -370,7 +370,7 @@ export function TasksModule({
             <span>Todo hinzufügen</span>
           </AppButton>
         </div>
-        <div className="grid gap-4 max-[720px]:gap-3 xl:grid-cols-3 xl:items-stretch">
+        <div className="grid gap-4 max-mobile:gap-3 xl:grid-cols-3 xl:items-stretch">
           {columns.map((column) => {
             const columnTasks = tasks.filter((task) => task.status === column.status);
             const isColumnDropActive = dropTarget === column.status;
@@ -381,7 +381,7 @@ export function TasksModule({
                   as="article"
                   data-drop-active={isColumnDropActive ? 'true' : undefined}
                   className={[
-                    `relative min-w-0 transition-all duration-200 max-[720px]:p-4 xl:flex xl:h-full xl:min-h-[26rem] xl:flex-col ${column.panelClassName}`,
+                    `relative min-w-0 transition-all duration-200 max-mobile:p-4 xl:flex xl:h-full xl:min-h-[26rem] xl:flex-col ${column.panelClassName}`,
                     openMenuTask?.status === column.status ? 'z-20' : 'z-0',
                     isColumnDropActive
                       ? '-translate-y-1 ring-2 ring-[rgba(25,98,77,0.2)]'
@@ -396,12 +396,12 @@ export function TasksModule({
                 >
                   <div className="panel-heading items-center">
                     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                      <h4 className="text-[1.34rem] font-semibold leading-tight max-[720px]:text-[1.12rem]">{column.title}</h4>
+                      <h4 className="text-[1.34rem] font-semibold leading-tight max-mobile:text-[1.12rem]">{column.title}</h4>
                       <span className="chip">{columnTasks.length}</span>
                     </div>
                   </div>
 
-                  <div className="mt-3 max-[720px]:mt-2 grid gap-3 max-[720px]:gap-2">
+                  <div className="mt-3 max-mobile:mt-2 grid gap-3 max-mobile:gap-2">
                   {isColumnDropActive ? (
                     <div className="inline-flex w-fit items-center rounded-full border border-[rgba(25,98,77,0.24)] bg-[rgba(25,98,77,0.12)] px-3 py-1 text-[0.72rem] font-bold tracking-[0.04em] text-[#19624d] shadow-[0_10px_24px_rgba(25,98,77,0.12)] animate-pulse">
                       Loslassen zum Verschieben
@@ -428,7 +428,7 @@ export function TasksModule({
                           setDropTarget(null);
                         }}
                         className={[
-                          'relative grid gap-3 border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.98)] p-4 shadow-[0_18px_34px_rgba(35,27,17,0.06)] transition-all duration-150 max-[720px]:gap-2 max-[720px]:rounded-[20px] max-[720px]:p-3',
+                          'relative grid gap-3 border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.98)] p-4 shadow-[0_18px_34px_rgba(35,27,17,0.06)] transition-all duration-150 max-mobile:gap-2 max-mobile:rounded-[20px] max-mobile:p-3',
                           isDragging ? 'scale-[0.985] opacity-70' : 'opacity-100',
                           menuTaskId === task.id ? 'z-30' : 'z-0',
                         ].join(' ')}
@@ -436,10 +436,10 @@ export function TasksModule({
                         <div className="flex items-start justify-between gap-3">
                           <div className="grid gap-[0.35rem] min-w-0">
                             <strong className="[overflow-wrap:anywhere]">{task.title}</strong>
-                            <small className="text-[rgba(24,52,47,0.66)] max-[720px]:text-[0.76rem]">{task.owner}</small>
+                            <small className="text-[rgba(24,52,47,0.66)] max-mobile:text-[0.76rem]">{task.owner}</small>
                           </div>
                           <div className="flex items-start gap-2">
-                            <span className={`inline-flex items-center rounded-full border px-[0.65rem] py-[0.35rem] text-[0.76rem] font-bold max-[720px]:px-[0.55rem] max-[720px]:py-[0.28rem] max-[720px]:text-[0.7rem] ${getDueBadgeClassName(task.due)}`}>
+                            <span className={`inline-flex items-center rounded-full border px-[0.65rem] py-[0.35rem] text-[0.76rem] font-bold max-mobile:px-[0.55rem] max-mobile:py-[0.28rem] max-mobile:text-[0.7rem] ${getDueBadgeClassName(task.due)}`}>
                               {formatTaskDueLabel(task.due)}
                             </span>
                             <div className="relative">
@@ -495,7 +495,7 @@ export function TasksModule({
                         </div>
 
                         {task.subtasks.length > 0 ? (
-                          <div className="flex flex-wrap items-center gap-2 text-[0.82rem] text-[rgba(24,52,47,0.74)] max-[720px]:gap-[0.35rem] max-[720px]:text-[0.74rem]">
+                          <div className="flex flex-wrap items-center gap-2 text-[0.82rem] text-[rgba(24,52,47,0.74)] max-mobile:gap-[0.35rem] max-mobile:text-[0.74rem]">
                             <span className="inline-flex items-center rounded-full bg-[rgba(25,98,77,0.09)] px-[0.6rem] py-[0.28rem] font-semibold">
                               {progress.completed}/{progress.total} erledigt
                             </span>
@@ -503,9 +503,9 @@ export function TasksModule({
                         ) : null}
 
                         {task.subtasks.length > 0 ? (
-                          <div className="grid gap-2 rounded-[18px] bg-[rgba(247,243,235,0.74)] p-3 max-[720px]:gap-[0.35rem] max-[720px]:rounded-[16px] max-[720px]:p-2.5">
+                          <div className="grid gap-2 rounded-[18px] bg-[rgba(247,243,235,0.74)] p-3 max-mobile:gap-[0.35rem] max-mobile:rounded-[16px] max-mobile:p-2.5">
                             {task.subtasks.map((subtask) => (
-                              <label key={subtask.id} className="flex items-center gap-3 text-[0.92rem] text-[rgba(24,52,47,0.84)] max-[720px]:gap-2 max-[720px]:text-[0.84rem]">
+                              <label key={subtask.id} className="flex items-center gap-3 text-[0.92rem] text-[rgba(24,52,47,0.84)] max-mobile:gap-2 max-mobile:text-[0.84rem]">
                                 <input
                                   type="checkbox"
                                   className={appCheckboxClassName()}
@@ -596,7 +596,7 @@ export function TasksModule({
             />
             <FieldError fieldName="due" message={errors.due} />
             <div className="grid gap-3 rounded-[22px] border border-[rgba(24,52,47,0.1)] bg-[rgba(248,243,235,0.62)] p-4">
-              <div className="flex items-center justify-between gap-3 max-[560px]:flex-col max-[560px]:items-start">
+              <div className="flex items-center justify-between gap-3 max-compact:flex-col max-compact:items-start">
                 <strong className="text-[0.96rem] text-[#18342f]">Subtasks</strong>
                 <AppButton type="button" variant="secondary" onClick={handleAddDraftSubtask}>
                   Subtask hinzufügen
@@ -605,7 +605,7 @@ export function TasksModule({
               {taskDraft.subtasks.length > 0 ? (
                 <div className="grid gap-2">
                   {taskDraft.subtasks.map((subtask, index) => (
-                    <div key={subtask.id} className="flex items-center gap-2 max-[560px]:items-stretch">
+                    <div key={subtask.id} className="flex items-center gap-2 max-compact:items-stretch">
                       <input
                         className={appInputClassName()}
                         value={subtask.title}

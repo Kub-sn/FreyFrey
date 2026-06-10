@@ -42,7 +42,7 @@ export function DocumentsModule({
     <section className={activeTab === 'documents' ? 'module is-visible' : 'module'}>
       {documents.documentSelectionErrors.length > 0 ? (
         <div
-          className="auth-feedback auth-error mb-4 max-[720px]:shadow-[0_10px_24px_rgba(70,54,31,0.08)] grid gap-[0.18rem]"
+          className="auth-feedback auth-error mb-4 max-mobile:shadow-[0_10px_24px_rgba(70,54,31,0.08)] grid gap-[0.18rem]"
           aria-live="polite"
           title={documents.documentSelectionSummary}
         >
@@ -51,7 +51,7 @@ export function DocumentsModule({
         </div>
       ) : null}
       <div className="module-layout document-module-layout">
-        <AppCard as="form" className="form-panel document-form-panel gap-[0.8rem] p-[1.15rem] max-[720px]:p-[0.8rem]" onSubmit={(event) => void documents.handleAddDocument(event)}>
+        <AppCard as="form" className="form-panel document-form-panel gap-[0.8rem] p-[1.15rem] max-mobile:p-[0.8rem]" onSubmit={(event) => void documents.handleAddDocument(event)}>
           <h4>Dokument erfassen</h4>
           <label
             className={`file-input-label grid gap-[0.65rem] font-semibold min-h-[8.5rem] content-start justify-items-start p-[1.3rem] border border-dashed border-[rgba(24,52,47,0.24)] rounded-[18px] bg-[rgba(246,239,226,0.5)] transition-[border-color,background,transform] duration-[140ms] ease-out hover:border-[rgba(185,95,44,0.42)] hover:bg-[rgba(255,247,239,0.72)] hover:-translate-y-px${documents.isDocumentDropActive ? ' is-drag-active !border-[#19624d] !bg-[rgba(25,98,77,0.12)] !-translate-y-px' : ''}`}
@@ -60,7 +60,7 @@ export function DocumentsModule({
             onDragLeave={documents.handleDocumentDragLeave}
           >
             <span className="text-base">Datei hochladen</span>
-            <small className="text-[rgba(24,52,47,0.72)] max-[560px]:text-[#4c564d]">
+            <small className="text-[rgba(24,52,47,0.72)] max-compact:text-[#4c564d]">
               PDF, Bilder, Word-Dateien oder mehrere Dateien hier hineinziehen. Maximal
               erlaubt sind 15 MB pro Datei.
             </small>
@@ -106,7 +106,7 @@ export function DocumentsModule({
               <small className="block">{documents.documentUploadProgress.currentName}</small>
               <div className="w-full h-[0.55rem] rounded-full overflow-hidden bg-[rgba(24,52,47,0.12)]" aria-hidden="true">
                 <span
-                  className="block h-full rounded-[inherit] bg-[linear-gradient(90deg,#19624d,#f46f3a)] transition-[width] duration-[180ms] ease-out max-[560px]:bg-[#a6b29f]"
+                  className="block h-full rounded-[inherit] bg-[linear-gradient(90deg,#19624d,#f46f3a)] transition-[width] duration-[180ms] ease-out max-compact:bg-[#a6b29f]"
                   style={{
                     width: `${Math.max(
                       8,
@@ -121,7 +121,7 @@ export function DocumentsModule({
         </AppCard>
         <AppCard className="self-start">
           <div className="document-toolbar grid gap-4 mb-4">
-            <div className="document-toolbar-copy flex justify-between items-center gap-4 [&>strong]:block [&>small]:block max-[560px]:flex-col max-[560px]:items-start max-[560px]:gap-1">
+            <div className="document-toolbar-copy flex justify-between items-center gap-4 [&>strong]:block [&>small]:block max-compact:flex-col max-compact:items-start max-compact:gap-1">
               <strong>{documents.visibleDocuments.length} {documents.visibleDocuments.length === 1 ? 'Dokument' : 'Dokumente'} sichtbar</strong>
               <small>{plannerState.documents.length} insgesamt</small>
             </div>
@@ -174,10 +174,10 @@ export function DocumentsModule({
                       )}
                       <div className="grid gap-[0.2rem]">
                         <strong className="block">{document.name}</strong>
-                        <small className="inline-flex flex-wrap gap-0 items-center text-[rgba(24,52,47,0.68)] max-[560px]:text-[#4c564d]">
+                        <small className="inline-flex flex-wrap gap-0 items-center text-[rgba(24,52,47,0.68)] max-compact:text-[#4c564d]">
                           {getDocumentMetaParts(document).map((part, index) => (
                             <span key={part.key}>
-                              {index > 0 ? <span className="text-[rgba(24,52,47,0.42)] max-[560px]:text-[rgba(29,36,31,0.62)]"> · </span> : null}
+                              {index > 0 ? <span className="text-[rgba(24,52,47,0.42)] max-compact:text-[rgba(29,36,31,0.62)]"> · </span> : null}
                               <span>{part.value}</span>
                             </span>
                           ))}
@@ -187,7 +187,7 @@ export function DocumentsModule({
                   </div>
                   <div className="w-full grid grid-cols-[repeat(2,minmax(0,1fr))] justify-items-stretch items-stretch gap-[0.6rem]">
                     {document.url ? (
-                      <AppButtonLink variant="primary" className="w-full inline-flex items-center justify-center no-underline order-1 max-[560px]:[grid-column:1]" href={document.url} target="_blank" rel="noreferrer">
+                      <AppButtonLink variant="primary" className="w-full inline-flex items-center justify-center no-underline order-1 max-compact:[grid-column:1]" href={document.url} target="_blank" rel="noreferrer">
                         Datei öffnen
                       </AppButtonLink>
                     ) : null}
@@ -195,7 +195,7 @@ export function DocumentsModule({
                       <AppButton
                         type="button"
                         variant="primary"
-                        className="w-full order-2 max-[560px]:[grid-column:2]"
+                        className="w-full order-2 max-compact:[grid-column:2]"
                         aria-label={`Dokument ${document.name} in Vorschau öffnen`}
                         onClick={() => documents.handleOpenDocumentPreview(document)}
                       >
@@ -205,7 +205,7 @@ export function DocumentsModule({
                     <AppButton
                       type="button"
                       variant="primary"
-                      className="w-full order-3 max-[560px]:[grid-column:1]"
+                      className="w-full order-3 max-compact:[grid-column:1]"
                       aria-label={`Dokument ${document.name} bearbeiten`}
                       onClick={() => documents.handleStartDocumentEdit(document)}
                     >
@@ -224,7 +224,7 @@ export function DocumentsModule({
                 </li>
               ))
             ) : (
-              <li className="min-h-[auto] items-center !bg-transparent !border-0 !shadow-none !py-2 !px-0 max-[720px]:content-center">
+              <li className="min-h-[auto] items-center !bg-transparent !border-0 !shadow-none !py-2 !px-0 max-mobile:content-center">
                 <span>Keine Dokumente vorhanden</span>
               </li>
             )}

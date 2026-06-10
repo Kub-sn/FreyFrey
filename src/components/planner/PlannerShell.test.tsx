@@ -121,4 +121,62 @@ describe('PlannerShell', () => {
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Löschen' }));
     expect(setPlannerState).toHaveBeenCalled();
   });
+
+  it('shows the green sign-out button in settings and forwards sign-out', async () => {
+    const user = userEvent.setup();
+    const onSignOut = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <PlannerShell
+        activeTab="family"
+        setActiveTab={vi.fn()}
+        plannerState={plannerFixture}
+        setPlannerState={vi.fn()}
+        familyInvites={[]}
+        setFamilyInvites={vi.fn()}
+        authState={{
+          stage: 'authenticated',
+          session: { access_token: 'token' } as never,
+          profile: {
+            id: 'member-admin',
+            display_name: 'Alex Admin',
+            email: 'alex@example.com',
+            role: 'admin',
+          },
+          family: {
+            familyId: 'family-1',
+            familyName: 'Familie Test',
+            role: 'admin',
+            ownerUserId: 'member-admin',
+            isOwner: true,
+            allowOpenRegistration: true,
+          },
+          error: null,
+          message: null,
+        }}
+        cloudSync={cloudSyncFixture}
+        setCloudSync={vi.fn()}
+        onSignOut={onSignOut}
+        onDeleteAccount={vi.fn().mockResolvedValue(undefined)}
+        onDeleteFamily={vi.fn().mockResolvedValue(undefined)}
+        onDeleteFamilyMemberAccount={vi.fn().mockResolvedValue(undefined)}
+        onUpdateFamilyRegistration={vi.fn().mockResolvedValue({
+          familyId: 'family-1',
+          familyName: 'Familie Test',
+          role: 'admin',
+          ownerUserId: 'member-admin',
+          isOwner: true,
+          allowOpenRegistration: true,
+        })}
+      />,
+    );
+
+    const signOutButton = screen.getByRole('button', { name: 'Ausloggen' });
+
+    expect(signOutButton).toHaveAttribute('data-app-button-variant', 'primary');
+
+    await user.click(signOutButton);
+
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+  });
 });

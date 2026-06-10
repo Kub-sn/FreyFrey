@@ -1091,21 +1091,27 @@ test('keeps family settings cards usable on mobile widths', async ({ page }) => 
   const firstMemberBadges = memberCards.first().locator('.family-status-badges');
   const firstMemberAvatar = memberCards.first().locator('[aria-hidden="true"]');
   const firstMemberSlot = memberCards.first().locator('span[class*="uppercase"]');
-  const familyButtons = page.getByRole('tablist', { name: 'Zwischen Familien wechseln' }).getByRole('button');
+  const familyMembersHeading = page.getByRole('heading', { name: 'Familienmitglieder' });
+  const familyMembersChip = familyMembersHeading.locator('..').locator('.chip');
+  const familySelect = page.getByRole('combobox', { name: 'Familie in der Übersicht auswählen' });
+  const invitePanel = page.getByRole('heading', { name: 'Familienmitglied einladen' }).locator('..');
   const openInvitesHeading = page.getByRole('heading', { name: 'Offene Einladungen' });
   const openInvitesChip = openInvitesHeading.locator('..').locator('.chip');
   const allFamiliesHeading = page.getByRole('heading', { name: 'Alle Familien' });
   const allFamiliesChip = allFamiliesHeading.locator('..').locator('.chip');
+  const familySelectOptions = familySelect.locator('option');
 
-  await expect(familyButtons).toHaveCount(2);
+  await expect(familySelectOptions).toHaveCount(2);
 
-  const [memberCopyBox, memberBadgesBox, firstMemberAvatarBox, firstMemberSlotBox, firstFamilyButtonBox, secondFamilyButtonBox, openInvitesHeadingBox, openInvitesChipBox, allFamiliesHeadingBox, allFamiliesChipBox, widths] = await Promise.all([
+  const [memberCopyBox, memberBadgesBox, firstMemberAvatarBox, firstMemberSlotBox, familyMembersHeadingBox, familyMembersChipBox, familySelectBox, invitePanelBox, openInvitesHeadingBox, openInvitesChipBox, allFamiliesHeadingBox, allFamiliesChipBox, widths] = await Promise.all([
     firstMemberCopy.boundingBox(),
     firstMemberBadges.boundingBox(),
     firstMemberAvatar.boundingBox(),
     firstMemberSlot.boundingBox(),
-    familyButtons.nth(0).boundingBox(),
-    familyButtons.nth(1).boundingBox(),
+    familyMembersHeading.boundingBox(),
+    familyMembersChip.boundingBox(),
+    familySelect.boundingBox(),
+    invitePanel.boundingBox(),
     openInvitesHeading.boundingBox(),
     openInvitesChip.boundingBox(),
     allFamiliesHeading.boundingBox(),
@@ -1120,8 +1126,10 @@ test('keeps family settings cards usable on mobile widths', async ({ page }) => 
   expect(memberBadgesBox).not.toBeNull();
   expect(firstMemberAvatarBox).not.toBeNull();
   expect(firstMemberSlotBox).not.toBeNull();
-  expect(firstFamilyButtonBox).not.toBeNull();
-  expect(secondFamilyButtonBox).not.toBeNull();
+  expect(familyMembersHeadingBox).not.toBeNull();
+  expect(familyMembersChipBox).not.toBeNull();
+  expect(familySelectBox).not.toBeNull();
+  expect(invitePanelBox).not.toBeNull();
   expect(openInvitesHeadingBox).not.toBeNull();
   expect(openInvitesChipBox).not.toBeNull();
   expect(allFamiliesHeadingBox).not.toBeNull();
@@ -1134,12 +1142,9 @@ test('keeps family settings cards usable on mobile widths', async ({ page }) => 
   expect((memberBadgesBox as NonNullable<typeof memberBadgesBox>).y).toBeGreaterThan(
     (memberCopyBox as NonNullable<typeof memberCopyBox>).y + (memberCopyBox as NonNullable<typeof memberCopyBox>).height - 2,
   );
-  expect((secondFamilyButtonBox as NonNullable<typeof secondFamilyButtonBox>).y).toBeGreaterThan(
-    (firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).y +
-      (firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).height - 2,
-  );
-  expect((firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).width).toBeLessThan(widths.clientWidth * 0.7);
-  expect((firstFamilyButtonBox as NonNullable<typeof firstFamilyButtonBox>).width).toBeGreaterThan(120);
+  expect(Math.abs((familyMembersChipBox as NonNullable<typeof familyMembersChipBox>).y - (familyMembersHeadingBox as NonNullable<typeof familyMembersHeadingBox>).y)).toBeLessThanOrEqual(8);
+  expect((familySelectBox as NonNullable<typeof familySelectBox>).width).toBeGreaterThan(widths.clientWidth * 0.7);
+  expect((invitePanelBox as NonNullable<typeof invitePanelBox>).width).toBeGreaterThan(widths.clientWidth * 0.9);
   expect(Math.abs((openInvitesChipBox as NonNullable<typeof openInvitesChipBox>).y - (openInvitesHeadingBox as NonNullable<typeof openInvitesHeadingBox>).y)).toBeLessThanOrEqual(8);
   expect(Math.abs((allFamiliesChipBox as NonNullable<typeof allFamiliesChipBox>).y - (allFamiliesHeadingBox as NonNullable<typeof allFamiliesHeadingBox>).y)).toBeLessThanOrEqual(8);
 });
@@ -1158,7 +1163,7 @@ test('lets admins switch registration to invite-only and back again', async ({ p
   await page.getByRole('button', { name: 'Einstellungen' }).click();
 
   await expect(page.getByRole('heading', { name: 'Alle Familien' })).toBeVisible();
-  await page.getByRole('button', { name: /Familie Abendrot/i }).click();
+  await page.getByRole('combobox', { name: 'Familie in der Übersicht auswählen' }).selectOption('family-2');
   await expect(page.getByText('lea@example.com')).toBeVisible();
   await page.getByRole('combobox', { name: 'Familie fuer Einladung' }).selectOption('family-2');
   await expect(page.getByRole('combobox', { name: 'Familie fuer Einladung' })).toHaveValue('family-2');
@@ -1231,7 +1236,7 @@ test('lets admins delete members and whole families from the all-families card',
   await expect(page.getByText('Familie: Familie Test', { exact: true }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Einstellungen' }).click();
 
-  await page.getByRole('button', { name: /Familie Abendrot/i }).click();
+  await page.getByRole('combobox', { name: 'Familie in der Übersicht auswählen' }).selectOption('family-2');
   await expect(page.getByText('tom.abendrot@example.com')).toBeVisible();
 
   await page.getByRole('button', { name: 'Mitglied tom.abendrot@example.com aus Familie Abendrot löschen' }).click();
@@ -1242,11 +1247,11 @@ test('lets admins delete members and whole families from the all-families card',
   await expect(page.getByText('Tom Abendrot wurde inklusive Konto gelöscht.')).toBeVisible();
   await expect(page.getByText('tom.abendrot@example.com')).toHaveCount(0);
 
-  await page.getByRole('button', { name: /Familie Abendrot/i }).click();
+  await page.getByRole('combobox', { name: 'Familie in der Übersicht auswählen' }).selectOption('family-2');
   await page.getByRole('button', { name: 'Familie Familie Abendrot löschen' }).click();
   await expect(page.getByText(/Familie Abendrot mit 1 Mitgliedern/i)).toBeVisible();
   await page.getByRole('button', { name: 'Familie endgültig löschen' }).click();
 
   await expect(page.getByText('Die Familie Familie Abendrot wurde gelöscht.')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Familie Abendrot/i })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Familie in der Übersicht auswählen' }).locator('option', { hasText: 'Familie Abendrot' })).toHaveCount(0);
 });

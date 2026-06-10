@@ -1,17 +1,21 @@
-import { Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { PlannerState } from '../../lib/planner-data';
 import { useActiveTab } from '../../context/ActiveTabContext';
-import { validateRequiredFields, type FieldErrors } from '../../lib/form-validation';
 import { clearUiDraft, loadUiDraft, saveUiDraft } from '../../lib/storage';
 import { AppButton } from '../ui/AppButton';
 import { AppCard } from '../ui/AppCard';
-import { appInputClassName, appTextareaClassName } from '../ui/AppField';
-import { FieldError } from './FieldError';
+import type { FieldErrors } from '../../lib/form-validation';
+import { CreateNoteDialog } from './CreateNoteDialog';
 
 type NoteCreateDraft = {
   title: string;
   text: string;
+};
+
+type PersistedNoteCreateState = {
+  isDialogOpen: boolean;
+  draft: NoteCreateDraft;
 };
 
 const NOTES_CREATE_STORAGE_KEY = 'notes-create';
@@ -19,6 +23,44 @@ const EMPTY_NOTE_DRAFT: NoteCreateDraft = {
   title: '',
   text: '',
 };
+
+function isNoteCreateDraft(value: unknown): value is NoteCreateDraft {
+  return Boolean(
+    value
+    && typeof value === 'object'
+    && typeof (value as NoteCreateDraft).title === 'string'
+    && typeof (value as NoteCreateDraft).text === 'string',
+  );
+}
+
+function isPersistedNoteCreateState(value: unknown): value is PersistedNoteCreateState {
+  return Boolean(
+    value
+    && typeof value === 'object'
+    && typeof (value as PersistedNoteCreateState).isDialogOpen === 'boolean'
+    && isNoteCreateDraft((value as PersistedNoteCreateState).draft),
+  );
+}
+
+function loadInitialCreateState(): PersistedNoteCreateState {
+  const persistedState = loadUiDraft<unknown | null>(NOTES_CREATE_STORAGE_KEY, null);
+
+  if (isPersistedNoteCreateState(persistedState)) {
+    return persistedState;
+  }
+
+  if (isNoteCreateDraft(persistedState)) {
+    return {
+      isDialogOpen: Boolean(persistedState.title || persistedState.text),
+      draft: persistedState,
+    };
+  }
+
+  return {
+    isDialogOpen: false,
+    draft: EMPTY_NOTE_DRAFT,
+  };
+}
 
 export function NotesModule({
   notes,
@@ -32,28 +74,49 @@ export function NotesModule({
   onOpenNote: (noteId: string) => void;
 }) {
   const { activeTab } = useActiveTab();
+  const [initialCreateState] = useState(loadInitialCreateState);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [draft, setDraft] = useState<NoteCreateDraft>(() =>
-    loadUiDraft<NoteCreateDraft>(NOTES_CREATE_STORAGE_KEY, EMPTY_NOTE_DRAFT),
-  );
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(initialCreateState.isDialogOpen);
+  const [draft, setDraft] = useState<NoteCreateDraft>(initialCreateState.draft);
+
+  const persistCreateDraft = (nextIsDialogOpen: boolean, nextDraft: NoteCreateDraft) => {
+    if (!nextIsDialogOpen) {
+      clearUiDraft(NOTES_CREATE_STORAGE_KEY);
+      return;
+    }
+
+    saveUiDraft<PersistedNoteCreateState>(NOTES_CREATE_STORAGE_KEY, {
+      isDialogOpen: nextIsDialogOpen,
+      draft: nextDraft,
+    });
+  };
 
   const updateDraft = (updater: (current: NoteCreateDraft) => NoteCreateDraft) => {
     setDraft((current) => {
       const next = updater(current);
-      saveUiDraft(NOTES_CREATE_STORAGE_KEY, next);
+      persistCreateDraft(isCreateDialogOpen, next);
       return next;
     });
   };
 
+  const handleOpenCreateDialog = () => {
+    setErrors({});
+    setIsCreateDialogOpen(true);
+    persistCreateDraft(true, draft);
+  };
+
+  const handleCloseCreateDialog = () => {
+    setErrors({});
+    setDraft(EMPTY_NOTE_DRAFT);
+    setIsCreateDialogOpen(false);
+    clearUiDraft(NOTES_CREATE_STORAGE_KEY);
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const next = validateRequiredFields(new FormData(event.currentTarget), [{ name: 'text', label: 'Inhalt' }]);
-    if (Object.keys(next).length > 0) {
-      setErrors(next);
-      return;
-    }
 
     if (!draft.text.trim()) {
+      setErrors({ text: 'Inhalt ist erforderlich.' });
       return;
     }
 
@@ -65,6 +128,7 @@ export function NotesModule({
     }
 
     setDraft(EMPTY_NOTE_DRAFT);
+    setIsCreateDialogOpen(false);
     clearUiDraft(NOTES_CREATE_STORAGE_KEY);
   };
 
@@ -75,40 +139,29 @@ export function NotesModule({
       return rest;
     });
 
+  const handleFieldChange = (field: 'title' | 'text', value: string) => {
+    updateDraft((current) => ({ ...current, [field]: value }));
+
+    if (field === 'text') {
+      clearFieldError('text');
+    }
+  };
+
   return (
     <section className={activeTab === 'notes' ? 'module is-visible' : 'module'}>
-      <div className="module-layout grid-cols-[minmax(320px,440px)_minmax(0,1fr)]">
-        <AppCard as="form" className="form-panel min-w-0" onSubmit={handleSubmit} noValidate>
-          <h4>Neue Notiz</h4>
-          <input
-            className={appInputClassName()}
-            name="title"
-            placeholder="Titel"
-            value={draft.title}
-            onChange={(event) => {
-              const nextTitle = event.currentTarget.value;
-              updateDraft((current) => ({ ...current, title: nextTitle }));
-            }}
-          />
-          <textarea
-            className={appTextareaClassName()}
-            name="text"
-            placeholder="Inhalt"
-            rows={5}
-            value={draft.text}
-            aria-invalid={errors.text ? 'true' : undefined}
-            aria-describedby={errors.text ? 'text-error' : undefined}
-            onInput={(event) => {
-              const nextText = event.currentTarget.value;
-              updateDraft((current) => ({ ...current, text: nextText }));
-              clearFieldError('text');
-            }}
-          />
-          <FieldError fieldName="text" message={errors.text} />
-          <AppButton type="submit" variant="primary">Notiz speichern</AppButton>
-        </AppCard>
-        <AppCard className="self-start">
-          <div className="columns-2 gap-x-[1.15rem] max-[720px]:columns-1">
+      <div className="grid content-start gap-4 max-mobile:gap-3">
+        <div className="flex items-start max-mobile:w-full">
+          <AppButton
+            type="button"
+            variant="secondary"
+            className="inline-flex items-center gap-2.5 border-[rgba(25,98,77,0.18)] bg-[rgba(255,250,244,0.96)] text-[#19624d] shadow-[0_16px_32px_rgba(24,52,47,0.08)] hover:bg-[rgba(243,249,246,0.98)] max-mobile:w-full max-mobile:justify-center"
+            onClick={handleOpenCreateDialog}
+          >
+            <Plus aria-hidden="true" size={18} strokeWidth={2.4} />
+            <span>Neue Notiz erstellen</span>
+          </AppButton>
+        </div>
+          <div className="columns-2 gap-x-[1.15rem] max-mobile:columns-1">
             {notes.length > 0 ? notes.map((note) => (
               <article key={note.id} className="note-card break-inside-avoid relative grid mb-4 p-0 w-full max-w-full max-h-[15rem] overflow-hidden rounded-[24px] bg-[rgba(255,248,239,0.92)]">
                 <button
@@ -121,7 +174,7 @@ export function NotesModule({
                 </button>
                 <button
                   type="button"
-                  className="appearance-none grid gap-3 w-full p-4 border-none bg-transparent text-left cursor-pointer pt-[1.2rem] pr-[4.3rem] max-[560px]:pt-[1.35rem] max-[560px]:pr-[4.75rem]"
+                  className="appearance-none grid gap-3 w-full p-4 border-none bg-transparent text-left cursor-pointer pt-[1.2rem] pr-[4.3rem] max-compact:pt-[1.35rem] max-compact:pr-[4.75rem]"
                   onClick={() => onOpenNote(note.id)}
                   aria-label={`Notiz ${note.title} öffnen`}
                 >
@@ -132,8 +185,17 @@ export function NotesModule({
             )) : null}
             {notes.length === 0 ? <p className="py-3 text-[rgba(24,52,47,0.55)] italic border-none list-none">Keine Notizen vorhanden</p> : null}
           </div>
-        </AppCard>
       </div>
+
+      {isCreateDialogOpen ? (
+        <CreateNoteDialog
+          draft={draft}
+          errorMessage={errors.text}
+          onClose={handleCloseCreateDialog}
+          onFieldChange={handleFieldChange}
+          onSave={handleSubmit}
+        />
+      ) : null}
     </section>
   );
 }

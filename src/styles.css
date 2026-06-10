@@ -37,6 +37,9 @@
 }
 
 @theme {
+  --breakpoint-compact: 35rem;
+  --breakpoint-mobile: 45rem;
+
   --color-earth-50: #fffdf9;
   --color-earth-100: #f8f2e8;
   --color-earth-200: #f0e5d7;

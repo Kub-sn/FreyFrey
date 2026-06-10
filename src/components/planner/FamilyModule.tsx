@@ -40,6 +40,7 @@ export function FamilyModule({
   selectedInviteFamilyId,
   onAddMember,
   onOpenDeleteAccount,
+  onSignOut,
   onRegistrationAccessChange,
   onRemoveInvite,
   onSelectAdminFamily,
@@ -64,6 +65,7 @@ export function FamilyModule({
   selectedInviteFamilyId: string | null;
   onAddMember: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onOpenDeleteAccount: () => void;
+  onSignOut: () => Promise<void>;
   onRegistrationAccessChange: (value: boolean) => Promise<void>;
   onRemoveInvite: (inviteId: string) => Promise<void>;
   onSelectAdminFamily: (familyId: string) => void;
@@ -73,9 +75,11 @@ export function FamilyModule({
 }) {
   const { activeTab } = useActiveTab();
   const canViewFamily = Boolean(authFamily);
-  const accountPanelClassName = 'self-start grid gap-[0.9rem] min-w-0 w-full family-account-panel [&>.danger-action]:justify-self-start';
+  const hasOpenInvites = familyInvites.length > 0;
+  const activeAdminFamily = selectedAdminFamily ?? adminFamilyDirectory[0] ?? null;
+  const accountPanelClassName = 'self-start grid gap-[0.9rem] max-mobile:gap-[0.45rem] min-w-0 w-full family-account-panel [&>.danger-action]:justify-self-start';
   const invitePanel = (
-    <AppCard as="form" className="form-panel family-invite-panel" onSubmit={(event) => void onAddMember(event)}>
+    <AppCard as="form" className="form-panel family-invite-panel w-full" onSubmit={(event) => void onAddMember(event)}>
       <h4>Familienmitglied einladen</h4>
       {canManageFamily ? (
         <label className="grid gap-[0.35rem] [&>span]:text-[0.84rem] [&>span]:font-semibold [&>span]:tracking-[0.04em] [&>span]:text-[rgba(24,52,47,0.78)]">
@@ -113,11 +117,14 @@ export function FamilyModule({
       <div className="panel-heading">
         <h4>Konto</h4>
       </div>
-      <p className="-mt-px m-0 text-[rgba(24,52,47,0.72)]">
-      </p>
-      <AppButton type="button" variant="danger" onClick={onOpenDeleteAccount}>
-        Account löschen
-      </AppButton>
+      <div className="flex flex-wrap items-center gap-3 max-mobile:w-full max-mobile:flex-col max-mobile:items-stretch">
+        <AppButton type="button" variant="primary" className="max-mobile:w-full" onClick={() => void onSignOut()}>
+          Ausloggen
+        </AppButton>
+        <AppButton type="button" variant="danger" className="max-mobile:w-full" onClick={onOpenDeleteAccount}>
+          Account löschen
+        </AppButton>
+      </div>
     </AppCard>
   ) : null;
   const registrationPanel = canManageFamily && authFamily ? (
@@ -155,18 +162,16 @@ export function FamilyModule({
   return (
     <section className={activeTab === 'family' && canViewFamily ? 'module is-visible' : 'module'}>
       <div className="role-layout flex flex-col gap-[0.65rem]">
-        <div className="flex flex-wrap items-start gap-[0.65rem] max-[720px]:flex-col">
-          <AppCard className="self-start flex-[1_1_620px] min-w-[min(100%,34rem)] max-[720px]:w-full max-[720px]:min-w-0">
-            <div className="panel-heading items-start">
-              <div className="grid gap-[0.3rem] min-w-0">
-                <h4>Familienmitglieder</h4>
-              </div>
-              <span className="chip">{members.length}</span>
+        <div className="flex flex-wrap items-start gap-[0.65rem] max-mobile:flex-col">
+          <AppCard className="self-start flex-[1_1_620px] min-w-[min(100%,34rem)] max-mobile:w-full max-mobile:min-w-0">
+            <div className="panel-heading family-inline-heading">
+              <h4>Familienmitglieder</h4>
+              <span className="chip shrink-0">{members.length}</span>
             </div>
             <ul className="list-none m-0 mt-[0.85rem] p-0 flex flex-col gap-[0.55rem]" aria-label="Familienmitglieder Liste">
               {members.length > 0 ? (
                 members.map((member, index) => (
-                  <li key={member.id} className="flex justify-between items-center gap-[0.85rem] w-full min-w-0 py-4 px-[1.05rem] border border-[rgba(24,52,47,0.12)] rounded-[22px] bg-[rgba(255,255,255,0.98)] shadow-[0_12px_26px_rgba(35,27,17,0.05)] max-[720px]:flex-col max-[720px]:items-start">
+                  <li key={member.id} className="flex justify-between items-center gap-[0.85rem] w-full min-w-0 py-4 px-[1.05rem] border border-[rgba(24,52,47,0.12)] rounded-[22px] bg-[rgba(255,255,255,0.98)] shadow-[0_12px_26px_rgba(35,27,17,0.05)] max-mobile:flex-col max-mobile:items-start">
                     <div className="flex items-center gap-[0.9rem] min-w-0">
                       <span className="grid size-12 place-items-center rounded-[16px] shrink-0 bg-[linear-gradient(135deg,rgba(24,52,47,0.14),rgba(25,98,77,0.24))] text-[#18342f] text-[0.88rem] font-extrabold tracking-[0.08em]" aria-hidden="true">
                         {getMemberMonogram(member.name)}
@@ -179,13 +184,13 @@ export function FamilyModule({
                         <small>{member.email}</small>
                       </div>
                     </div>
-                    <div className="flex justify-end min-w-0 ml-auto max-[720px]:justify-start">
+                    <div className="flex justify-end min-w-0 ml-auto max-mobile:justify-start">
                       <FamilyStatusBadges role={member.role} isOwner={isFamilyOwnerMember(member.id, authFamily)} />
                     </div>
                   </li>
                 ))
               ) : (
-                <li className="flex justify-between items-center gap-[0.85rem] w-full min-w-0 py-4 px-[1.05rem] border border-[rgba(24,52,47,0.12)] rounded-[22px] bg-[rgba(255,255,255,0.98)] shadow-[0_12px_26px_rgba(35,27,17,0.05)] grid-cols-[1fr] max-[720px]:flex-col max-[720px]:items-start">
+                <li className="flex justify-between items-center gap-[0.85rem] w-full min-w-0 py-4 px-[1.05rem] border border-[rgba(24,52,47,0.12)] rounded-[22px] bg-[rgba(255,255,255,0.98)] shadow-[0_12px_26px_rgba(35,27,17,0.05)] grid-cols-[1fr] max-mobile:flex-col max-mobile:items-start">
                   <div className="grid gap-[0.2rem] min-w-0 [&>strong]:block [&>strong]:[overflow-wrap:anywhere] [&>small]:block [&>small]:[overflow-wrap:anywhere]">
                     <strong>Noch keine Mitglieder geladen</strong>
                     <small>Nach Login und Familienzuordnung werden echte Mitglieder aus Supabase angezeigt.</small>
@@ -193,11 +198,11 @@ export function FamilyModule({
                 </li>
               )}
             </ul>
-            <div className="panel-heading panel-heading-tight mb-8 family-inline-heading">
+            <div className={hasOpenInvites ? 'panel-heading panel-heading-tight mb-8 family-inline-heading' : 'panel-heading panel-heading-tight mb-2 family-inline-heading'}>
               <h4>Offene Einladungen</h4>
               <span className="chip">{familyInvites.length}</span>
             </div>
-            {familyInvites.length > 0 ? (
+            {hasOpenInvites ? (
               <ul className="document-list [&>li]:py-[0.7rem] gap-[0.85rem] mt-[0.4rem]">
                 {familyInvites.map((invite) => (
                   <li key={invite.id} className="items-stretch py-4 px-[1.05rem] border border-[rgba(24,52,47,0.09)] rounded-[20px] bg-[rgba(255,255,255,0.98)] shadow-[0_10px_22px_rgba(35,27,17,0.05)]">
@@ -205,7 +210,7 @@ export function FamilyModule({
                       <strong>{invite.email}</strong>
                       <span className={`${getRoleChipClass(invite.role as UserRole)} w-fit`}>{getRoleLabel(invite.role as UserRole)}</span>
                     </div>
-                    <div className="flex items-center justify-end ml-auto max-[720px]:w-full max-[720px]:ml-0 max-[720px]:justify-start">
+                    <div className="flex items-center justify-end ml-auto max-mobile:w-full max-mobile:ml-0 max-mobile:justify-start">
                       {canInviteFamilyMembers ? (
                         <AppButton
                           type="button"
@@ -224,7 +229,7 @@ export function FamilyModule({
             ) : null}
           </AppCard>
 
-          <div className="flex flex-[0_1_360px] flex-col gap-[0.6rem] min-w-[min(100%,21rem)] max-[720px]:w-full max-[720px]:min-w-0">
+          <div className="flex flex-[1_1_360px] flex-col gap-[0.6rem] min-w-[min(100%,21rem)] w-full max-mobile:w-full max-mobile:min-w-0">
             {invitePanel}
           </div>
         </div>
@@ -232,7 +237,7 @@ export function FamilyModule({
         {!canManageFamily ? accountPanel : null}
 
         {canManageFamily ? (
-          <AppCard className="self-start admin-directory-panel min-w-0 w-full overflow-x-clip gap-[0.75rem] max-[720px]:min-w-0">
+          <AppCard className="self-start admin-directory-panel min-w-0 w-full overflow-x-clip gap-[0.75rem] max-mobile:min-w-0">
               <div className="panel-heading family-inline-heading">
                 <h4>Alle Familien</h4>
                 <span className="chip">{adminFamilyDirectory.length}</span>
@@ -246,45 +251,42 @@ export function FamilyModule({
               ) : null}
               {adminFamilyDirectory.length > 0 ? (
                 <>
-                  <div className="flex flex-wrap gap-[0.65rem] mb-[1.2rem] max-[720px]:grid max-[720px]:justify-start max-[720px]:gap-[0.55rem]" role="tablist" aria-label="Zwischen Familien wechseln">
-                    {adminFamilyDirectory.map((family) => {
-                      const isSelectedFamily = selectedAdminFamily?.familyId === family.familyId;
+                  <label className="grid gap-[0.35rem] mb-[1.2rem] max-w-full [&>span]:text-[0.84rem] [&>span]:font-semibold [&>span]:tracking-[0.04em] [&>span]:text-[rgba(24,52,47,0.78)]">
+                    <span>Familie auswählen</span>
+                    <select
+                      className={appSelectClassName('w-full')}
+                      aria-label="Familie in der Übersicht auswählen"
+                      value={activeAdminFamily?.familyId ?? ''}
+                      onChange={(event) => onSelectAdminFamily(event.currentTarget.value)}
+                    >
+                      {adminFamilyDirectory.map((family) => (
+                        <option key={family.familyId} value={family.familyId}>
+                          {family.familyName} ({family.members.length} Mitglieder)
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                      return (
-                      <button
-                        key={family.familyId}
-                        type="button"
-                        className={`grid gap-[0.18rem] min-w-[10.5rem] py-[0.85rem] px-4 border border-[rgba(24,52,47,0.12)] rounded-[18px] bg-[rgba(255,252,248,0.96)] text-[#18342f] text-left shadow-[0_8px_18px_rgba(35,27,17,0.04)] transition-[transform,border-color,box-shadow,background] duration-[180ms] ease-out hover:-translate-y-px hover:border-[rgba(24,52,47,0.22)] hover:shadow-[0_12px_22px_rgba(35,27,17,0.06)] [&>strong]:block [&>strong]:[overflow-wrap:anywhere] [&>small]:block [&>small]:[overflow-wrap:anywhere] max-[720px]:w-auto max-[720px]:min-w-[min(10.5rem,100%)]${isSelectedFamily ? ' border-[rgba(24,52,47,0.26)] !bg-[rgba(232,242,238,0.96)] !shadow-[0_14px_26px_rgba(24,52,47,0.08)]' : ''}`}
-                        aria-pressed={isSelectedFamily ? 'true' : 'false'}
-                        onClick={() => onSelectAdminFamily(family.familyId)}
-                      >
-                        <strong>{family.familyName}</strong>
-                        <small>{family.members.length} Mitglieder</small>
-                      </button>
-                      );
-                    })}
-                  </div>
-
-                  {selectedAdminFamily ? (
+                  {activeAdminFamily ? (
                     <div className="grid min-w-0 overflow-x-clip gap-3">
-                      <div className="panel-heading panel-heading-tight family-directory-summary mt-[0.1rem] min-w-0 max-[720px]:flex-col max-[720px]:items-start max-[720px]:gap-[0.55rem]">
+                      <div className="panel-heading panel-heading-tight family-directory-summary mt-[0.1rem] min-w-0 max-mobile:flex-col max-mobile:items-start max-mobile:gap-[0.55rem]">
                         <div className="grid min-w-0 gap-[0.18rem] pl-[0.45rem]">
-                          <strong>{selectedAdminFamily.familyName}</strong>
+                          <strong>{activeAdminFamily.familyName}</strong>
                           <small>
-                            {selectedAdminFamily.members.filter((member) => member.role === 'admin').length} Admin · {selectedAdminFamily.members.length} Mitglieder
+                            {activeAdminFamily.members.filter((member) => member.role === 'admin').length} Admin · {activeAdminFamily.members.length} Mitglieder
                           </small>
                         </div>
-                        <div className="flex flex-wrap items-center justify-end min-w-0 gap-[0.65rem] pr-[0.35rem] [&>.danger-action]:[white-space:normal] [&>.danger-action]:[overflow-wrap:anywhere] max-[720px]:w-full max-[720px]:ml-0 max-[720px]:justify-start [&>.danger-action]:max-[720px]:w-full">
+                        <div className="flex flex-wrap items-center justify-end min-w-0 gap-[0.65rem] pr-[0.35rem] [&>.danger-action]:[white-space:normal] [&>.danger-action]:[overflow-wrap:anywhere] max-mobile:w-full max-mobile:ml-0 max-mobile:justify-start [&>.danger-action]:max-mobile:w-full">
                           <AppButton
                             type="button"
                             variant="danger"
-                            aria-label={`Familie ${selectedAdminFamily.familyName} löschen`}
+                            aria-label={`Familie ${activeAdminFamily.familyName} löschen`}
                             onClick={() =>
                               onSetPendingFamilyDeletion({
-                                familyId: selectedAdminFamily.familyId,
-                                familyName: selectedAdminFamily.familyName,
-                                memberCount: selectedAdminFamily.members.length,
-                                isCurrentFamily: authFamily?.familyId === selectedAdminFamily.familyId,
+                                familyId: activeAdminFamily.familyId,
+                                familyName: activeAdminFamily.familyName,
+                                memberCount: activeAdminFamily.members.length,
+                                isCurrentFamily: authFamily?.familyId === activeAdminFamily.familyId,
                               })
                             }
                           >
@@ -293,26 +295,26 @@ export function FamilyModule({
                         </div>
                       </div>
                       <ul className="document-list grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] min-w-0 gap-[0.8rem]">
-                        {selectedAdminFamily.members.map((member) => (
+                        {activeAdminFamily.members.map((member) => (
                           <li key={member.id} className="w-full min-w-0 overflow-hidden py-4 px-[1.2rem] border border-[rgba(24,52,47,0.26)] border-b-0 rounded-[20px] bg-[rgba(255,255,255,0.98)] shadow-[0_14px_26px_rgba(24,52,47,0.08)]">
                             <div className="family-directory-member-copy grid gap-[0.4rem] min-w-0 pl-[0.45rem] [&>strong]:block [&>strong]:[overflow-wrap:anywhere] [&>small]:block [&>small]:[overflow-wrap:anywhere]">
-                              <div className="flex flex-wrap items-center min-w-0 gap-[0.85rem] max-[720px]:flex-col max-[720px]:items-start max-[720px]:gap-[0.45rem]">
+                              <div className="flex flex-wrap items-center min-w-0 gap-[0.85rem] max-mobile:flex-col max-mobile:items-start max-mobile:gap-[0.45rem]">
                                 <strong>{member.name}</strong>
                                 <FamilyStatusBadges role={member.role as UserRole} isOwner={member.isOwner} />
                               </div>
                               <small>{member.email}</small>
                             </div>
-                            <div className="flex flex-wrap items-center justify-end min-w-0 gap-[0.65rem] ml-auto pr-[0.35rem] [&>.ghost-toggle]:[white-space:normal] [&>.ghost-toggle]:[overflow-wrap:anywhere] max-[720px]:w-full max-[720px]:ml-0 max-[720px]:justify-start [&>.ghost-toggle]:max-[720px]:w-full">
+                            <div className="flex flex-wrap items-center justify-end min-w-0 gap-[0.65rem] ml-auto pr-[0.35rem] [&>.ghost-toggle]:[white-space:normal] [&>.ghost-toggle]:[overflow-wrap:anywhere] max-mobile:w-full max-mobile:ml-0 max-mobile:justify-start [&>.ghost-toggle]:max-mobile:w-full">
                               {!member.isOwner && member.id !== authProfile?.id ? (
                                 <AppButton
                                   type="button"
                                   variant="ghost"
                                   className="danger-action"
-                                  aria-label={`Mitglied ${member.email || member.name} aus ${selectedAdminFamily.familyName} löschen`}
+                                  aria-label={`Mitglied ${member.email || member.name} aus ${activeAdminFamily.familyName} löschen`}
                                   onClick={() =>
                                     onSetPendingMemberDeletion({
-                                      familyId: selectedAdminFamily.familyId,
-                                      familyName: selectedAdminFamily.familyName,
+                                      familyId: activeAdminFamily.familyId,
+                                      familyName: activeAdminFamily.familyName,
                                       memberId: member.id,
                                       memberName: member.name,
                                       memberEmail: member.email,
@@ -334,7 +336,7 @@ export function FamilyModule({
         ) : null}
 
         {canManageFamily ? (
-          <div className="flex flex-wrap items-start gap-[0.65rem] max-[720px]:flex-col [&>.panel]:flex-[1_1_280px] [&>.panel]:min-w-[min(100%,18rem)]">
+          <div className="flex flex-wrap items-start gap-[0.65rem] max-mobile:flex-col [&>.panel]:flex-[1_1_280px] [&>.panel]:min-w-[min(100%,18rem)]">
             {registrationPanel}
             {accountPanel}
           </div>
