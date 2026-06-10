@@ -29,6 +29,7 @@ import {
   type SupabaseRegistrationGate,
 } from '../lib/supabase';
 import {
+  type AuthDraft,
   EMPTY_AUTH_DRAFT,
   INVITE_ONLY_REGISTRATION_ERROR,
   isRegistrationDisabledByAdmin,

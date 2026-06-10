@@ -144,14 +144,17 @@ function getActiveFormattingState(
   const canUsePendingInlineFormatting = Boolean(
     pendingInlineFormatting && (!selection || selection.isCollapsed),
   );
+  const resolvedPendingInlineFormatting = canUsePendingInlineFormatting
+    ? pendingInlineFormatting
+    : null;
 
   return {
-    bold: canUsePendingInlineFormatting
-      ? pendingInlineFormatting.bold
-      : isInlineFormatActive(editorElement, anchorNode, "strong, b"),
-    underline: canUsePendingInlineFormatting
-      ? pendingInlineFormatting.underline
-      : isInlineFormatActive(editorElement, anchorNode, "u"),
+    bold:
+      resolvedPendingInlineFormatting?.bold ??
+      isInlineFormatActive(editorElement, anchorNode, "strong, b"),
+    underline:
+      resolvedPendingInlineFormatting?.underline ??
+      isInlineFormatActive(editorElement, anchorNode, "u"),
     unorderedList: unorderedList instanceof HTMLUListElement && !checklist,
     orderedList: orderedList instanceof HTMLOListElement,
     checklist,

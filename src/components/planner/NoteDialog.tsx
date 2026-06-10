@@ -54,7 +54,7 @@ export function NoteDialog({
               onChange={(event) => onFieldChange('title', event.currentTarget.value)}
             />
             <NoteRichTextEditor
-              aria-label="Notizinhalt bearbeiten"
+              ariaLabel="Notizinhalt bearbeiten"
               value={note.text}
               onChange={(value) => onFieldChange('text', value)}
             />
