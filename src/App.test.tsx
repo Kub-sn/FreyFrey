@@ -15,6 +15,15 @@ vi.mock('./lib/supabase', async () => {
 
 import App from './App';
 
+function getRichTextEditor(container: HTMLElement) {
+  const editor = within(container).getAllByRole('textbox').find((element) => element.classList.contains('note-rich-text-surface'));
+  if (!editor) {
+    throw new Error('Rich text editor not found');
+  }
+
+  return editor;
+}
+
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
@@ -137,7 +146,7 @@ describe('App', () => {
     const dialog = screen.getByRole('dialog', { name: 'Neue Notiz' });
 
     await user.type(within(dialog).getByPlaceholderText('Titel'), 'Lösch mich');
-    await user.type(within(dialog).getByPlaceholderText('Inhalt'), 'Diese Notiz wird direkt wieder entfernt.');
+    await user.type(getRichTextEditor(dialog), 'Diese Notiz wird direkt wieder entfernt.');
     await user.click(within(dialog).getByRole('button', { name: 'Notiz speichern' }));
 
     expect(screen.getByRole('button', { name: 'Notiz Lösch mich öffnen' })).toBeInTheDocument();
@@ -198,7 +207,7 @@ describe('App', () => {
     const firstDialog = screen.getByRole('dialog', { name: 'Neue Notiz' });
 
     await user.type(within(firstDialog).getByPlaceholderText('Titel'), 'Einkaufsidee');
-    await user.type(within(firstDialog).getByPlaceholderText('Inhalt'), 'Blaubeeren nicht vergessen');
+    await user.type(getRichTextEditor(firstDialog), 'Blaubeeren nicht vergessen');
 
     firstRender.unmount();
     render(<App />);
@@ -207,8 +216,9 @@ describe('App', () => {
 
     expect(screen.getByRole('button', { name: 'Neue Notiz erstellen' })).toBeInTheDocument();
     expect(within(secondDialog).getByDisplayValue('Einkaufsidee')).toBeInTheDocument();
-    expect(within(secondDialog).getByDisplayValue('Blaubeeren nicht vergessen')).toBeInTheDocument();
+    expect(getRichTextEditor(secondDialog)).toHaveTextContent('Blaubeeren nicht vergessen');
   });
+
 
   it('restores an unsaved shopping draft dialog after a reload', async () => {
     const user = userEvent.setup();

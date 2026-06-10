@@ -7,6 +7,7 @@ import { AppButton } from '../ui/AppButton';
 import { AppCard } from '../ui/AppCard';
 import type { FieldErrors } from '../../lib/form-validation';
 import { CreateNoteDialog } from './CreateNoteDialog';
+import { getNotePreviewText } from './noteRichText';
 
 type NoteCreateDraft = {
   title: string;
@@ -115,7 +116,7 @@ export function NotesModule({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!draft.text.trim()) {
+    if (!getNotePreviewText(draft.text).trim()) {
       setErrors({ text: 'Inhalt ist erforderlich.' });
       return;
     }
@@ -179,7 +180,7 @@ export function NotesModule({
                   aria-label={`Notiz ${note.title} öffnen`}
                 >
                   <h4 className="m-0 pt-0 pr-0 [overflow-wrap:anywhere] break-words hyphens-auto line-clamp-2">{note.title}</h4>
-                  <p className="m-0 leading-[1.6] [overflow-wrap:anywhere] break-words hyphens-auto line-clamp-5">{note.text}</p>
+                  <p className="m-0 leading-[1.6] [overflow-wrap:anywhere] break-words hyphens-auto line-clamp-5">{getNotePreviewText(note.text)}</p>
                 </button>
               </article>
             )) : null}

@@ -617,11 +617,170 @@ select:focus-visible,
 
 .dialog-form input:focus,
 .dialog-form textarea:focus,
+.dialog-form .note-rich-text-surface:focus,
 .dialog-form select:focus {
   border-color: rgba(58, 101, 87, 0.52);
   box-shadow:
     0 0 0 4px rgba(58, 101, 87, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.note-rich-text-toolbar .app-button[data-app-button-size="icon"] {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.note-rich-text-toolbar .note-rich-text-toolbar-button.is-active {
+  border-color: rgba(25, 98, 77, 0.34);
+  background: rgba(25, 98, 77, 0.16);
+  color: #19624d;
+  box-shadow: inset 0 0 0 1px rgba(25, 98, 77, 0.08);
+}
+
+.note-rich-text-toolbar .note-rich-text-toolbar-button.is-active:hover {
+  background: rgba(25, 98, 77, 0.2);
+}
+
+.note-rich-text-surface,
+.note-rich-text-content {
+  width: 100%;
+  min-height: 12rem;
+  border-radius: 16px;
+  color: #18342f;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.note-rich-text-surface {
+  position: relative;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(35, 63, 54, 0.18);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 1px 2px rgba(35, 27, 17, 0.04);
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.note-rich-text-surface:focus-visible {
+  outline: 2px solid rgba(185, 95, 44, 0.8);
+  outline-offset: 3px;
+}
+
+.note-rich-text-surface[data-empty="true"]::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  inset: 0.95rem 1rem auto;
+  color: rgba(24, 52, 47, 0.48);
+  pointer-events: none;
+}
+
+.note-rich-text-surface > :first-child,
+.note-rich-text-content > :first-child {
+  margin-top: 0;
+}
+
+.note-rich-text-surface > :last-child,
+.note-rich-text-content > :last-child {
+  margin-bottom: 0;
+}
+
+.note-rich-text-surface div,
+.note-rich-text-surface p,
+.note-rich-text-content div,
+.note-rich-text-content p {
+  margin: 0;
+}
+
+.note-rich-text-surface ul,
+.note-rich-text-surface ol,
+.note-rich-text-content ul,
+.note-rich-text-content ol {
+  margin: 0.4rem 0 0.4rem 1.3rem;
+  padding-left: 1rem;
+  list-style-position: outside;
+}
+
+.note-rich-text-surface ul,
+.note-rich-text-content ul {
+  list-style-type: disc;
+}
+
+.note-rich-text-surface ol,
+.note-rich-text-content ol {
+  list-style-type: decimal;
+}
+
+.note-rich-text-surface li,
+.note-rich-text-content li {
+  margin: 0.18rem 0;
+}
+
+.note-rich-text-surface ul[data-list-type="checklist"],
+.note-rich-text-content ul[data-list-type="checklist"] {
+  margin-left: 0;
+  list-style: none;
+}
+
+.note-rich-text-surface ul[data-list-type="checklist"] li,
+.note-rich-text-content ul[data-list-type="checklist"] li {
+  position: relative;
+  padding-left: 2rem;
+  list-style: none;
+}
+
+.note-rich-text-surface ul[data-list-type="checklist"] li::before,
+.note-rich-text-content ul[data-list-type="checklist"] li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.15rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(25, 98, 77, 0.42);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.note-rich-text-surface ul[data-list-type="checklist"] li[data-checked="true"]::before,
+.note-rich-text-content ul[data-list-type="checklist"] li[data-checked="true"]::before {
+  background: linear-gradient(180deg, rgba(25, 98, 77, 0.92), rgba(24, 52, 47, 0.92));
+  border-color: rgba(24, 52, 47, 0.75);
+  box-shadow: none;
+}
+
+.note-rich-text-surface ul[data-list-type="checklist"] li[data-checked="true"]::after,
+.note-rich-text-content ul[data-list-type="checklist"] li[data-checked="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0.33rem;
+  top: 0.38rem;
+  width: 0.48rem;
+  height: 0.26rem;
+  border-left: 2px solid #f6efe2;
+  border-bottom: 2px solid #f6efe2;
+  transform: rotate(-45deg);
+}
+
+.note-rich-text-content {
+  white-space: normal;
+}
+
+@media (max-width: 720px) {
+  .note-rich-text-toolbar {
+    gap: 0.45rem;
+  }
+
+  .note-rich-text-toolbar .app-button[data-app-button-size="icon"] {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .note-rich-text-surface,
+  .note-rich-text-content {
+    min-height: 10.5rem;
+  }
 }
 
 .dialog-actions .secondary-action,

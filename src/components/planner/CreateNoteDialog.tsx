@@ -1,8 +1,9 @@
 import type { FormEvent } from 'react';
 import { AppButton } from '../ui/AppButton';
-import { appInputClassName, appTextareaClassName } from '../ui/AppField';
+import { appInputClassName } from '../ui/AppField';
 import { FieldError } from './FieldError';
 import { ModalDialog } from './ModalDialog';
+import { NoteRichTextEditor } from './NoteRichTextEditor';
 
 export function CreateNoteDialog({
   draft,
@@ -45,15 +46,13 @@ export function CreateNoteDialog({
           value={draft.title}
           onChange={(event) => onFieldChange('title', event.currentTarget.value)}
         />
-        <textarea
-          className={appTextareaClassName()}
+        <NoteRichTextEditor
           aria-label="Notizinhalt"
           placeholder="Inhalt"
-          rows={12}
           value={draft.text}
-          aria-invalid={errorMessage ? 'true' : undefined}
-          aria-describedby={errorMessage ? 'text-error' : undefined}
-          onChange={(event) => onFieldChange('text', event.currentTarget.value)}
+          invalid={Boolean(errorMessage)}
+          describedBy={errorMessage ? 'text-error' : undefined}
+          onChange={(value) => onFieldChange('text', value)}
         />
         <FieldError fieldName="text" message={errorMessage} />
       </form>

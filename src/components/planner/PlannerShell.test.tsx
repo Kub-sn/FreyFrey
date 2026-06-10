@@ -4,6 +4,15 @@ import { describe, expect, it, vi } from 'vitest';
 import PlannerShell from './PlannerShell';
 import { cloudSyncFixture, plannerFixture } from './planner-test-fixtures';
 
+function getRichTextEditor(container: ParentNode) {
+  const editor = Array.from(container.querySelectorAll('[role="textbox"]')).find((element) => element.classList.contains('note-rich-text-surface'));
+  if (!editor) {
+    throw new Error('Rich text editor not found');
+  }
+
+  return editor as HTMLElement;
+}
+
 describe('PlannerShell', () => {
   it('renders the planner shell in local mode and allows resetting local data', async () => {
     const user = userEvent.setup();
@@ -75,9 +84,9 @@ describe('PlannerShell', () => {
     expect(within(dialog).getByRole('button', { name: 'Bearbeiten' })).toBeInTheDocument();
 
     await user.click(within(dialog).getByRole('button', { name: 'Bearbeiten' }));
-    fireEvent.change(screen.getByLabelText('Notizinhalt bearbeiten'), {
-      target: { value: 'Vollständiger bearbeiteter Text' },
-    });
+  const editor = getRichTextEditor(document.body);
+    editor.innerHTML = '<div>Vollständiger bearbeiteter Text</div>';
+    fireEvent.input(editor);
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
     expect(setPlannerState).toHaveBeenCalled();

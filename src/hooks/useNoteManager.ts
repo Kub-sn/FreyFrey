@@ -10,6 +10,7 @@ import { createNote, deleteNote, updateNote } from '../lib/supabase';
 import { humanizeAuthError } from '../lib/auth-errors';
 import { nextStringId } from '../lib/id';
 import { clearUiDraft, loadUiDraft, saveUiDraft } from '../lib/storage';
+import { getNotePreviewText } from '../components/planner/noteRichText';
 
 type UseNoteManagerParams = {
   authState: AuthState;
@@ -53,7 +54,7 @@ export function useNoteManager({
     const normalizedTitle = title.trim();
     const normalizedText = text.trim();
 
-    if (!normalizedText) {
+    if (!getNotePreviewText(normalizedText).trim()) {
       return false;
     }
 
@@ -147,7 +148,7 @@ export function useNoteManager({
     const title = noteDialogState.title.trim();
     const text = noteDialogState.text.trim();
 
-    if (!text) {
+    if (!getNotePreviewText(text).trim()) {
       return;
     }
 

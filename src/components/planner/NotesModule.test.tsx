@@ -5,6 +5,15 @@ import { ActiveTabProvider } from '../../context/ActiveTabContext';
 import { plannerFixture } from './planner-test-fixtures';
 import { NotesModule } from './NotesModule';
 
+function getRichTextEditor(container: HTMLElement) {
+  const editor = within(container).getAllByRole('textbox').find((element) => element.classList.contains('note-rich-text-surface'));
+  if (!editor) {
+    throw new Error('Rich text editor not found');
+  }
+
+  return editor;
+}
+
 describe('NotesModule', () => {
   it('renders notes, opens a note, deletes a note, and submits the create dialog', async () => {
     const user = userEvent.setup();
@@ -33,12 +42,12 @@ describe('NotesModule', () => {
     const dialog = screen.getByRole('dialog', { name: 'Neue Notiz' });
 
     await user.type(within(dialog).getByPlaceholderText('Titel'), 'Neu');
-    await user.type(within(dialog).getByPlaceholderText('Inhalt'), 'Turnbeutel mitnehmen');
+    await user.type(getRichTextEditor(dialog), 'Turnbeutel mitnehmen');
     await user.click(within(dialog).getByRole('button', { name: 'Notiz speichern' }));
 
     expect(onOpenNote).toHaveBeenCalledWith('note-1');
     expect(onDeleteNote).toHaveBeenCalledWith('note-1');
-    expect(onAddNote).toHaveBeenCalledWith('Neu', 'Turnbeutel mitnehmen');
+    expect(onAddNote).toHaveBeenCalledWith('Neu', expect.stringContaining('Turnbeutel mitnehmen'));
   });
 
   it('shows a validation message when content is empty and skips onAddNote', async () => {
@@ -85,7 +94,7 @@ describe('NotesModule', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Neue Notiz' });
 
-    await user.type(within(dialog).getByPlaceholderText('Inhalt'), 'Nur Inhalt');
+    await user.type(getRichTextEditor(dialog), 'Nur Inhalt');
     await user.click(within(dialog).getByRole('button', { name: 'Notiz speichern' }));
 
     expect(onAddNote).toHaveBeenCalledTimes(1);
@@ -111,7 +120,7 @@ describe('NotesModule', () => {
     const firstDialog = screen.getByRole('dialog', { name: 'Neue Notiz' });
 
     await user.type(within(firstDialog).getByPlaceholderText('Titel'), 'Entwurf');
-    await user.type(within(firstDialog).getByPlaceholderText('Inhalt'), 'Noch offen');
+    await user.type(getRichTextEditor(firstDialog), 'Noch offen');
     await user.click(within(firstDialog).getByRole('button', { name: 'Abbrechen' }));
 
     expect(screen.queryByRole('dialog', { name: 'Neue Notiz' })).not.toBeInTheDocument();
@@ -121,6 +130,27 @@ describe('NotesModule', () => {
     const secondDialog = screen.getByRole('dialog', { name: 'Neue Notiz' });
 
     expect(within(secondDialog).getByPlaceholderText('Titel')).toHaveValue('');
-    expect(within(secondDialog).getByPlaceholderText('Inhalt')).toHaveValue('');
+    expect(getRichTextEditor(secondDialog)).toHaveTextContent('');
+  });
+
+  it('shows a plain-text preview for formatted notes', () => {
+    render(
+      <ActiveTabProvider activeTab="notes" setActiveTab={vi.fn()}>
+        <NotesModule
+          notes={[
+            {
+              id: 'note-2',
+              title: 'Packliste',
+              text: '<div data-note-rich-text="true"><div><strong>Urlaub</strong></div><ul data-list-type="checklist"><li data-checked="true">Badesachen</li></ul></div>',
+            },
+          ]}
+          onAddNote={vi.fn().mockResolvedValue(true)}
+          onDeleteNote={vi.fn().mockResolvedValue(undefined)}
+          onOpenNote={vi.fn()}
+        />
+      </ActiveTabProvider>,
+    );
+
+    expect(screen.getByText('Urlaub ☑ Badesachen')).toBeInTheDocument();
   });
 });

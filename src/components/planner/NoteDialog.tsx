@@ -1,8 +1,10 @@
 import type { FormEvent } from 'react';
 import type { NoteDialogState } from '../../app/types';
 import { AppButton } from '../ui/AppButton';
-import { appInputClassName, appTextareaClassName } from '../ui/AppField';
+import { appInputClassName } from '../ui/AppField';
 import { ModalDialog } from './ModalDialog';
+import { NoteRichTextContent } from './NoteRichTextContent';
+import { NoteRichTextEditor } from './NoteRichTextEditor';
 
 export function NoteDialog({
   note,
@@ -51,17 +53,15 @@ export function NoteDialog({
               value={note.title}
               onChange={(event) => onFieldChange('title', event.currentTarget.value)}
             />
-            <textarea
-              className={appTextareaClassName()}
+            <NoteRichTextEditor
               aria-label="Notizinhalt bearbeiten"
-              rows={12}
               value={note.text}
-              onChange={(event) => onFieldChange('text', event.currentTarget.value)}
+              onChange={(value) => onFieldChange('text', value)}
             />
         </form>
       ) : (
         <div className="max-h-[min(60vh,38rem)] overflow-auto">
-          <p className="m-0 p-[0.9rem_1rem] rounded-[18px] bg-[rgba(24,52,47,0.08)] text-[rgba(24,52,47,0.78)] leading-[1.5] [overflow-wrap:anywhere] break-words hyphens-auto whitespace-pre-wrap">{note.text}</p>
+          <NoteRichTextContent className="m-0 rounded-[18px] bg-[rgba(24,52,47,0.08)] p-[0.9rem_1rem] text-[rgba(24,52,47,0.78)] leading-[1.5] [overflow-wrap:anywhere] break-words hyphens-auto" value={note.text} />
         </div>
       )}
     </ModalDialog>
