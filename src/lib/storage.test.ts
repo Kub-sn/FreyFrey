@@ -78,7 +78,7 @@ describe('loadPlannerState', () => {
     ]);
   });
 
-  it('migrates legacy tasks and subtasks into a todo list', () => {
+  it('migrates legacy tasks and subtasks into grouped todo lists', () => {
     window.localStorage.setItem(
       'family-planner-state-v2',
       JSON.stringify({
@@ -102,30 +102,102 @@ describe('loadPlannerState', () => {
               { id: 'subtask-2', title: '  ', done: false },
             ],
           },
+          {
+            id: 'task-3',
+            title: 'Umzug - Amtszeug',
+            owner: 'Alex',
+            due: '2026-05-04',
+            done: false,
+            subtasks: [
+              { id: 'subtask-3', title: 'Wohnsitz ändern', done: false },
+            ],
+          },
         ],
       }),
     );
 
     expect(loadPlannerState().todoLists).toEqual([
       {
-        id: 'todo-list-migrated',
-        title: 'Vorhandene To-dos',
+        id: 'todo-list-migrated-sportsachen-packen',
+        title: 'Sportsachen packen',
+        date: '2026-05-02',
         items: [
           {
             id: 'todo-migrated-task-task-1',
             title: 'Sportsachen packen',
             checked: true,
           },
+        ],
+      },
+      {
+        id: 'todo-list-migrated-fragebogen-ausfuellen',
+        title: 'Fragebogen ausfuellen',
+        date: '2026-05-03',
+        items: [
           {
-            id: 'todo-migrated-task-task-2',
-            title: 'Fragebogen ausfuellen',
+            id: 'todo-migrated-subtask-task-2-subtask-1',
+            title: 'Unterschrift holen',
+            checked: true,
+          },
+        ],
+      },
+      {
+        id: 'todo-list-migrated-umzug',
+        title: 'Umzug',
+        date: '2026-05-04',
+        items: [
+          {
+            id: 'todo-migrated-task-task-3',
+            title: 'Amtszeug',
             checked: false,
           },
           {
-            id: 'todo-migrated-subtask-task-2-subtask-1',
-            title: 'Fragebogen ausfuellen - Unterschrift holen',
-            checked: true,
+            id: 'todo-migrated-subtask-task-3-subtask-3',
+            title: 'Amtszeug - Wohnsitz ändern',
+            checked: false,
           },
+        ],
+      },
+    ]);
+  });
+
+  it('repairs already flattened migrated todo lists', () => {
+    window.localStorage.setItem(
+      'family-planner-state-v3',
+      JSON.stringify({
+        ...defaultPlannerState,
+        todoLists: [
+          {
+            id: 'todo-list-migrated',
+            title: 'Vorhandene To-dos',
+            items: [
+              { id: 'todo-migrated-task-task-1', title: 'Umzug', checked: false },
+              { id: 'todo-migrated-task-task-2', title: 'Umzug - n-ergie kündigen', checked: false },
+              { id: 'todo-migrated-task-task-3', title: 'Umzug - Amtszeug', checked: false },
+              { id: 'todo-migrated-subtask-task-3-subtask-1', title: 'Umzug - Amtszeug - Wohnsitz ändern', checked: true },
+              { id: 'todo-migrated-task-task-4', title: 'Nächste Fahrt nach Minga', checked: false },
+              { id: 'todo-migrated-task-task-5', title: 'Nächste Fahrt nach Minga - Klopapier mitnehmen', checked: false },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(loadPlannerState().todoLists).toEqual([
+      {
+        id: 'todo-list-migrated-umzug',
+        title: 'Umzug',
+        items: [
+          { id: 'todo-migrated-task-task-2', title: 'n-ergie kündigen', checked: false },
+          { id: 'todo-migrated-task-task-3', title: 'Amtszeug', checked: false },
+          { id: 'todo-migrated-subtask-task-3-subtask-1', title: 'Amtszeug - Wohnsitz ändern', checked: true },
+        ],
+      },
+      {
+        id: 'todo-list-migrated-nachste-fahrt-nach-minga',
+        title: 'Nächste Fahrt nach Minga',
+        items: [
+          { id: 'todo-migrated-task-task-5', title: 'Klopapier mitnehmen', checked: false },
         ],
       },
     ]);

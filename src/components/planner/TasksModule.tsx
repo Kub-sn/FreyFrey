@@ -78,6 +78,13 @@ export function TasksModule({
     });
   };
 
+  const openListDialog = (listId: string) => {
+    setMenuListId(null);
+    setOpenListId(listId);
+    setQuickAddText('');
+    focusQuickAddInput();
+  };
+
   const handleCreateList = async () => {
     const title = listDraft.title.trim() || getNextTodoListTitle(lists);
     const createdList = await onCreateList({
@@ -91,8 +98,8 @@ export function TasksModule({
     }
 
     setMenuListId(null);
-  setIsCreateDialogOpen(false);
-  setListDraft({ title: '', date: '' });
+    setIsCreateDialogOpen(false);
+    setListDraft({ title: '', date: '' });
     setOpenListId(createdList.id);
     setQuickAddText('');
     setValidationMessage(null);
@@ -174,18 +181,6 @@ export function TasksModule({
     focusQuickAddInput();
   };
 
-  const handleUpdateOpenListDate = async (date: string) => {
-    if (!openList || date === (openList.date ?? '')) {
-      return;
-    }
-
-    await onUpdateList(openList.id, {
-      title: openList.title,
-      ...(date ? { date } : {}),
-      items: openList.items,
-    });
-  };
-
   const handleConfirmDelete = async () => {
     if (!pendingDeleteList) {
       return;
@@ -236,17 +231,16 @@ export function TasksModule({
                   menuListId === list.id ? 'z-30' : 'z-0',
                 )}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <button
-                    type="button"
-                    className="grid min-w-0 flex-1 gap-3 rounded-[20px] text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[rgba(25,98,77,0.12)]"
-                    onClick={() => {
-                      setMenuListId(null);
-                      setOpenListId(list.id);
-                      setQuickAddText('');
-                      focusQuickAddInput();
-                    }}
-                  >
+                <button
+                  type="button"
+                  className="absolute inset-0 rounded-[24px] focus:outline-none focus-visible:ring-4 focus-visible:ring-[rgba(25,98,77,0.12)]"
+                  aria-label={`Todo-Liste ${list.title} öffnen`}
+                  data-testid={`todo-list-open-surface-${list.id}`}
+                  onClick={() => openListDialog(list.id)}
+                />
+
+                <div className="relative z-10 flex items-start justify-between gap-3">
+                  <div className="pointer-events-none grid min-w-0 flex-1 gap-3 rounded-[20px]">
                     <div className="grid gap-2">
                       {list.date ? (
                         <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[rgba(25,98,77,0.14)] bg-[rgba(255,255,255,0.66)] px-3 py-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[rgba(24,52,47,0.66)]">
@@ -259,9 +253,9 @@ export function TasksModule({
                         {openItems} offen · {list.items.length} gesamt
                       </span>
                     </div>
-                  </button>
+                  </div>
 
-                  <div className="relative shrink-0">
+                  <div className="relative z-20 shrink-0">
                     <AppButton
                       type="button"
                       variant="secondary"
@@ -277,7 +271,10 @@ export function TasksModule({
                     </AppButton>
 
                     {menuListId === list.id ? (
-                      <div className="absolute right-0 top-11 z-40 grid min-w-[12rem] gap-1 rounded-[18px] border border-[rgba(24,52,47,0.12)] bg-[rgba(255,250,244,0.98)] p-2 shadow-[0_18px_36px_rgba(24,52,47,0.14)]">
+                      <div
+                        className="absolute right-0 top-11 z-40 grid min-w-[12rem] gap-1 rounded-[18px] border border-[rgba(24,52,47,0.12)] bg-[rgba(255,250,244,0.98)] p-2 shadow-[0_18px_36px_rgba(24,52,47,0.14)]"
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         <AppButton
                           type="button"
                           variant="secondary"
@@ -378,17 +375,7 @@ export function TasksModule({
           )}
         >
           <div className="grid gap-4 max-mobile:gap-3">
-            <div className="grid gap-3 md:grid-cols-[minmax(9rem,13rem)_1fr]">
-              <input
-                className={appInputClassName()}
-                type="date"
-                value={openList.date ?? ''}
-                aria-label="Fristdatum"
-                onChange={(event) => {
-                  const { value } = event.currentTarget;
-                  void handleUpdateOpenListDate(value);
-                }}
-              />
+            <div>
               <input
                 ref={quickAddInputRef}
                 className={appInputClassName()}
@@ -408,10 +395,10 @@ export function TasksModule({
             </div>
 
             {openList.items.length > 0 ? (
-              <ul className="check-list max-h-[min(54vh,26rem)] overflow-y-auto pr-1">
+              <ul className="check-list max-h-[min(54vh,26rem)] overflow-y-auto pr-5">
                 {openList.items.map((item) => (
                   <li key={item.id} className={cn(item.checked && '[&_.todo-item-copy]:opacity-60 [&_.todo-item-copy]:line-through')}>
-                    <label>
+                    <label className="min-w-0 flex-1">
                       <input
                         type="checkbox"
                         className={appCheckboxClassName()}
@@ -425,11 +412,11 @@ export function TasksModule({
                       type="button"
                       variant="danger"
                       size="icon"
-                      className="ml-auto size-[2.35rem]"
+                      className="ml-3 size-[2.85rem] min-w-[2.85rem] shrink-0 self-start"
                       onClick={() => void onDeleteItem(openList.id, item.id)}
                       aria-label={`Todo ${item.title} löschen`}
                     >
-                      <Trash2 aria-hidden="true" size={18} strokeWidth={2.3} />
+                      <Trash2 aria-hidden="true" strokeWidth={2.2} />
                     </AppButton>
                   </li>
                 ))}

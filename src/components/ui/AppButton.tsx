@@ -14,8 +14,8 @@ const variantClassNames: Record<ButtonVariant, string> = {
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {
-  md: 'h-auto min-h-0 rounded-[18px] px-4 py-3',
-  icon: 'h-auto min-h-0 rounded-full p-0 size-[2.2rem]',
+  md: 'h-auto min-h-0 rounded-[18px] px-4 py-3 [&_svg]:shrink-0',
+  icon: 'h-auto min-h-0 rounded-full p-0 size-[2.2rem] [&_svg]:size-5 [&_svg]:shrink-0',
 };
 
 export function buttonClassName({

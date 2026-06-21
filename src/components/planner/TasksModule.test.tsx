@@ -131,7 +131,7 @@ describe('TasksModule', () => {
 
     renderTasksModule({ onCreateItem });
 
-    await user.click(screen.getByText('Schule').closest('button') as HTMLButtonElement);
+    await user.click(screen.getByRole('button', { name: 'Todo-Liste Schule öffnen' }));
     const dialog = screen.getByRole('dialog', { name: 'Schule' });
     const quickAddInput = within(dialog).getByLabelText('Todo hinzufügen');
 
@@ -142,21 +142,15 @@ describe('TasksModule', () => {
     expect(quickAddInput).toHaveFocus();
   });
 
-  it('updates an optional date and toggles todo items', async () => {
+  it('keeps the date read-only in the open dialog and updates it only in edit mode', async () => {
     const user = userEvent.setup();
     const onUpdateList = vi.fn().mockResolvedValue(true);
     const onToggleItem = vi.fn().mockResolvedValue(undefined);
 
     renderTasksModule({ onUpdateList, onToggleItem });
 
-    await user.click(screen.getByText('Schule').closest('button') as HTMLButtonElement);
-    fireEvent.change(screen.getByLabelText('Fristdatum'), { target: { value: '2026-05-04' } });
-
-    expect(onUpdateList).toHaveBeenCalledWith('todo-list-1', {
-      title: 'Schule',
-      date: '2026-05-04',
-      items: plannerFixture.todoLists[0].items,
-    });
+    await user.click(screen.getByRole('button', { name: 'Todo-Liste Schule öffnen' }));
+    expect(screen.queryByLabelText('Fristdatum')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Schließen' }));
 
@@ -169,12 +163,13 @@ describe('TasksModule', () => {
     fireEvent.change(within(editDialog).getByLabelText('Fristdatum (optional)'), { target: { value: '' } });
     await user.click(within(editDialog).getByRole('button', { name: 'Liste speichern' }));
 
+    expect(onUpdateList).toHaveBeenCalledTimes(1);
     expect(onUpdateList).toHaveBeenCalledWith('todo-list-1', {
       title: 'Wochenende',
       items: plannerFixture.todoLists[0].items,
     });
 
-    await user.click(screen.getByText('Schule').closest('button') as HTMLButtonElement);
+    await user.click(screen.getByRole('button', { name: 'Todo-Liste Schule öffnen' }));
     await user.click(screen.getByRole('checkbox', { name: 'Turnbeutel prüfen' }));
 
     expect(onToggleItem).toHaveBeenCalledWith('todo-list-1', 'todo-2', true);
@@ -187,7 +182,7 @@ describe('TasksModule', () => {
 
     renderTasksModule({ onDeleteItem, onDeleteList });
 
-    await user.click(screen.getByText('Schule').closest('button') as HTMLButtonElement);
+    await user.click(screen.getByRole('button', { name: 'Todo-Liste Schule öffnen' }));
     await user.click(screen.getByRole('button', { name: 'Todo Turnbeutel prüfen löschen' }));
 
     expect(onDeleteItem).toHaveBeenCalledWith('todo-list-1', 'todo-2');
@@ -205,5 +200,15 @@ describe('TasksModule', () => {
     await user.click(within(deleteDialog).getByRole('button', { name: 'Löschen' }));
 
     expect(onDeleteList).toHaveBeenCalledWith('todo-list-1');
+  });
+
+  it('opens a todo list when clicking the card itself', async () => {
+    const user = userEvent.setup();
+
+    renderTasksModule();
+
+    await user.click(screen.getByTestId('todo-list-open-surface-todo-list-1'));
+
+    expect(screen.getByRole('dialog', { name: 'Schule' })).toBeInTheDocument();
   });
 });

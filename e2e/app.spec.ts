@@ -639,6 +639,44 @@ test('edits and deletes a todo list through the action menu on mobile widths', a
   await expect(page.getByText('Wochenende')).toHaveCount(0);
 });
 
+test('keeps the todo create action anchored close below the mobile module switcher', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+
+  await expect(page.getByRole('heading', { name: 'Frey Frey' }).first()).toBeVisible();
+
+  if (await page.getByRole('button', { name: 'Jetzt anmelden' }).isVisible()) {
+    return;
+  }
+
+  await page.getByRole('button', { name: 'To-dos' }).click();
+
+  const mobileTopbar = page.locator('.mobile-topbar');
+  const createButton = page.getByRole('button', { name: 'Liste erstellen' });
+  const firstTodoCard = page.getByText('Schule').locator('xpath=ancestor::article[1]');
+
+  await expect(createButton).toBeVisible();
+  await expect(firstTodoCard).toBeVisible();
+
+  const [topbarBox, createButtonBox, firstTodoCardBox] = await Promise.all([
+    mobileTopbar.boundingBox(),
+    createButton.boundingBox(),
+    firstTodoCard.boundingBox(),
+  ]);
+
+  expect(topbarBox).not.toBeNull();
+  expect(createButtonBox).not.toBeNull();
+  expect(firstTodoCardBox).not.toBeNull();
+
+  const gapBelowTopbar = createButtonBox!.y - (topbarBox!.y + topbarBox!.height);
+  const gapBelowCreateButton = firstTodoCardBox!.y - (createButtonBox!.y + createButtonBox!.height);
+
+  expect(gapBelowTopbar).toBeGreaterThanOrEqual(0);
+  expect(gapBelowTopbar).toBeLessThanOrEqual(28);
+  expect(gapBelowCreateButton).toBeGreaterThanOrEqual(0);
+  expect(gapBelowCreateButton).toBeLessThanOrEqual(28);
+});
+
 test('keeps the meal planner card wide on large desktop screens', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1200 });
   await page.goto('/');

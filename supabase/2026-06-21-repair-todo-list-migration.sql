@@ -1,66 +1,18 @@
-create table if not exists public.todo_lists (
-  id uuid primary key default gen_random_uuid(),
-  family_id uuid not null references public.families(id) on delete cascade,
-  title text not null,
-  todo_date text,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists public.todo_items (
-  id uuid primary key default gen_random_uuid(),
-  family_id uuid not null references public.families(id) on delete cascade,
-  list_id uuid not null references public.todo_lists(id) on delete cascade,
-  title text not null,
-  checked boolean not null default false,
-  created_at timestamptz not null default now()
-);
-
-alter table public.todo_lists enable row level security;
-alter table public.todo_items enable row level security;
-
-create policy "family members can read todo lists"
-on public.todo_lists
-for select
-using (public.is_family_member(family_id));
-
-create policy "family members can insert todo lists"
-on public.todo_lists
-for insert
-with check (public.is_family_member(family_id));
-
-create policy "family members can update todo lists"
-on public.todo_lists
-for update
-using (public.is_family_member(family_id))
-with check (public.is_family_member(family_id));
-
-create policy "family members can delete todo lists"
-on public.todo_lists
-for delete
-using (public.is_family_member(family_id));
-
-create policy "family members can read todo items"
-on public.todo_items
-for select
-using (public.is_family_member(family_id));
-
-create policy "family members can insert todo items"
-on public.todo_items
-for insert
-with check (public.is_family_member(family_id));
-
-create policy "family members can update todo items"
-on public.todo_items
-for update
-using (public.is_family_member(family_id))
-with check (public.is_family_member(family_id));
-
-create policy "family members can delete todo items"
-on public.todo_items
-for delete
-using (public.is_family_member(family_id));
-
-with normalized_legacy_tasks as (
+with families_to_repair as (
+  select distinct tasks.family_id
+  from public.tasks tasks
+  where exists (
+    select 1
+    from public.todo_lists todo_lists
+    where todo_lists.family_id = tasks.family_id
+      and todo_lists.title = 'Vorhandene To-dos'
+  )
+), deleted_generated_lists as (
+  delete from public.todo_lists
+  where family_id in (select family_id from families_to_repair)
+    and title = 'Vorhandene To-dos'
+  returning family_id
+), normalized_legacy_tasks as (
   select
     tasks.id as task_id,
     tasks.family_id,
@@ -77,6 +29,7 @@ with normalized_legacy_tasks as (
     coalesce(tasks.subtasks, '[]'::jsonb) as subtasks,
     tasks.created_at
   from public.tasks
+  join families_to_repair on families_to_repair.family_id = tasks.family_id
   where btrim(tasks.title) <> ''
 ), legacy_task_metadata as (
   select
@@ -94,16 +47,37 @@ with normalized_legacy_tasks as (
       where btrim(coalesce(subtask.value->>'title', '')) <> ''
     ) as has_valid_subtasks
   from normalized_legacy_tasks
-), created_lists as (
+), inserted_lists as (
   insert into public.todo_lists (family_id, title, todo_date, created_at)
   select
-    family_id,
-    list_title,
-    min(todo_date),
-    min(created_at)
+    legacy_task_metadata.family_id,
+    legacy_task_metadata.list_title,
+    min(legacy_task_metadata.todo_date),
+    min(legacy_task_metadata.created_at)
   from legacy_task_metadata
-  group by family_id, list_title
+  where not exists (
+    select 1
+    from public.todo_lists todo_lists
+    where todo_lists.family_id = legacy_task_metadata.family_id
+      and todo_lists.title = legacy_task_metadata.list_title
+  )
+  group by legacy_task_metadata.family_id, legacy_task_metadata.list_title
   returning id, family_id, title
+), target_lists as (
+  select inserted_lists.id, inserted_lists.family_id, inserted_lists.title
+  from inserted_lists
+
+  union all
+
+  select todo_lists.id, todo_lists.family_id, todo_lists.title
+  from public.todo_lists todo_lists
+  where todo_lists.family_id in (select family_id from families_to_repair)
+    and exists (
+      select 1
+      from legacy_task_metadata
+      where legacy_task_metadata.family_id = todo_lists.family_id
+        and legacy_task_metadata.list_title = todo_lists.title
+    )
 ), generated_items as (
   select
     legacy_task_metadata.family_id,
@@ -133,11 +107,18 @@ with normalized_legacy_tasks as (
 insert into public.todo_items (family_id, list_id, title, checked, created_at)
 select
   generated_items.family_id,
-  created_lists.id,
+  target_lists.id,
   generated_items.title,
   generated_items.checked,
   generated_items.created_at
 from generated_items
-join created_lists
-  on created_lists.family_id = generated_items.family_id
- and created_lists.title = generated_items.list_title;
+join target_lists
+  on target_lists.family_id = generated_items.family_id
+ and target_lists.title = generated_items.list_title
+where not exists (
+  select 1
+  from public.todo_items todo_items
+  where todo_items.list_id = target_lists.id
+    and todo_items.title = generated_items.title
+    and todo_items.checked = generated_items.checked
+);

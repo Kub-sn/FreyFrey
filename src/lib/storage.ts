@@ -124,12 +124,111 @@ function normalizeTodoListItems(items: unknown): TodoListItem[] {
   });
 }
 
+function normalizeMigrationIdPart(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'liste';
+}
+
+function splitMigratedTodoTitle(title: string) {
+  const [listTitleCandidate, ...itemTitleParts] = title.split(' - ');
+  const listTitle = listTitleCandidate.trim() || title;
+  const itemTitle = itemTitleParts.join(' - ').trim();
+
+  return {
+    listTitle,
+    itemTitle: itemTitle || undefined,
+  };
+}
+
+function getMigratedTodoListId(title: string) {
+  return `todo-list-migrated-${normalizeMigrationIdPart(title)}`;
+}
+
+function appendMigratedTodoItem(
+  groups: Map<string, TodoList>,
+  listTitle: string,
+  item: TodoListItem,
+  date?: string,
+) {
+  const existingGroup = groups.get(listTitle);
+  const group = existingGroup ?? {
+    id: getMigratedTodoListId(listTitle),
+    title: listTitle,
+    ...(date ? { date } : {}),
+    items: [],
+  };
+
+  if (date && (!group.date || date < group.date)) {
+    group.date = date;
+  }
+
+  group.items.push(item);
+  groups.set(listTitle, group);
+}
+
+function hasGeneratedMigratedTodoItems(list: TodoList) {
+  return list.items.some((item) => (
+    item.id.startsWith('todo-migrated-task-') || item.id.startsWith('todo-migrated-subtask-')
+  ));
+}
+
+function repairGeneratedMigratedTodoList(list: TodoList): TodoList[] | null {
+  if (list.id !== 'todo-list-migrated' && list.title !== 'Vorhandene To-dos') {
+    return null;
+  }
+
+  if (!hasGeneratedMigratedTodoItems(list)) {
+    return null;
+  }
+
+  const generatedItems = list.items.filter((item) => (
+    item.id.startsWith('todo-migrated-task-') || item.id.startsWith('todo-migrated-subtask-')
+  ));
+  const preservedItems = list.items.filter((item) => !generatedItems.includes(item));
+  const parentTitles = new Set(
+    generatedItems.flatMap((item) => {
+      const { itemTitle, listTitle } = splitMigratedTodoTitle(item.title);
+      return itemTitle ? [listTitle] : [];
+    }),
+  );
+  const groups = new Map<string, TodoList>();
+
+  generatedItems.forEach((item) => {
+    const { itemTitle, listTitle } = splitMigratedTodoTitle(item.title);
+
+    if (!itemTitle && parentTitles.has(item.title)) {
+      return;
+    }
+
+    appendMigratedTodoItem(groups, listTitle, {
+      ...item,
+      title: itemTitle ?? item.title,
+    }, list.date);
+  });
+
+  const repairedLists = Array.from(groups.values()).filter((entry) => entry.items.length > 0);
+
+  if (preservedItems.length > 0) {
+    repairedLists.push({
+      ...list,
+      items: preservedItems,
+    });
+  }
+
+  return repairedLists;
+}
+
 function migrateLegacyTasks(tasks: unknown): TodoList[] {
   if (!Array.isArray(tasks) || tasks.length === 0) {
     return defaultPlannerState.todoLists;
   }
 
-  const items = tasks.flatMap((task) => {
+  const groups = new Map<string, TodoList>();
+  const validTasks = tasks.flatMap((task) => {
     if (!task || typeof task !== 'object') {
       return [];
     }
@@ -137,6 +236,7 @@ function migrateLegacyTasks(tasks: unknown): TodoList[] {
     const candidate = task as {
       id?: unknown;
       title?: unknown;
+      due?: unknown;
       status?: unknown;
       done?: unknown;
       subtasks?: unknown;
@@ -148,14 +248,36 @@ function migrateLegacyTasks(tasks: unknown): TodoList[] {
       return [];
     }
 
-    const migratedItems: TodoListItem[] = [{
-      id: `todo-migrated-task-${taskId}`,
+    return [{
+      done: candidate.status === 'done' || Boolean(candidate.done),
+      due: typeof candidate.due === 'string' && candidate.due.trim() ? candidate.due.trim() : undefined,
+      id: taskId,
+      subtasks: candidate.subtasks,
       title: taskTitle,
-      checked: candidate.status === 'done' || Boolean(candidate.done),
     }];
+  });
 
-    if (Array.isArray(candidate.subtasks)) {
-      candidate.subtasks.forEach((subtask) => {
+  const parentTitles = new Set(
+    validTasks.flatMap((task) => {
+      const { itemTitle, listTitle } = splitMigratedTodoTitle(task.title);
+      return itemTitle ? [listTitle] : [];
+    }),
+  );
+
+  validTasks.forEach((task) => {
+    const { itemTitle, listTitle } = splitMigratedTodoTitle(task.title);
+    let validSubtaskCount = 0;
+
+    if (itemTitle || !parentTitles.has(task.title)) {
+      appendMigratedTodoItem(groups, listTitle, {
+        id: `todo-migrated-task-${task.id}`,
+        title: itemTitle ?? task.title,
+        checked: task.done,
+      }, task.due);
+    }
+
+    if (Array.isArray(task.subtasks)) {
+      task.subtasks.forEach((subtask) => {
         if (!subtask || typeof subtask !== 'object') {
           return;
         }
@@ -168,26 +290,31 @@ function migrateLegacyTasks(tasks: unknown): TodoList[] {
           return;
         }
 
-        migratedItems.push({
-          id: `todo-migrated-subtask-${taskId}-${subtaskId}`,
-          title: `${taskTitle} - ${subtaskTitle}`,
+        validSubtaskCount += 1;
+        appendMigratedTodoItem(groups, listTitle, {
+          id: `todo-migrated-subtask-${task.id}-${subtaskId}`,
+          title: itemTitle ? `${itemTitle} - ${subtaskTitle}` : subtaskTitle,
           checked: Boolean(subtaskCandidate.done),
-        });
+        }, task.due);
       });
     }
 
-    return migratedItems;
+    if (!itemTitle && !parentTitles.has(task.title) && validSubtaskCount > 0) {
+      const group = groups.get(listTitle);
+
+      if (group) {
+        group.items = group.items.filter((item) => item.id !== `todo-migrated-task-${task.id}`);
+      }
+    }
   });
 
-  if (items.length === 0) {
+  const migratedLists = Array.from(groups.values()).filter((list) => list.items.length > 0);
+
+  if (migratedLists.length === 0) {
     return defaultPlannerState.todoLists;
   }
 
-  return [{
-    id: 'todo-list-migrated',
-    title: 'Vorhandene To-dos',
-    items,
-  }];
+  return migratedLists;
 }
 
 function normalizeTodoLists(state: PlannerState & { todoLists?: unknown; tasks?: unknown }): TodoList[] {
@@ -215,7 +342,7 @@ function normalizeTodoLists(state: PlannerState & { todoLists?: unknown; tasks?:
     });
 
     if (normalizedLists.length > 0 || !Array.isArray(state.tasks) || state.tasks.length === 0) {
-      return normalizedLists;
+      return normalizedLists.flatMap((list) => repairGeneratedMigratedTodoList(list) ?? [list]);
     }
   }
 
