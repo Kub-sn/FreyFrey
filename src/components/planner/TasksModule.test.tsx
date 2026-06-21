@@ -1,287 +1,209 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState, type ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ActiveTabProvider } from '../../context/ActiveTabContext';
+import type { TodoList } from '../../lib/planner-data';
 import { plannerFixture } from './planner-test-fixtures';
 import { TasksModule } from './TasksModule';
 
-describe('TasksModule', () => {
-  it('uses equal-height task columns with a desktop minimum height', () => {
-    render(
-      <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
-        <TasksModule
-          familyMemberOptions={plannerFixture.members.map((member) => member.name)}
-          ownerDefaultValue="Alex"
-          tasks={plannerFixture.tasks}
-          onAddTask={vi.fn().mockResolvedValue(true)}
-          onUpdateTask={vi.fn().mockResolvedValue(true)}
-          onDeleteTask={vi.fn().mockResolvedValue(true)}
-          onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
-          onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
-        />
-      </ActiveTabProvider>,
-    );
+function renderTasksModule(overrides: Partial<ComponentProps<typeof TasksModule>> = {}) {
+  const props: ComponentProps<typeof TasksModule> = {
+    lists: plannerFixture.todoLists,
+    onCreateList: vi.fn().mockResolvedValue({ id: 'todo-list-created', title: 'Todo Liste 1', items: [] }),
+    onUpdateList: vi.fn().mockResolvedValue(true),
+    onDeleteList: vi.fn().mockResolvedValue(true),
+    onCreateItem: vi.fn().mockResolvedValue({ id: 'todo-created', title: 'Muell rausbringen', checked: false }),
+    onToggleItem: vi.fn().mockResolvedValue(undefined),
+    onDeleteItem: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
 
-    const createButton = screen.getByRole('button', { name: 'Todo hinzufügen' });
-    const moduleStack = createButton.closest('div')?.parentElement;
-    const todoHeading = screen.getByRole('heading', { level: 4, name: 'Todo' });
-    const todoColumn = screen.getByRole('heading', { level: 4, name: 'Todo' }).closest('article');
+  render(
+    <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
+      <TasksModule {...props} />
+    </ActiveTabProvider>,
+  );
 
-    expect(moduleStack).toHaveClass('content-start', 'gap-4');
-    expect(todoHeading).toHaveClass('text-[1.34rem]', 'font-semibold');
-    expect(todoColumn).toHaveClass('xl:h-full', 'xl:min-h-[26rem]', 'xl:flex', 'xl:flex-col');
-    expect(todoColumn).not.toHaveClass('self-start');
-  });
+  return props;
+}
 
-  it('renders kanban columns, submits the form, changes status via dialog, and toggles a subtask', async () => {
-    const user = userEvent.setup();
-    const onAddTask = vi.fn().mockResolvedValue(true);
-    const onUpdateTask = vi.fn().mockResolvedValue(true);
-    const onDeleteTask = vi.fn().mockResolvedValue(true);
-    const onSetTaskStatus = vi.fn().mockResolvedValue(undefined);
-    const onToggleTaskSubtask = vi.fn().mockResolvedValue(undefined);
+function StatefulTasksModule({
+  initialLists,
+  onCreateList,
+}: {
+  initialLists: TodoList[];
+  onCreateList: (payload: Omit<TodoList, 'id'>) => Promise<TodoList | null>;
+}) {
+  const [lists, setLists] = useState(initialLists);
 
-    render(
-      <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
-        <TasksModule
-          familyMemberOptions={plannerFixture.members.map((member) => member.name)}
-          ownerDefaultValue="Alex"
-          tasks={plannerFixture.tasks}
-          onAddTask={onAddTask}
-          onUpdateTask={onUpdateTask}
-          onDeleteTask={onDeleteTask}
-          onSetTaskStatus={onSetTaskStatus}
-          onToggleTaskSubtask={onToggleTaskSubtask}
-        />
-      </ActiveTabProvider>,
-    );
+  const handleCreateList = async (payload: Omit<TodoList, 'id'>) => {
+    const createdList = await onCreateList(payload);
 
-    expect(screen.getByRole('heading', { level: 4, name: 'Todo' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 4, name: 'In Arbeit' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 4, name: 'Erledigt' })).toBeInTheDocument();
-    expect(screen.getByText('1/2 erledigt')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: 'Hefte sortieren' })).toHaveClass('app-checkbox', 'checkbox');
-    const createButton = screen.getByRole('button', { name: 'Todo hinzufügen' });
-    expect(createButton).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 4, name: 'Todo' }).closest('article')).not.toContainElement(createButton);
-
-    await user.click(createButton);
-
-    const createDialog = screen.getByRole('dialog', { name: 'Neue Aufgabe' });
-    expect(within(createDialog).getByRole('combobox', { name: 'Verantwortlich' })).toBeInTheDocument();
-    expect(within(createDialog).queryByText('Kanban')).not.toBeInTheDocument();
-
-    await user.type(within(createDialog).getByPlaceholderText('Aufgabe'), 'Muell rausbringen');
-    await user.selectOptions(within(createDialog).getByRole('combobox', { name: 'Verantwortlich' }), 'Bea User');
-    await user.type(within(createDialog).getByLabelText('Fälligkeitsdatum'), '2026-05-04');
-    await user.click(within(createDialog).getByRole('button', { name: 'Subtask hinzufügen' }));
-    await user.type(within(createDialog).getByLabelText('Subtask 1'), 'Muellsack verknoten');
-    await user.click(within(createDialog).getByRole('button', { name: 'Aufgabe speichern' }));
-
-    await user.click(screen.getByRole('button', { name: /Aufgabe Schultasche packen Aktionen/i }));
-    await user.click(screen.getByRole('button', { name: 'Status ändern' }));
-    await user.click(within(screen.getByRole('dialog', { name: 'Status ändern' })).getByRole('button', { name: /In Arbeit/i }));
-    await user.click(screen.getByRole('checkbox', { name: 'Turnbeutel prüfen' }));
-
-    expect(onAddTask).toHaveBeenCalledWith({
-      title: 'Muell rausbringen',
-      owner: 'Bea User',
-      due: '2026-05-04',
-      subtasks: [{ id: expect.any(String), title: 'Muellsack verknoten', done: false }],
-    });
-    expect(onUpdateTask).not.toHaveBeenCalled();
-    expect(onDeleteTask).not.toHaveBeenCalled();
-    expect(onSetTaskStatus).toHaveBeenCalledWith('task-1', 'in-progress');
-    expect(onToggleTaskSubtask).toHaveBeenCalledWith('task-1', 'task-1-subtask-2', true);
-  });
-
-  it('shows animated drag feedback on the drop target column without highlighting the hovered task card', () => {
-    const dataTransfer = {
-      effectAllowed: 'move',
-      setData: vi.fn(),
-      getData: vi.fn().mockReturnValue('task-1'),
-    };
-
-    render(
-      <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
-        <TasksModule
-          familyMemberOptions={plannerFixture.members.map((member) => member.name)}
-          ownerDefaultValue="Alex"
-          tasks={[
-            ...plannerFixture.tasks,
-            {
-              id: 'task-2',
-              title: 'Brotdose prüfen',
-              owner: 'Bea',
-              due: '2026-05-05',
-              status: 'in-progress',
-              subtasks: [],
-            },
-          ]}
-          onAddTask={vi.fn().mockResolvedValue(true)}
-          onUpdateTask={vi.fn().mockResolvedValue(true)}
-          onDeleteTask={vi.fn().mockResolvedValue(true)}
-          onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
-          onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
-        />
-      </ActiveTabProvider>,
-    );
-
-    const sourceTask = screen.getByText('Schultasche packen').closest('article');
-    const targetTask = screen.getByText('Brotdose prüfen').closest('article');
-    const targetColumn = screen.getByRole('heading', { level: 4, name: 'In Arbeit' }).closest('article');
-
-    if (!sourceTask || !targetTask || !targetColumn) {
-      throw new Error('Drag-and-drop test targets were not found.');
+    if (createdList) {
+      setLists((current) => [createdList, ...current]);
     }
 
-    fireEvent.dragStart(sourceTask, { dataTransfer });
-    fireEvent.dragOver(targetTask, { dataTransfer });
+    return createdList;
+  };
 
-    expect(screen.getByText('Loslassen zum Verschieben')).toBeInTheDocument();
-    expect(targetColumn).toHaveClass('-translate-y-1');
-    expect(targetColumn).toHaveAttribute('data-drop-active', 'true');
-    expect(targetTask).not.toHaveClass('-translate-y-1');
-    expect(screen.queryByText('Hier ablegen')).not.toBeInTheDocument();
-  });
+  return (
+    <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
+      <TasksModule
+        lists={lists}
+        onCreateList={handleCreateList}
+        onUpdateList={vi.fn().mockResolvedValue(true)}
+        onDeleteList={vi.fn().mockResolvedValue(true)}
+        onCreateItem={vi.fn().mockResolvedValue({ id: 'todo-created', title: 'Muell rausbringen', checked: false })}
+        onToggleItem={vi.fn().mockResolvedValue(undefined)}
+        onDeleteItem={vi.fn().mockResolvedValue(undefined)}
+      />
+    </ActiveTabProvider>
+  );
+}
 
-  it('hides subtask progress and fallback text for tasks without subtasks', () => {
-    render(
-      <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
-        <TasksModule
-          familyMemberOptions={plannerFixture.members.map((member) => member.name)}
-          ownerDefaultValue="Alex"
-          tasks={[
-            ...plannerFixture.tasks,
-            {
-              id: 'task-2',
-              title: 'Muell rausbringen',
-              owner: 'Bea',
-              due: '2026-05-05',
-              status: 'todo',
-              subtasks: [],
-            },
-          ]}
-          onAddTask={vi.fn().mockResolvedValue(true)}
-          onUpdateTask={vi.fn().mockResolvedValue(true)}
-          onDeleteTask={vi.fn().mockResolvedValue(true)}
-          onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
-          onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
-        />
-      </ActiveTabProvider>,
-    );
-
-    expect(screen.queryByText('Keine Subtasks hinterlegt.')).not.toBeInTheDocument();
-    expect(screen.queryByText('0/0 erledigt')).not.toBeInTheDocument();
-    expect(screen.queryAllByText('Todo')).toHaveLength(1);
-  });
-
-  it('edits and deletes a task through the action menu', async () => {
+describe('TasksModule', () => {
+  it('creates a default-named todo list and opens it for fast entry', async () => {
     const user = userEvent.setup();
-    const onUpdateTask = vi.fn().mockResolvedValue(true);
-    const onDeleteTask = vi.fn().mockResolvedValue(true);
+    const onCreateList = vi.fn().mockResolvedValue({ id: 'todo-list-created', title: 'Todo Liste 1', items: [] });
 
-    render(
-      <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
-        <TasksModule
-          familyMemberOptions={plannerFixture.members.map((member) => member.name)}
-          ownerDefaultValue="Alex"
-          tasks={plannerFixture.tasks}
-          onAddTask={vi.fn().mockResolvedValue(true)}
-          onUpdateTask={onUpdateTask}
-          onDeleteTask={onDeleteTask}
-          onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
-          onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
-        />
-      </ActiveTabProvider>,
-    );
+    render(<StatefulTasksModule initialLists={[]} onCreateList={onCreateList} />);
 
-    await user.click(screen.getByRole('button', { name: /Aufgabe Schultasche packen Aktionen/i }));
-    expect(screen.getByRole('heading', { level: 4, name: 'Todo' }).closest('article')).toHaveClass('z-20');
-    expect(screen.getByRole('button', { name: 'Status ändern' }).parentElement).toHaveClass('z-40');
-    await user.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+    await user.click(screen.getByRole('button', { name: 'Liste erstellen' }));
 
-    const editDialog = screen.getByRole('dialog', { name: 'Aufgabe bearbeiten' });
-    expect(within(editDialog).getByPlaceholderText('Aufgabe').closest('form')).toHaveClass('dialog-form');
-    await user.clear(within(editDialog).getByPlaceholderText('Aufgabe'));
-    await user.type(within(editDialog).getByPlaceholderText('Aufgabe'), 'Schultasche neu packen');
-    await user.click(within(editDialog).getByRole('button', { name: 'Änderungen speichern' }));
+  const createDialog = screen.getByRole('dialog', { name: 'Neue Todo-Liste' });
+  await user.click(within(createDialog).getByRole('button', { name: 'Liste erstellen' }));
 
-    expect(onUpdateTask).toHaveBeenCalledWith('task-1', {
-      title: 'Schultasche neu packen',
-      owner: 'Alex',
-      due: '2026-05-02',
-      status: 'todo',
-      subtasks: [
-        { id: 'task-1-subtask-1', title: 'Hefte sortieren', done: true },
-        { id: 'task-1-subtask-2', title: 'Turnbeutel prüfen', done: false },
-      ],
+    expect(onCreateList).toHaveBeenCalledWith({ title: 'Todo Liste 1', items: [] });
+    expect(await screen.findByRole('dialog', { name: 'Todo Liste 1' })).toBeInTheDocument();
+    expect(screen.queryByText('Neues Todo')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ohne Datum')).not.toBeInTheDocument();
+    expect(screen.queryByText('Noch keine To-dos erfasst. Tippe oben etwas ein und drücke Enter.')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Todo hinzufügen')).toHaveFocus();
+  });
+
+  it('creates a todo list with a custom name and optional date', async () => {
+    const user = userEvent.setup();
+    const onCreateList = vi.fn().mockResolvedValue({
+      id: 'todo-list-created',
+      title: 'Wochenende',
+      date: '2026-05-04',
+      items: [],
     });
 
-    await user.click(screen.getByRole('button', { name: /Aufgabe Schultasche packen Aktionen/i }));
-    await user.click(screen.getByRole('button', { name: 'Löschen' }));
-    expect(screen.getByRole('button', { name: /^Löschen$/ })).toHaveClass('secondary-action', 'danger-action');
-    await user.click(screen.getByRole('button', { name: /^Löschen$/ }));
+    render(<StatefulTasksModule initialLists={[]} onCreateList={onCreateList} />);
 
-    expect(onDeleteTask).toHaveBeenCalledWith('task-1');
+    await user.click(screen.getByRole('button', { name: 'Liste erstellen' }));
+
+    const createDialog = screen.getByRole('dialog', { name: 'Neue Todo-Liste' });
+    await user.type(within(createDialog).getByLabelText('Listenname'), 'Wochenende');
+    fireEvent.change(within(createDialog).getByLabelText('Fristdatum (optional)'), { target: { value: '2026-05-04' } });
+    await user.click(within(createDialog).getByRole('button', { name: 'Liste erstellen' }));
+
+    expect(onCreateList).toHaveBeenCalledWith({
+      title: 'Wochenende',
+      date: '2026-05-04',
+      items: [],
+    });
+    expect(await screen.findByRole('dialog', { name: 'Wochenende' })).toBeInTheDocument();
   });
 
-  it('keeps the create dialog open when saving fails', async () => {
+  it('increments default todo list names like shopping lists', async () => {
     const user = userEvent.setup();
+    const onCreateList = vi.fn().mockResolvedValue({ id: 'todo-list-created', title: 'Todo Liste 2', items: [] });
+    const lists: TodoList[] = [
+      { id: 'todo-list-existing', title: 'Todo Liste 1', items: [] },
+    ];
 
-    render(
-      <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
-        <TasksModule
-          familyMemberOptions={plannerFixture.members.map((member) => member.name)}
-          ownerDefaultValue="Alex"
-          tasks={plannerFixture.tasks}
-          onAddTask={vi.fn().mockResolvedValue(false)}
-          onUpdateTask={vi.fn().mockResolvedValue(true)}
-          onDeleteTask={vi.fn().mockResolvedValue(true)}
-          onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
-          onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
-        />
-      </ActiveTabProvider>,
-    );
+    renderTasksModule({ lists, onCreateList });
 
-    await user.click(screen.getByRole('button', { name: 'Todo hinzufügen' }));
+    await user.click(screen.getByRole('button', { name: 'Liste erstellen' }));
 
-    const createDialog = screen.getByRole('dialog', { name: 'Neue Aufgabe' });
-    await user.type(within(createDialog).getByPlaceholderText('Aufgabe'), 'Fehlversuch');
-    await user.type(within(createDialog).getByLabelText('Fälligkeitsdatum'), '2026-05-04');
-    await user.click(within(createDialog).getByRole('button', { name: 'Aufgabe speichern' }));
+    const createDialog = screen.getByRole('dialog', { name: 'Neue Todo-Liste' });
+    await user.click(within(createDialog).getByRole('button', { name: 'Liste erstellen' }));
 
-    expect(screen.getByRole('dialog', { name: 'Neue Aufgabe' })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Fehlversuch')).toBeInTheDocument();
+    expect(onCreateList).toHaveBeenCalledWith({ title: 'Todo Liste 2', items: [] });
   });
 
-  it('keeps the edit dialog open when saving fails', async () => {
+  it('adds todo items with Enter and keeps the quick-add input focused', async () => {
     const user = userEvent.setup();
+    const onCreateItem = vi.fn().mockResolvedValue({ id: 'todo-created', title: 'Muell rausbringen', checked: false });
 
-    render(
-      <ActiveTabProvider activeTab="tasks" setActiveTab={vi.fn()}>
-        <TasksModule
-          familyMemberOptions={plannerFixture.members.map((member) => member.name)}
-          ownerDefaultValue="Alex"
-          tasks={plannerFixture.tasks}
-          onAddTask={vi.fn().mockResolvedValue(true)}
-          onUpdateTask={vi.fn().mockResolvedValue(false)}
-          onDeleteTask={vi.fn().mockResolvedValue(true)}
-          onSetTaskStatus={vi.fn().mockResolvedValue(undefined)}
-          onToggleTaskSubtask={vi.fn().mockResolvedValue(undefined)}
-        />
-      </ActiveTabProvider>,
-    );
+    renderTasksModule({ onCreateItem });
 
-    await user.click(screen.getByRole('button', { name: /Aufgabe Schultasche packen Aktionen/i }));
+    await user.click(screen.getByText('Schule').closest('button') as HTMLButtonElement);
+    const dialog = screen.getByRole('dialog', { name: 'Schule' });
+    const quickAddInput = within(dialog).getByLabelText('Todo hinzufügen');
+
+    await user.type(quickAddInput, 'Muell   rausbringen{Enter}');
+
+    expect(onCreateItem).toHaveBeenCalledWith('todo-list-1', 'Muell rausbringen');
+    expect(quickAddInput).toHaveValue('');
+    expect(quickAddInput).toHaveFocus();
+  });
+
+  it('updates an optional date and toggles todo items', async () => {
+    const user = userEvent.setup();
+    const onUpdateList = vi.fn().mockResolvedValue(true);
+    const onToggleItem = vi.fn().mockResolvedValue(undefined);
+
+    renderTasksModule({ onUpdateList, onToggleItem });
+
+    await user.click(screen.getByText('Schule').closest('button') as HTMLButtonElement);
+    fireEvent.change(screen.getByLabelText('Fristdatum'), { target: { value: '2026-05-04' } });
+
+    expect(onUpdateList).toHaveBeenCalledWith('todo-list-1', {
+      title: 'Schule',
+      date: '2026-05-04',
+      items: plannerFixture.todoLists[0].items,
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Schließen' }));
+
+    await user.click(screen.getByRole('button', { name: /Todo-Liste Schule Aktionen/i }));
     await user.click(screen.getByRole('button', { name: 'Bearbeiten' }));
 
-    const editDialog = screen.getByRole('dialog', { name: 'Aufgabe bearbeiten' });
-    await user.clear(within(editDialog).getByPlaceholderText('Aufgabe'));
-    await user.type(within(editDialog).getByPlaceholderText('Aufgabe'), 'Bleibt offen');
-    await user.click(within(editDialog).getByRole('button', { name: 'Änderungen speichern' }));
+    const editDialog = screen.getByRole('dialog', { name: 'Todo-Liste bearbeiten' });
+    await user.clear(within(editDialog).getByDisplayValue('Schule'));
+    await user.type(within(editDialog).getByPlaceholderText('z. B. Wochenende'), 'Wochenende');
+    fireEvent.change(within(editDialog).getByLabelText('Fristdatum (optional)'), { target: { value: '' } });
+    await user.click(within(editDialog).getByRole('button', { name: 'Liste speichern' }));
 
-    expect(screen.getByRole('dialog', { name: 'Aufgabe bearbeiten' })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Bleibt offen')).toBeInTheDocument();
+    expect(onUpdateList).toHaveBeenCalledWith('todo-list-1', {
+      title: 'Wochenende',
+      items: plannerFixture.todoLists[0].items,
+    });
+
+    await user.click(screen.getByText('Schule').closest('button') as HTMLButtonElement);
+    await user.click(screen.getByRole('checkbox', { name: 'Turnbeutel prüfen' }));
+
+    expect(onToggleItem).toHaveBeenCalledWith('todo-list-1', 'todo-2', true);
+  });
+
+  it('deletes todo items and whole todo lists', async () => {
+    const user = userEvent.setup();
+    const onDeleteItem = vi.fn().mockResolvedValue(undefined);
+    const onDeleteList = vi.fn().mockResolvedValue(true);
+
+    renderTasksModule({ onDeleteItem, onDeleteList });
+
+    await user.click(screen.getByText('Schule').closest('button') as HTMLButtonElement);
+    await user.click(screen.getByRole('button', { name: 'Todo Turnbeutel prüfen löschen' }));
+
+    expect(onDeleteItem).toHaveBeenCalledWith('todo-list-1', 'todo-2');
+
+    await user.click(screen.getByRole('button', { name: 'Schließen' }));
+    await user.click(screen.getByRole('button', { name: /Todo-Liste Schule Aktionen/i }));
+    await user.click(screen.getByRole('button', { name: 'Löschen' }));
+    const deleteDialog = screen.getByRole('dialog', { name: 'Todo-Liste löschen?' });
+    const hiddenHeading = within(deleteDialog).getByRole('heading', { name: 'Todo-Liste löschen?' });
+
+    expect(hiddenHeading).toHaveClass('sr-only');
+    expect(within(deleteDialog).getByText('Schule')).toHaveClass('font-bold');
+    expect(within(deleteDialog).getByText('Liste').closest('p')).toHaveClass('whitespace-nowrap');
+
+    await user.click(within(deleteDialog).getByRole('button', { name: 'Löschen' }));
+
+    expect(onDeleteList).toHaveBeenCalledWith('todo-list-1');
   });
 });

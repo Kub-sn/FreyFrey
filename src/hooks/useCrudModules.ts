@@ -1,25 +1,28 @@
+import type { AuthState, CloudSyncSetterValue } from '../app/types';
+import { humanizeAuthError } from '../lib/auth-errors';
+import { nextStringId } from '../lib/id';
 import type {
   MealItem,
   PlannerState,
   ShoppingList,
   ShoppingListItem,
-  TaskItem,
-  TaskStatus,
+  TodoList,
+  TodoListItem,
 } from '../lib/planner-data';
-import type { AuthState, CloudSyncSetterValue } from '../app/types';
 import {
-  createShoppingList,
-  createTask,
   createMeal,
+  createShoppingList,
+  createTodoItem,
+  createTodoList,
   deleteMeal,
   deleteShoppingList,
-  deleteTask,
+  deleteTodoItem,
+  deleteTodoList,
   updateShoppingList,
   updateShoppingListItemChecked,
-  updateTask,
+  updateTodoItemChecked,
+  updateTodoList,
 } from '../lib/supabase';
-import { humanizeAuthError } from '../lib/auth-errors';
-import { nextStringId } from '../lib/id';
 
 type UseCrudModulesParams = {
   authState: AuthState;
@@ -36,87 +39,100 @@ export function useCrudModules({
 }: UseCrudModulesParams) {
   const applyShoppingItemChecked = (state: PlannerState, listId: string, itemId: string, checked: boolean) => ({
     ...state,
-    shoppingLists: state.shoppingLists.map((entry) =>
+    shoppingLists: state.shoppingLists.map((entry) => (
       entry.id === listId
         ? {
             ...entry,
-            items: entry.items.map((item) =>
-              item.id === itemId ? { ...item, checked } : item,
-            ),
+            items: entry.items.map((item) => (
+              item.id === itemId ? { ...item, checked } : item
+            )),
           }
-        : entry,
-    ),
+        : entry
+    )),
   });
 
-  const applyTaskSubtaskDone = (state: PlannerState, taskId: string, subtaskId: string, done: boolean, status: TaskStatus) => ({
+  const applyTodoItemChecked = (state: PlannerState, listId: string, itemId: string, checked: boolean) => ({
     ...state,
-    tasks: state.tasks.map((entry) =>
-      entry.id === taskId
+    todoLists: state.todoLists.map((entry) => (
+      entry.id === listId
         ? {
             ...entry,
-            status,
-            subtasks: entry.subtasks.map((subtask) =>
-              subtask.id === subtaskId ? { ...subtask, done } : subtask,
-            ),
+            items: entry.items.map((item) => (
+              item.id === itemId ? { ...item, checked } : item
+            )),
           }
-        : entry,
-    ),
+        : entry
+    )),
   });
 
   const normalizeShoppingItems = (items: ShoppingListItem[]) =>
-    items
-      .flatMap((item) => {
-        const name = item.name.trim();
-        const quantity = item.quantity?.trim();
+    items.flatMap((item) => {
+      const name = item.name.trim();
+      const quantity = item.quantity?.trim();
 
-        if (!name) {
-          return [];
-        }
+      if (!name) {
+        return [];
+      }
 
-        return [{
-          ...item,
-          id: item.id || nextStringId(),
-          name,
-          quantity: quantity || undefined,
-        }];
-      });
+      return [{
+        ...item,
+        id: item.id || nextStringId(),
+        name,
+        quantity: quantity || undefined,
+      }];
+    });
+
+  const normalizeTodoItems = (items: TodoListItem[]) =>
+    items.flatMap((item) => {
+      const title = item.title.trim().replace(/\s+/g, ' ');
+
+      if (!title) {
+        return [];
+      }
+
+      return [{
+        ...item,
+        id: item.id || nextStringId(),
+        title,
+      }];
+    });
+
+  const normalizeTodoListPayload = (payload: Omit<TodoList, 'id'>): Omit<TodoList, 'id'> => ({
+    title: payload.title.trim(),
+    ...(payload.date?.trim() ? { date: payload.date.trim() } : {}),
+    items: normalizeTodoItems(payload.items),
+  });
 
   const handleCreateShoppingList = async (payload: Omit<ShoppingList, 'id'>) => {
+    const title = payload.title.trim();
     const normalizedItems = normalizeShoppingItems(payload.items);
 
-    if (!payload.title.trim() || !payload.date || normalizedItems.length === 0) {
+    if (!title || !payload.date || normalizedItems.length === 0) {
       return false;
     }
 
     try {
-      if (authState.family) {
-        const createdList = await createShoppingList(authState.family.familyId, {
-          title: payload.title.trim(),
-          date: payload.date,
-          items: normalizedItems,
-        });
-        updateState((current) => ({
-          ...current,
-          shoppingLists: [createdList, ...current.shoppingLists],
-        }));
-        setCloudSync({
-          phase: 'ready',
-          message: 'Neue Einkaufsliste wurde gespeichert.',
-        });
-      } else {
-        updateState((current) => ({
-          ...current,
-          shoppingLists: [
-            {
-              id: nextStringId(),
-              title: payload.title.trim(),
-              date: payload.date,
-              items: normalizedItems,
-            },
-            ...current.shoppingLists,
-          ],
-        }));
-      }
+      const createdList = authState.family
+        ? await createShoppingList(authState.family.familyId, {
+            title,
+            date: payload.date,
+            items: normalizedItems,
+          })
+        : {
+            id: nextStringId(),
+            title,
+            date: payload.date,
+            items: normalizedItems,
+          };
+
+      updateState((current) => ({
+        ...current,
+        shoppingLists: [createdList, ...current.shoppingLists],
+      }));
+      setCloudSync({
+        phase: 'ready',
+        message: 'Neue Einkaufsliste wurde gespeichert.',
+      });
 
       return true;
     } catch (error) {
@@ -129,42 +145,33 @@ export function useCrudModules({
   };
 
   const handleUpdateShoppingList = async (id: string, payload: Omit<ShoppingList, 'id'>) => {
+    const title = payload.title.trim();
     const normalizedItems = normalizeShoppingItems(payload.items);
 
-    if (!payload.title.trim() || !payload.date || normalizedItems.length === 0) {
+    if (!title || !payload.date || normalizedItems.length === 0) {
       return false;
     }
 
     try {
-      if (authState.family) {
-        const savedList = await updateShoppingList(authState.family.familyId, id, {
-          title: payload.title.trim(),
-          date: payload.date,
-          items: normalizedItems,
-        });
+      const savedList = authState.family
+        ? await updateShoppingList(authState.family.familyId, id, {
+            title,
+            date: payload.date,
+            items: normalizedItems,
+          })
+        : {
+            id,
+            title,
+            date: payload.date,
+            items: normalizedItems,
+          };
 
-        updateState((current) => ({
-          ...current,
-          shoppingLists: current.shoppingLists.map((entry) =>
-            entry.id === id ? savedList : entry,
-          ),
-        }));
-      } else {
-        updateState((current) => ({
-          ...current,
-          shoppingLists: current.shoppingLists.map((entry) =>
-            entry.id === id
-              ? {
-                  ...entry,
-                  title: payload.title.trim(),
-                  date: payload.date,
-                  items: normalizedItems,
-                }
-              : entry,
-          ),
-        }));
-      }
-
+      updateState((current) => ({
+        ...current,
+        shoppingLists: current.shoppingLists.map((entry) => (
+          entry.id === id ? savedList : entry
+        )),
+      }));
       setCloudSync({
         phase: 'ready',
         message: 'Einkaufsliste wurde aktualisiert.',
@@ -190,7 +197,6 @@ export function useCrudModules({
         ...current,
         shoppingLists: current.shoppingLists.filter((entry) => entry.id !== id),
       }));
-
       setCloudSync({
         phase: 'ready',
         message: 'Einkaufsliste wurde gelöscht.',
@@ -222,61 +228,67 @@ export function useCrudModules({
     }
   };
 
-  const handleAddTask = async (payload: Omit<TaskItem, 'id' | 'status'>) => {
-    if (!payload.title || !payload.owner || !payload.due) {
-      return false;
+  const handleCreateTodoList = async (payload: Omit<TodoList, 'id'>): Promise<TodoList | null> => {
+    const normalizedPayload = normalizeTodoListPayload(payload);
+
+    if (!normalizedPayload.title) {
+      return null;
     }
 
     try {
-      if (authState.family) {
-        const createdTask = await createTask(authState.family.familyId, {
-          title: payload.title,
-          owner: payload.owner,
-          due: payload.due,
-          status: 'todo',
-          subtasks: payload.subtasks,
-        });
-        updateState((current) => ({
-          ...current,
-          tasks: [createdTask, ...current.tasks],
-        }));
-        setCloudSync({
-          phase: 'ready',
-          message: 'Neue Aufgabe wurde gespeichert.',
-        });
-      } else {
-        updateState((current) => ({
-          ...current,
-          tasks: [{ id: nextStringId(), title: payload.title, owner: payload.owner, due: payload.due, status: 'todo', subtasks: payload.subtasks }, ...current.tasks],
-        }));
-      }
-      return true;
+      const createdList = authState.family
+        ? await createTodoList(authState.family.familyId, normalizedPayload)
+        : {
+            id: nextStringId(),
+            ...normalizedPayload,
+          };
+
+      updateState((current) => ({
+        ...current,
+        todoLists: [createdList, ...current.todoLists],
+      }));
+      setCloudSync({
+        phase: 'ready',
+        message: 'Neue Todo-Liste wurde gespeichert.',
+      });
+
+      return createdList;
     } catch (error) {
       setCloudSync({
         phase: 'error',
         message: humanizeAuthError(error),
       });
-      return false;
+      return null;
     }
   };
 
-  const handleUpdateTask = async (id: string, payload: Partial<Omit<TaskItem, 'id'>>) => {
-    const currentTask = plannerState.tasks.find((entry) => entry.id === id) ?? null;
+  const handleUpdateTodoList = async (id: string, payload: Omit<TodoList, 'id'>) => {
+    const currentList = plannerState.todoLists.find((entry) => entry.id === id) ?? null;
+    const normalizedPayload = normalizeTodoListPayload(payload);
 
-    if (!currentTask) {
+    if (!currentList || !normalizedPayload.title) {
       return false;
     }
 
     try {
-      if (authState.family) {
-        await updateTask(id, payload);
-      }
+      const savedList = authState.family
+        ? await updateTodoList(authState.family.familyId, id, normalizedPayload)
+        : {
+            id,
+            ...normalizedPayload,
+          };
+
       updateState((current) => ({
         ...current,
-        tasks: current.tasks.map((entry) => (
-          entry.id === id ? { ...entry, ...payload } : entry
+        todoLists: current.todoLists.map((entry) => (
+          entry.id === id ? savedList : entry
         )),
       }));
+      setCloudSync({
+        phase: 'ready',
+        message: 'Todo-Liste wurde aktualisiert.',
+      });
+
       return true;
     } catch (error) {
       setCloudSync({
@@ -287,15 +299,21 @@ export function useCrudModules({
     }
   };
 
-  const handleDeleteTask = async (id: string) => {
+  const handleDeleteTodoList = async (id: string) => {
     try {
       if (authState.family) {
-        await deleteTask(id);
+        await deleteTodoList(id);
       }
+
       updateState((current) => ({
         ...current,
-        tasks: current.tasks.filter((entry) => entry.id !== id),
+        todoLists: current.todoLists.filter((entry) => entry.id !== id),
       }));
+      setCloudSync({
+        phase: 'ready',
+        message: 'Todo-Liste wurde gelöscht.',
+      });
+
       return true;
     } catch (error) {
       setCloudSync({
@@ -306,30 +324,51 @@ export function useCrudModules({
     }
   };
 
-  const handleSetTaskStatus = async (id: string, status: TaskStatus) => {
-    const currentTask = plannerState.tasks.find((entry) => entry.id === id) ?? null;
+  const handleCreateTodoItem = async (listId: string, title: string): Promise<TodoListItem | null> => {
+    const currentList = plannerState.todoLists.find((entry) => entry.id === listId) ?? null;
+    const normalizedTitle = title.trim().replace(/\s+/g, ' ');
 
-    if (!currentTask) {
-      return;
+    if (!currentList || !normalizedTitle) {
+      return null;
     }
 
-    const nextSubtasks = status === 'done'
-      ? currentTask.subtasks.map((subtask) => ({ ...subtask, done: true }))
-      : currentTask.subtasks;
+    try {
+      const createdItem = authState.family
+        ? await createTodoItem(authState.family.familyId, listId, normalizedTitle)
+        : {
+            id: nextStringId(),
+            title: normalizedTitle,
+            checked: false,
+          };
+
+      updateState((current) => ({
+        ...current,
+        todoLists: current.todoLists.map((entry) => (
+          entry.id === listId
+            ? { ...entry, items: [...entry.items, createdItem] }
+            : entry
+        )),
+      }));
+
+      return createdItem;
+    } catch (error) {
+      setCloudSync({
+        phase: 'error',
+        message: humanizeAuthError(error),
+      });
+      return null;
+    }
+  };
+
+  const handleToggleTodoItem = async (listId: string, itemId: string, checked: boolean) => {
+    updateState((current) => applyTodoItemChecked(current, listId, itemId, checked));
 
     try {
       if (authState.family) {
-        await updateTask(id, { status, subtasks: nextSubtasks });
+        await updateTodoItemChecked(itemId, checked);
       }
-      updateState((current) => ({
-        ...current,
-        tasks: current.tasks.map((entry) =>
-          entry.id === id
-            ? { ...entry, status, subtasks: nextSubtasks }
-            : entry,
-        ),
-      }));
     } catch (error) {
+      updateState((current) => applyTodoItemChecked(current, listId, itemId, !checked));
       setCloudSync({
         phase: 'error',
         message: humanizeAuthError(error),
@@ -337,30 +376,33 @@ export function useCrudModules({
     }
   };
 
-  const handleToggleTask = async (id: string, done: boolean) => {
-    await handleSetTaskStatus(id, done ? 'done' : 'todo');
-  };
+  const handleDeleteTodoItem = async (listId: string, itemId: string) => {
+    const currentList = plannerState.todoLists.find((entry) => entry.id === listId) ?? null;
 
-  const handleToggleTaskSubtask = async (taskId: string, subtaskId: string, done: boolean) => {
-    const currentTask = plannerState.tasks.find((entry) => entry.id === taskId) ?? null;
-
-    if (!currentTask) {
+    if (!currentList) {
       return;
     }
 
-    const nextSubtasks = currentTask.subtasks.map((subtask) =>
-      subtask.id === subtaskId ? { ...subtask, done } : subtask,
-    );
-    const nextStatus = currentTask.status === 'done' && !done ? 'in-progress' : currentTask.status;
-
-    updateState((current) => applyTaskSubtaskDone(current, taskId, subtaskId, done, nextStatus));
+    updateState((current) => ({
+      ...current,
+      todoLists: current.todoLists.map((entry) => (
+        entry.id === listId
+          ? { ...entry, items: entry.items.filter((item) => item.id !== itemId) }
+          : entry
+      )),
+    }));
 
     try {
       if (authState.family) {
-        await updateTask(taskId, { subtasks: nextSubtasks, status: nextStatus });
+        await deleteTodoItem(itemId);
       }
     } catch (error) {
-      updateState((current) => applyTaskSubtaskDone(current, taskId, subtaskId, !done, currentTask.status));
+      updateState((current) => ({
+        ...current,
+        todoLists: current.todoLists.map((entry) => (
+          entry.id === listId ? currentList : entry
+        )),
+      }));
       setCloudSync({
         phase: 'error',
         message: humanizeAuthError(error),
@@ -378,26 +420,18 @@ export function useCrudModules({
     }
 
     try {
-      if (authState.family) {
-        const createdMeal = await createMeal(authState.family.familyId, {
-          date,
-          name,
-          recipe,
-        });
-        updateState((current) => ({
-          ...current,
-          meals: [...current.meals, createdMeal],
-        }));
-        setCloudSync({
-          phase: 'ready',
-          message: 'Gericht wurde gespeichert.',
-        });
-      } else {
-        updateState((current) => ({
-          ...current,
-          meals: [...current.meals, { id: nextStringId(), date, name, recipe }],
-        }));
-      }
+      const createdMeal = authState.family
+        ? await createMeal(authState.family.familyId, { date, name, recipe })
+        : { id: nextStringId(), date, name, recipe };
+
+      updateState((current) => ({
+        ...current,
+        meals: [...current.meals, createdMeal],
+      }));
+      setCloudSync({
+        phase: 'ready',
+        message: 'Gericht wurde gespeichert.',
+      });
 
       return true;
     } catch (error) {
@@ -420,7 +454,6 @@ export function useCrudModules({
         ...current,
         meals: current.meals.filter((meal) => meal.id !== mealId),
       }));
-
       setCloudSync({
         phase: 'ready',
         message: 'Gericht wurde gelöscht.',
@@ -442,12 +475,12 @@ export function useCrudModules({
     handleUpdateShoppingList,
     handleDeleteShoppingList,
     handleToggleShoppingListItem,
-    handleAddTask,
-    handleUpdateTask,
-    handleDeleteTask,
-    handleToggleTask,
-    handleSetTaskStatus,
-    handleToggleTaskSubtask,
+    handleCreateTodoList,
+    handleUpdateTodoList,
+    handleDeleteTodoList,
+    handleCreateTodoItem,
+    handleToggleTodoItem,
+    handleDeleteTodoItem,
     handleCreateMeal,
     handleDeleteMeal,
   };

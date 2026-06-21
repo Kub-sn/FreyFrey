@@ -46,6 +46,18 @@ function getDocumentForm() {
   return within(form);
 }
 
+function getVisibleModuleButton(name: string | RegExp) {
+  const button = screen.getAllByRole('button', { name }).find((candidate) => (
+    candidate.closest('section')?.classList.contains('is-visible')
+  ));
+
+  if (!button) {
+    throw new Error(`Visible module button not found: ${String(name)}`);
+  }
+
+  return button;
+}
+
 function createDocumentFile(name: string, type: string, content = 'datei-inhalt') {
   return new File([content], name, { type });
 }
@@ -95,8 +107,8 @@ describe('App', () => {
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Einkauf' }));
 
-    expect(screen.getByRole('button', { name: 'Liste erstellen' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Liste erstellen' }));
+    expect(getVisibleModuleButton('Liste erstellen')).toBeInTheDocument();
+    await user.click(getVisibleModuleButton('Liste erstellen'));
 
     const dialog = screen.getByRole('dialog');
 
@@ -227,7 +239,7 @@ describe('App', () => {
     const moduleNav = screen.getByRole('navigation', { name: 'Module' });
 
     await user.click(within(moduleNav).getByRole('button', { name: 'Einkauf' }));
-    await user.click(screen.getByRole('button', { name: 'Liste erstellen' }));
+    await user.click(getVisibleModuleButton('Liste erstellen'));
 
     const firstDialog = screen.getByRole('dialog', { name: 'Neue Einkaufsliste' });
     await user.type(within(firstDialog).getByPlaceholderText('z. B. Wocheneinkauf'), 'Samstag');
@@ -242,29 +254,31 @@ describe('App', () => {
     expect(within(secondDialog).getByDisplayValue('Hafermilch')).toBeInTheDocument();
   });
 
-  it('restores an unsaved task draft dialog after a reload', async () => {
+  it('creates a todo list and adds items with Enter', async () => {
     const user = userEvent.setup();
-    const firstRender = render(<App />);
+    render(<App />);
 
     const moduleNav = screen.getByRole('navigation', { name: 'Module' });
 
     await user.click(within(moduleNav).getByRole('button', { name: 'To-dos' }));
-    await user.click(screen.getByRole('button', { name: 'Todo hinzufügen' }));
+    await user.click(getVisibleModuleButton('Liste erstellen'));
 
-    const firstDialog = screen.getByRole('dialog', { name: 'Neue Aufgabe' });
-    await user.type(within(firstDialog).getByPlaceholderText('Aufgabe'), 'Kinderzimmer aufräumen');
-    await user.type(within(firstDialog).getByLabelText('Fälligkeitsdatum'), '2026-05-12');
-    await user.click(within(firstDialog).getByRole('button', { name: 'Subtask hinzufügen' }));
-    await user.type(within(firstDialog).getByLabelText('Subtask 1'), 'Bücher einsortieren');
+    const createDialog = screen.getByRole('dialog', { name: 'Neue Todo-Liste' });
+    await user.type(within(createDialog).getByLabelText('Listenname'), 'Kinderzimmer');
+    await user.click(within(createDialog).getByRole('button', { name: 'Liste erstellen' }));
 
-    firstRender.unmount();
-    render(<App />);
+    const dialog = screen.getByRole('dialog', { name: 'Kinderzimmer' });
+    const quickAddInput = within(dialog).getByLabelText('Todo hinzufügen');
 
-    const secondDialog = screen.getByRole('dialog', { name: 'Neue Aufgabe' });
+    await user.type(quickAddInput, 'Kinderzimmer aufräumen{Enter}');
 
-    expect(within(secondDialog).getByDisplayValue('Kinderzimmer aufräumen')).toBeInTheDocument();
-    expect(within(secondDialog).getByDisplayValue('2026-05-12')).toBeInTheDocument();
-    expect(within(secondDialog).getByDisplayValue('Bücher einsortieren')).toBeInTheDocument();
+    expect(quickAddInput).toHaveValue('');
+    expect(quickAddInput).toHaveFocus();
+    expect(within(dialog).getByRole('checkbox', { name: 'Kinderzimmer aufräumen' })).not.toBeChecked();
+
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Kinderzimmer aufräumen' }));
+
+    expect(within(dialog).getByRole('checkbox', { name: 'Kinderzimmer aufräumen' })).toBeChecked();
   });
 
   it('restores an unsaved meal draft dialog after a reload', async () => {

@@ -1,5 +1,9 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
+declare const Buffer: {
+  from(value: string): Uint8Array;
+};
+
 const supabaseBaseUrl = 'https://aachyijzixdeupeqcdvk.supabase.co';
 const recoverySession = {
   access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLXJlY292ZXJ5IiwiZW1haWwiOiJhbGV4QGV4YW1wbGUuY29tIiwiZXhwIjo0MTAyNDQ0ODAwfQ.signature',
@@ -558,7 +562,7 @@ test('shows the planner shell and lets the user open the shopping module', async
   await expect(page.getByRole('button', { name: 'Gericht speichern' })).toBeVisible();
 });
 
-test('creates and progresses a kanban task in demo mode', async ({ page }) => {
+test('creates and checks a todo list item in demo mode', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('heading', { name: 'Frey Frey' }).first()).toBeVisible();
@@ -568,33 +572,37 @@ test('creates and progresses a kanban task in demo mode', async ({ page }) => {
   }
 
   await page.getByRole('button', { name: 'To-dos' }).click();
-  await expect(page.getByRole('button', { name: 'Todo hinzufügen' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Liste erstellen' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Todo hinzufügen' }).click();
-  await expect(page.getByRole('heading', { name: 'Neue Aufgabe' })).toBeVisible();
-  await page.getByRole('dialog').getByPlaceholder('Aufgabe').fill('Muell rausbringen');
-  await page.getByRole('dialog').getByLabel('Fälligkeitsdatum').fill('2026-05-04');
-  await page.getByRole('dialog').getByRole('button', { name: 'Subtask hinzufügen' }).click();
-  await page.getByRole('dialog').getByLabel('Subtask 1').fill('Tonnenrand säubern');
-  await page.getByRole('dialog').getByRole('button', { name: 'Aufgabe speichern' }).click();
+  await page.getByRole('button', { name: 'Liste erstellen' }).click();
+  await expect(page.getByRole('dialog', { name: 'Neue Todo-Liste' })).toBeVisible();
+  await page.getByRole('dialog').getByLabel('Listenname').fill('Haushalt');
+  await page.getByRole('dialog').getByLabel('Fristdatum (optional)').fill('2026-05-04');
+  await page.getByRole('dialog').getByRole('button', { name: 'Liste erstellen' }).click();
+  await expect(page.getByRole('dialog', { name: 'Haushalt' })).toBeVisible();
 
-  const newTaskCard = page.getByText('Muell rausbringen').locator('xpath=ancestor::article[1]');
+  await expect(page.getByRole('dialog')).not.toContainText('Ohne Datum');
+  await expect(page.getByRole('dialog')).not.toContainText('Neues Todo');
+  await expect(page.getByRole('dialog')).not.toContainText('Noch keine To-dos erfasst. Tippe oben etwas ein und drücke Enter.');
 
-  await expect(newTaskCard).toContainText('0/1 erledigt');
-  await newTaskCard.getByRole('button', { name: 'Aufgabe Muell rausbringen Aktionen' }).click();
-  await page.getByRole('button', { name: 'Status ändern' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: /In Arbeit/i }).click();
-  await newTaskCard.getByRole('checkbox', { name: 'Tonnenrand säubern' }).click();
-  await expect(newTaskCard).toContainText('1/1 erledigt');
-  await newTaskCard.getByRole('button', { name: 'Aufgabe Muell rausbringen Aktionen' }).click();
-  await page.getByRole('button', { name: 'Status ändern' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: /Erledigt/i }).click();
+  const quickAddInput = page.getByRole('dialog').getByLabel('Todo hinzufügen');
 
-  const doneColumn = page.getByRole('heading', { name: 'Erledigt' }).locator('xpath=ancestor::article[1]');
-  await expect(doneColumn).toContainText('Muell rausbringen');
+  await quickAddInput.fill('Muell rausbringen');
+  await quickAddInput.press('Enter');
+  await expect(quickAddInput).toBeFocused();
+  await expect(quickAddInput).toHaveValue('');
+  await expect(page.getByRole('dialog').getByRole('checkbox', { name: 'Muell rausbringen' })).not.toBeChecked();
+
+  await page.getByRole('dialog').getByRole('checkbox', { name: 'Muell rausbringen' }).check();
+  await expect(page.getByRole('dialog').getByRole('checkbox', { name: 'Muell rausbringen' })).toBeChecked();
+  await page.getByRole('button', { name: 'Schließen' }).click();
+
+  const todoListCard = page.getByText('Haushalt').locator('xpath=ancestor::article[1]');
+  await expect(todoListCard).toContainText('04.05.2026');
+  await expect(todoListCard).toContainText('0 offen · 1 gesamt');
 });
 
-test('changes task status via dialog on mobile widths', async ({ page }) => {
+test('edits and deletes a todo list through the action menu on mobile widths', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
@@ -605,47 +613,30 @@ test('changes task status via dialog on mobile widths', async ({ page }) => {
   }
 
   await page.getByRole('button', { name: 'To-dos' }).click();
-  await expect(page.getByRole('button', { name: 'Todo hinzufügen' })).toBeVisible();
+  await page.getByRole('button', { name: 'Liste erstellen' }).click();
+  await expect(page.getByRole('dialog', { name: 'Neue Todo-Liste' })).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Liste erstellen' }).click();
+  await expect(page.getByRole('dialog', { name: 'Todo Liste 1' })).toBeVisible();
+  await page.getByRole('button', { name: 'Schließen' }).click();
 
-  const taskCard = page.getByText('Schultasche packen').locator('xpath=ancestor::article[1]');
+  const listCard = page.getByText('Todo Liste 1').locator('xpath=ancestor::article[1]');
 
-  await taskCard.getByRole('button', { name: 'Aufgabe Schultasche packen Aktionen' }).click();
-  await page.getByRole('button', { name: 'Status ändern' }).click();
-  await expect(page.getByRole('heading', { name: 'Status ändern' })).toBeVisible();
-  await page.getByRole('dialog').getByRole('button', { name: /In Arbeit/i }).click();
-
-  const inProgressColumn = page.getByRole('heading', { name: 'In Arbeit' }).locator('xpath=ancestor::article[1]');
-  await expect(inProgressColumn).toContainText('Schultasche packen');
-});
-
-test('edits and deletes a task through the action menu in demo mode', async ({ page }) => {
-  await page.goto('/');
-
-  await expect(page.getByRole('heading', { name: 'Frey Frey' }).first()).toBeVisible();
-
-  if (await page.getByRole('button', { name: 'Jetzt anmelden' }).isVisible()) {
-    return;
-  }
-
-  await page.getByRole('button', { name: 'To-dos' }).click();
-
-  const taskCard = page.getByText('Schultasche packen').locator('xpath=ancestor::article[1]');
-
-  await taskCard.getByRole('button', { name: 'Aufgabe Schultasche packen Aktionen' }).click();
+  await listCard.getByRole('button', { name: 'Todo-Liste Todo Liste 1 Aktionen' }).click();
   await page.getByRole('button', { name: 'Bearbeiten' }).click();
-  await expect(page.getByRole('heading', { name: 'Aufgabe bearbeiten' })).toBeVisible();
-  await page.getByRole('dialog').getByPlaceholder('Aufgabe').fill('Schultasche neu packen');
-  await page.getByRole('dialog').getByRole('button', { name: 'Änderungen speichern' }).click();
+  await expect(page.getByRole('heading', { name: 'Todo-Liste bearbeiten' })).toBeVisible();
+  await page.getByRole('dialog').getByPlaceholder('z. B. Wochenende').fill('Wochenende');
+  await page.getByRole('dialog').getByLabel('Fristdatum (optional)').fill('2026-05-04');
+  await page.getByRole('dialog').getByRole('button', { name: 'Liste speichern' }).click();
 
-  const editedTaskCard = page.getByText('Schultasche neu packen').locator('xpath=ancestor::article[1]');
-  await expect(editedTaskCard).toBeVisible();
+  const editedListCard = page.getByText('Wochenende').locator('xpath=ancestor::article[1]');
+  await expect(editedListCard).toContainText('04.05.2026');
 
-  await editedTaskCard.getByRole('button', { name: 'Aufgabe Schultasche neu packen Aktionen' }).click();
+  await editedListCard.getByRole('button', { name: 'Todo-Liste Wochenende Aktionen' }).click();
   await page.getByRole('button', { name: 'Löschen' }).click();
-  await expect(page.getByRole('heading', { name: 'Löschen?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Todo-Liste löschen?' })).toBeVisible();
   await page.getByRole('button', { name: /^Löschen$/ }).click();
 
-  await expect(page.getByText('Schultasche neu packen')).toHaveCount(0);
+  await expect(page.getByText('Wochenende')).toHaveCount(0);
 });
 
 test('keeps the meal planner card wide on large desktop screens', async ({ page }) => {

@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
 import { AppDialogShell } from '../ui/AppDialogShell';
+import { cn } from '../../lib/classnames';
 
 export function ModalDialog({
   actions,
   children,
   className,
   eyebrow,
+  hideTitle = false,
   id,
   title,
 }: {
@@ -13,6 +15,7 @@ export function ModalDialog({
   children: ReactNode;
   className?: string;
   eyebrow?: string;
+  hideTitle?: boolean;
   id: string;
   title: string;
 }) {
@@ -22,7 +25,7 @@ export function ModalDialog({
         <div className="block min-w-0">
           <div className="w-auto min-w-0">
             {eyebrow ? <p className="m-0 uppercase tracking-[0.18em] text-[0.72rem] opacity-75">{eyebrow}</p> : null}
-            <h3 id={id} className="break-words">{title}</h3>
+            <h3 id={id} className={cn('break-words', hideTitle ? 'sr-only' : undefined)}>{title}</h3>
           </div>
         </div>
         {children}

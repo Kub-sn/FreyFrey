@@ -78,7 +78,7 @@ describe('loadPlannerState', () => {
     ]);
   });
 
-  it('migrates legacy tasks with only a done flag to the new task shape', () => {
+  it('migrates legacy tasks and subtasks into a todo list', () => {
     window.localStorage.setItem(
       'family-planner-state-v2',
       JSON.stringify({
@@ -106,22 +106,27 @@ describe('loadPlannerState', () => {
       }),
     );
 
-    expect(loadPlannerState().tasks).toEqual([
+    expect(loadPlannerState().todoLists).toEqual([
       {
-        id: 'task-1',
-        title: 'Sportsachen packen',
-        owner: 'Alex',
-        due: '2026-05-02',
-        status: 'done',
-        subtasks: [],
-      },
-      {
-        id: 'task-2',
-        title: 'Fragebogen ausfuellen',
-        owner: 'Bea',
-        due: '2026-05-03',
-        status: 'todo',
-        subtasks: [{ id: 'subtask-1', title: 'Unterschrift holen', done: true }],
+        id: 'todo-list-migrated',
+        title: 'Vorhandene To-dos',
+        items: [
+          {
+            id: 'todo-migrated-task-task-1',
+            title: 'Sportsachen packen',
+            checked: true,
+          },
+          {
+            id: 'todo-migrated-task-task-2',
+            title: 'Fragebogen ausfuellen',
+            checked: false,
+          },
+          {
+            id: 'todo-migrated-subtask-task-2-subtask-1',
+            title: 'Fragebogen ausfuellen - Unterschrift holen',
+            checked: true,
+          },
+        ],
       },
     ]);
   });

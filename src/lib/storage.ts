@@ -5,7 +5,8 @@ import {
   type ShoppingList,
   type ShoppingListItem,
   type TabId,
-  type TaskStatus,
+  type TodoList,
+  type TodoListItem,
 } from './planner-data';
 import { isDateKey, resolveLegacyMealDate } from './meals';
 
@@ -16,36 +17,6 @@ const UI_DRAFT_STORAGE_PREFIX = 'family-planner-ui-draft-v1:';
 
 function isTabId(value: unknown): value is TabId {
   return typeof value === 'string' && tabs.some((tab) => tab.id === value);
-}
-
-function isTaskStatus(value: unknown): value is TaskStatus {
-  return value === 'todo' || value === 'in-progress' || value === 'done';
-}
-
-function normalizeTaskSubtasks(subtasks: unknown): PlannerState['tasks'][number]['subtasks'] {
-  if (!Array.isArray(subtasks)) {
-    return [];
-  }
-
-  return subtasks.flatMap((subtask) => {
-    if (!subtask || typeof subtask !== 'object') {
-      return [];
-    }
-
-    const candidate = subtask as Partial<PlannerState['tasks'][number]['subtasks'][number]>;
-    const id = typeof candidate.id === 'string' ? candidate.id : '';
-    const title = typeof candidate.title === 'string' ? candidate.title.trim() : '';
-
-    if (!id || !title) {
-      return [];
-    }
-
-    return [{
-      id,
-      title,
-      done: Boolean(candidate.done),
-    }];
-  });
 }
 
 function normalizeShoppingListItems(items: unknown): ShoppingListItem[] {
@@ -123,40 +94,132 @@ function normalizeShoppingLists(state: PlannerState & { shoppingItems?: unknown 
   }];
 }
 
-function normalizeTasks(tasks: unknown): PlannerState['tasks'] {
-  if (!Array.isArray(tasks)) {
-    return defaultPlannerState.tasks;
+function normalizeTodoListItems(items: unknown): TodoListItem[] {
+  if (!Array.isArray(items)) {
+    return [];
   }
 
-  return tasks.flatMap((task) => {
-    if (!task || typeof task !== 'object') {
+  return items.flatMap((item) => {
+    if (!item || typeof item !== 'object') {
       return [];
     }
 
-    const candidate = task as Partial<PlannerState['tasks'][number]> & { done?: boolean };
+    const candidate = item as Partial<TodoListItem> & { name?: unknown; done?: unknown };
     const id = typeof candidate.id === 'string' ? candidate.id : '';
-    const title = typeof candidate.title === 'string' ? candidate.title : '';
-    const owner = typeof candidate.owner === 'string' ? candidate.owner : '';
-    const due = typeof candidate.due === 'string' ? candidate.due : '';
-    const status = isTaskStatus(candidate.status)
-      ? candidate.status
-      : candidate.done
-        ? 'done'
-        : 'todo';
+    const title = typeof candidate.title === 'string'
+      ? candidate.title.trim()
+      : typeof candidate.name === 'string'
+        ? candidate.name.trim()
+        : '';
 
-    if (!id || !title || !owner || !due) {
+    if (!id || !title) {
       return [];
     }
 
     return [{
       id,
       title,
-      owner,
-      due,
-      status,
-      subtasks: normalizeTaskSubtasks(candidate.subtasks),
+      checked: Boolean(candidate.checked ?? candidate.done),
     }];
   });
+}
+
+function migrateLegacyTasks(tasks: unknown): TodoList[] {
+  if (!Array.isArray(tasks) || tasks.length === 0) {
+    return defaultPlannerState.todoLists;
+  }
+
+  const items = tasks.flatMap((task) => {
+    if (!task || typeof task !== 'object') {
+      return [];
+    }
+
+    const candidate = task as {
+      id?: unknown;
+      title?: unknown;
+      status?: unknown;
+      done?: unknown;
+      subtasks?: unknown;
+    };
+    const taskId = typeof candidate.id === 'string' ? candidate.id : '';
+    const taskTitle = typeof candidate.title === 'string' ? candidate.title.trim() : '';
+
+    if (!taskId || !taskTitle) {
+      return [];
+    }
+
+    const migratedItems: TodoListItem[] = [{
+      id: `todo-migrated-task-${taskId}`,
+      title: taskTitle,
+      checked: candidate.status === 'done' || Boolean(candidate.done),
+    }];
+
+    if (Array.isArray(candidate.subtasks)) {
+      candidate.subtasks.forEach((subtask) => {
+        if (!subtask || typeof subtask !== 'object') {
+          return;
+        }
+
+        const subtaskCandidate = subtask as { id?: unknown; title?: unknown; done?: unknown };
+        const subtaskId = typeof subtaskCandidate.id === 'string' ? subtaskCandidate.id : '';
+        const subtaskTitle = typeof subtaskCandidate.title === 'string' ? subtaskCandidate.title.trim() : '';
+
+        if (!subtaskId || !subtaskTitle) {
+          return;
+        }
+
+        migratedItems.push({
+          id: `todo-migrated-subtask-${taskId}-${subtaskId}`,
+          title: `${taskTitle} - ${subtaskTitle}`,
+          checked: Boolean(subtaskCandidate.done),
+        });
+      });
+    }
+
+    return migratedItems;
+  });
+
+  if (items.length === 0) {
+    return defaultPlannerState.todoLists;
+  }
+
+  return [{
+    id: 'todo-list-migrated',
+    title: 'Vorhandene To-dos',
+    items,
+  }];
+}
+
+function normalizeTodoLists(state: PlannerState & { todoLists?: unknown; tasks?: unknown }): TodoList[] {
+  if (Array.isArray(state.todoLists)) {
+    const normalizedLists = state.todoLists.flatMap((list) => {
+      if (!list || typeof list !== 'object') {
+        return [];
+      }
+
+      const candidate = list as Partial<TodoList>;
+      const id = typeof candidate.id === 'string' ? candidate.id : '';
+      const title = typeof candidate.title === 'string' ? candidate.title.trim() : '';
+      const date = typeof candidate.date === 'string' && candidate.date.trim() ? candidate.date.trim() : undefined;
+
+      if (!id || !title) {
+        return [];
+      }
+
+      return [{
+        id,
+        title,
+        ...(date ? { date } : {}),
+        items: normalizeTodoListItems(candidate.items),
+      }];
+    });
+
+    if (normalizedLists.length > 0 || !Array.isArray(state.tasks) || state.tasks.length === 0) {
+      return normalizedLists;
+    }
+  }
+
+  return migrateLegacyTasks(state.tasks);
 }
 
 function normalizeMeals(meals: unknown): PlannerState['meals'] {
@@ -203,7 +266,7 @@ function normalizePlannerState(state: PlannerState): PlannerState {
   return {
     ...state,
     shoppingLists: normalizeShoppingLists(state as PlannerState & { shoppingItems?: unknown }),
-    tasks: normalizeTasks(state.tasks),
+    todoLists: normalizeTodoLists(state as PlannerState & { todoLists?: unknown; tasks?: unknown }),
     meals: normalizeMeals(state.meals),
     notes: Array.isArray(state.notes)
       ? state.notes.map((note) => ({

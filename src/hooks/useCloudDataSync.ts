@@ -10,7 +10,7 @@ import {
   fetchMeals,
   fetchNotes,
   fetchShoppingLists,
-  fetchTasks,
+  fetchTodoLists,
 } from '../lib/supabase';
 import { applyCloudCollections } from '../lib/cloud-sync';
 
@@ -47,9 +47,9 @@ export function useCloudDataSync({
       });
 
       try {
-        const [shoppingLists, tasks, notes, meals, documents, members, invites] = await Promise.all([
+        const [shoppingLists, todoLists, notes, meals, documents, members, invites] = await Promise.all([
           fetchShoppingLists(familyId),
-          fetchTasks(familyId),
+          fetchTodoLists(familyId),
           fetchNotes(familyId),
           fetchMeals(familyId),
           fetchDocuments(familyId),
@@ -64,7 +64,7 @@ export function useCloudDataSync({
         setPlannerState((current) => {
           const nextState = applyCloudCollections(current, {
             shoppingLists,
-            tasks,
+            todoLists,
             notes,
             meals,
             documents,

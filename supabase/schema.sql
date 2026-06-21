@@ -58,14 +58,20 @@ create table public.shopping_items (
   created_at timestamptz not null default now()
 );
 
-create table public.tasks (
+create table public.todo_lists (
   id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
   title text not null,
-  owner text not null,
-  due text not null,
-  status text not null default 'todo' check (status in ('todo', 'in-progress', 'done')),
-  subtasks jsonb not null default '[]'::jsonb,
+  todo_date text,
+  created_at timestamptz not null default now()
+);
+
+create table public.todo_items (
+  id uuid primary key default gen_random_uuid(),
+  family_id uuid not null references public.families(id) on delete cascade,
+  list_id uuid not null references public.todo_lists(id) on delete cascade,
+  title text not null,
+  checked boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -104,7 +110,8 @@ alter table public.family_members enable row level security;
 alter table public.family_invites enable row level security;
 alter table public.shopping_lists enable row level security;
 alter table public.shopping_items enable row level security;
-alter table public.tasks enable row level security;
+alter table public.todo_lists enable row level security;
+alter table public.todo_items enable row level security;
 alter table public.notes enable row level security;
 alter table public.meals enable row level security;
 alter table public.documents enable row level security;
@@ -632,24 +639,45 @@ on public.shopping_lists
 for delete
 using (public.is_family_member(family_id));
 
-create policy "family members can read tasks"
-on public.tasks
+create policy "family members can read todo lists"
+on public.todo_lists
 for select
 using (public.is_family_member(family_id));
 
-create policy "family members can insert tasks"
-on public.tasks
+create policy "family members can insert todo lists"
+on public.todo_lists
 for insert
 with check (public.is_family_member(family_id));
 
-create policy "family members can update tasks"
-on public.tasks
+create policy "family members can update todo lists"
+on public.todo_lists
 for update
 using (public.is_family_member(family_id))
 with check (public.is_family_member(family_id));
 
-create policy "family members can delete tasks"
-on public.tasks
+create policy "family members can delete todo lists"
+on public.todo_lists
+for delete
+using (public.is_family_member(family_id));
+
+create policy "family members can read todo items"
+on public.todo_items
+for select
+using (public.is_family_member(family_id));
+
+create policy "family members can insert todo items"
+on public.todo_items
+for insert
+with check (public.is_family_member(family_id));
+
+create policy "family members can update todo items"
+on public.todo_items
+for update
+using (public.is_family_member(family_id))
+with check (public.is_family_member(family_id));
+
+create policy "family members can delete todo items"
+on public.todo_items
 for delete
 using (public.is_family_member(family_id));
 

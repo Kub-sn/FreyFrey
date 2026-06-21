@@ -21,21 +21,17 @@ export type ShoppingList = {
   items: ShoppingListItem[];
 };
 
-export type TaskStatus = 'todo' | 'in-progress' | 'done';
-
-export type TaskSubtask = {
+export type TodoListItem = {
   id: string;
   title: string;
-  done: boolean;
+  checked: boolean;
 };
 
-export type TaskItem = {
+export type TodoList = {
   id: string;
   title: string;
-  owner: string;
-  due: string;
-  status: TaskStatus;
-  subtasks: TaskSubtask[];
+  date?: string;
+  items: TodoListItem[];
 };
 
 export type NoteItem = {
@@ -64,7 +60,7 @@ export type PlannerState = {
   storageMode: 'local' | 'supabase-ready';
   members: FamilyMember[];
   shoppingLists: ShoppingList[];
-  tasks: TaskItem[];
+  todoLists: TodoList[];
   notes: NoteItem[];
   meals: MealItem[];
   documents: DocumentItem[];
@@ -88,7 +84,7 @@ export const defaultPlannerState: PlannerState = {
   storageMode: 'local',
   members: [],
   shoppingLists: [],
-  tasks: [],
+  todoLists: [],
   notes: [],
   meals: [],
   documents: [],

@@ -19,16 +19,14 @@ export const plannerFixture: PlannerState = {
       ],
     },
   ],
-  tasks: [
+  todoLists: [
     {
-      id: 'task-1',
-      title: 'Schultasche packen',
-      owner: 'Alex',
-      due: '2026-05-02',
-      status: 'todo',
-      subtasks: [
-        { id: 'task-1-subtask-1', title: 'Hefte sortieren', done: true },
-        { id: 'task-1-subtask-2', title: 'Turnbeutel prüfen', done: false },
+      id: 'todo-list-1',
+      title: 'Schule',
+      date: '2026-05-02',
+      items: [
+        { id: 'todo-1', title: 'Hefte sortieren', checked: true },
+        { id: 'todo-2', title: 'Turnbeutel prüfen', checked: false },
       ],
     },
   ],

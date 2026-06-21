@@ -20,14 +20,14 @@ describe('applyCloudCollections', () => {
           ],
         },
       ],
-      tasks: [
+      todoLists: [
         {
-          id: 'task-cloud-1',
-          title: 'Turnbeutel packen',
-          owner: 'Mia',
-          due: '2026-05-01',
-          status: 'todo',
-          subtasks: [],
+          id: 'todo-list-cloud-1',
+          title: 'Schule',
+          date: '2026-05-01',
+          items: [
+            { id: 'todo-cloud-1', title: 'Turnbeutel packen', checked: false },
+          ],
         },
       ],
       notes: [
@@ -58,8 +58,8 @@ describe('applyCloudCollections', () => {
     expect(nextState.storageMode).toBe('supabase-ready');
     expect(nextState.shoppingLists).toHaveLength(1);
     expect(nextState.shoppingLists[0]?.items[0]?.name).toBe('Joghurt');
-    expect(nextState.tasks).toHaveLength(1);
-    expect(nextState.tasks[0]?.title).toBe('Turnbeutel packen');
+    expect(nextState.todoLists).toHaveLength(1);
+    expect(nextState.todoLists[0]?.items[0]?.title).toBe('Turnbeutel packen');
     expect(nextState.notes).toHaveLength(1);
     expect(nextState.notes[0]?.title).toBe('Arztunterlagen');
     expect(nextState.meals).toHaveLength(1);

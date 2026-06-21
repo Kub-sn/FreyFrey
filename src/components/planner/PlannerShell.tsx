@@ -13,10 +13,9 @@ import type {
 import type { SupabaseFamilyContext, SupabaseFamilyInvite } from '../../lib/supabase';
 import { ActiveTabProvider } from '../../context/ActiveTabContext';
 import { useNoteManager } from '../../hooks/useNoteManager';
-import { useAdminDirectory } from '../../hooks/useAdminDirectory';
 import { useCrudModules } from '../../hooks/useCrudModules';
+import { useAdminDirectory } from '../../hooks/useAdminDirectory';
 import { useDeletionManager } from '../../hooks/useDeletionManager';
-import { isTaskDone } from '../../lib/tasks';
 import { AppButton } from '../ui/AppButton';
 import { AccountCard } from './AccountCard';
 import { ConfirmationDialog } from './ConfirmationDialog';
@@ -123,8 +122,11 @@ export default function PlannerShell({
   // --- Derived values ---
 
   const openTasks = useMemo(
-    () => plannerState.tasks.filter((task) => !isTaskDone(task)).length,
-    [plannerState.tasks],
+    () => plannerState.todoLists.reduce(
+      (total, list) => total + list.items.filter((item) => !item.checked).length,
+      0,
+    ),
+    [plannerState.todoLists],
   );
 
   const pendingShopping = useMemo(
@@ -194,7 +196,7 @@ export default function PlannerShell({
         <PlannerOverview
           openTasks={openTasks}
           plannerState={plannerState}
-          onToggleTask={crud.handleToggleTask}
+          onToggleTodoItem={crud.handleToggleTodoItem}
         />
 
         <ShoppingModule
@@ -206,14 +208,13 @@ export default function PlannerShell({
         />
 
         <TasksModule
-          familyMemberOptions={plannerState.members.map((member) => member.name)}
-          ownerDefaultValue={authState.profile?.display_name ?? activeMember?.name ?? ''}
-          tasks={plannerState.tasks}
-          onAddTask={crud.handleAddTask}
-          onUpdateTask={crud.handleUpdateTask}
-          onDeleteTask={crud.handleDeleteTask}
-          onSetTaskStatus={crud.handleSetTaskStatus}
-          onToggleTaskSubtask={crud.handleToggleTaskSubtask}
+          lists={plannerState.todoLists}
+          onCreateList={crud.handleCreateTodoList}
+          onUpdateList={crud.handleUpdateTodoList}
+          onDeleteList={crud.handleDeleteTodoList}
+          onCreateItem={crud.handleCreateTodoItem}
+          onToggleItem={crud.handleToggleTodoItem}
+          onDeleteItem={crud.handleDeleteTodoItem}
         />
 
         <NotesModule

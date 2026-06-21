@@ -83,6 +83,13 @@ function buildTaskDeleteBuilder(result: { error: unknown }) {
   };
 }
 
+function buildCheckedUpdateBuilder(result: { error: unknown }) {
+  return {
+    update: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockResolvedValue(result),
+  };
+}
+
 function buildShoppingListQueryBuilder(result: { data: unknown; error: unknown }) {
   return {
     select: vi.fn().mockReturnThis(),
@@ -317,6 +324,7 @@ describe('auth email normalization', () => {
     expect(getSessionMock).not.toHaveBeenCalled();
   });
 });
+
 
 describe('createFamilyInvite', () => {
   beforeEach(() => {
@@ -1053,7 +1061,7 @@ describe('note persistence', () => {
   });
 });
 
-describe('task persistence', () => {
+describe('todo list persistence', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -1061,156 +1069,229 @@ describe('task persistence', () => {
     vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'publishable-key');
   });
 
-  it('fetches tasks and normalizes malformed subtasks', async () => {
-    const taskListBuilder = buildTaskListBuilder({
+  it('fetches todo lists with their items grouped by list', async () => {
+    const todoListBuilder = buildTaskListBuilder({
       data: [
         {
-          id: 'task-1',
+          id: 'todo-list-1',
+          title: 'Schule',
+          todo_date: '2026-05-01',
+        },
+        {
+          id: 'todo-list-2',
+          title: 'Ohne Datum',
+          todo_date: null,
+        },
+      ],
+      error: null,
+    });
+    const todoItemsBuilder = buildTaskListBuilder({
+      data: [
+        {
+          id: 'todo-item-1',
+          list_id: 'todo-list-1',
           title: 'Ranzen packen',
-          owner: 'Alex',
-          due: '2026-05-01',
-          status: 'in-progress',
-          subtasks: [
-            { id: 'subtask-1', title: 'Deutschheft', done: true },
-            { id: 'subtask-2', title: '   ', done: false },
-            null,
-          ],
+          checked: false,
+        },
+        {
+          id: 'todo-item-2',
+          list_id: 'todo-list-1',
+          title: 'Deutschheft',
+          checked: true,
         },
       ],
       error: null,
     });
 
-    const fromMock = vi.fn().mockReturnValue(taskListBuilder);
+    const fromMock = vi.fn((table: string) => (table === 'todo_lists' ? todoListBuilder : todoItemsBuilder));
     createClientMock.mockReturnValue({
       from: fromMock,
     });
 
-    const { fetchTasks } = await import('./supabase');
+    const { fetchTodoLists } = await import('./supabase');
 
-    await expect(fetchTasks('family-1')).resolves.toEqual([
+    await expect(fetchTodoLists('family-1')).resolves.toEqual([
       {
-        id: 'task-1',
-        title: 'Ranzen packen',
-        owner: 'Alex',
-        due: '2026-05-01',
-        status: 'in-progress',
-        subtasks: [{ id: 'subtask-1', title: 'Deutschheft', done: true }],
+        id: 'todo-list-1',
+        title: 'Schule',
+        date: '2026-05-01',
+        items: [
+          { id: 'todo-item-1', title: 'Ranzen packen', checked: false },
+          { id: 'todo-item-2', title: 'Deutschheft', checked: true },
+        ],
+      },
+      {
+        id: 'todo-list-2',
+        title: 'Ohne Datum',
+        items: [],
       },
     ]);
 
-    expect(fromMock).toHaveBeenCalledWith('tasks');
-    expect(taskListBuilder.eq).toHaveBeenCalledWith('family_id', 'family-1');
-    expect(taskListBuilder.order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(fromMock).toHaveBeenCalledWith('todo_lists');
+    expect(fromMock).toHaveBeenCalledWith('todo_items');
+    expect(todoListBuilder.eq).toHaveBeenCalledWith('family_id', 'family-1');
+    expect(todoListBuilder.order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(todoItemsBuilder.order).toHaveBeenCalledWith('created_at', { ascending: true });
   });
 
-  it('creates a task and serializes subtasks for storage', async () => {
-    const taskMutationBuilder = buildTaskMutationBuilder({
+  it('creates a todo list with optional date and initial items', async () => {
+    const todoListMutationBuilder = buildTaskMutationBuilder({
       data: {
-        id: 'task-2',
-        title: 'Elternbrief lesen',
-        owner: 'Bea',
-        due: '2026-05-02',
-        status: 'todo',
-        subtasks: [{ id: 'subtask-1', title: 'Unterschreiben', done: false }],
+        id: 'todo-list-3',
+        title: 'Todo Liste 1',
+        todo_date: null,
       },
       error: null,
     });
+    const todoItemInsertBuilder = buildShoppingItemInsertBuilder({
+      data: [{ id: 'todo-item-3', list_id: 'todo-list-3', title: 'Elternbrief lesen', checked: false }],
+      error: null,
+    });
 
-    const fromMock = vi.fn().mockReturnValue(taskMutationBuilder);
+    const fromMock = vi.fn((table: string) => (table === 'todo_lists' ? todoListMutationBuilder : todoItemInsertBuilder));
     createClientMock.mockReturnValue({
       from: fromMock,
     });
 
-    const { createTask } = await import('./supabase');
+    const { createTodoList } = await import('./supabase');
 
     await expect(
-      createTask('family-1', {
-        title: 'Elternbrief lesen',
-        owner: 'Bea',
-        due: '2026-05-02',
-        status: 'todo',
-        subtasks: [{ id: 'subtask-1', title: 'Unterschreiben', done: false }],
+      createTodoList('family-1', {
+        title: 'Todo Liste 1',
+        items: [{ id: 'draft-item', title: 'Elternbrief lesen', checked: false }],
       }),
     ).resolves.toEqual({
-      id: 'task-2',
-      title: 'Elternbrief lesen',
-      owner: 'Bea',
-      due: '2026-05-02',
-      status: 'todo',
-      subtasks: [{ id: 'subtask-1', title: 'Unterschreiben', done: false }],
+      id: 'todo-list-3',
+      title: 'Todo Liste 1',
+      items: [{ id: 'todo-item-3', title: 'Elternbrief lesen', checked: false }],
     });
 
-    expect(fromMock).toHaveBeenCalledWith('tasks');
-    expect(taskMutationBuilder.insert).toHaveBeenCalledWith({
+    expect(fromMock).toHaveBeenCalledWith('todo_lists');
+    expect(fromMock).toHaveBeenCalledWith('todo_items');
+    expect(todoListMutationBuilder.insert).toHaveBeenCalledWith({
       family_id: 'family-1',
-      title: 'Elternbrief lesen',
-      owner: 'Bea',
-      due: '2026-05-02',
-      status: 'todo',
-      subtasks: [{ id: 'subtask-1', title: 'Unterschreiben', done: false }],
+      title: 'Todo Liste 1',
+      todo_date: null,
     });
+    expect(todoItemInsertBuilder.insert).toHaveBeenCalledWith([
+      {
+        family_id: 'family-1',
+        list_id: 'todo-list-3',
+        title: 'Elternbrief lesen',
+        checked: false,
+      },
+    ]);
   });
 
-  it('updates a task and keeps only valid subtasks in the response', async () => {
-    const taskMutationBuilder = buildTaskMutationBuilder({
+  it('updates a todo list and replaces stored items', async () => {
+    const todoListMutationBuilder = buildTaskMutationBuilder({
       data: {
-        id: 'task-3',
-        title: 'Turnbeutel pruefen',
-        owner: 'Alex',
-        due: '2026-05-03',
-        status: 'done',
-        subtasks: [
-          { id: 'subtask-1', title: 'Schuhe', done: true },
-          { id: '', title: 'Ignorieren', done: true },
-        ],
+        id: 'todo-list-4',
+        title: 'Schule',
+        todo_date: '2026-05-03',
       },
       error: null,
     });
-
-    const fromMock = vi.fn().mockReturnValue(taskMutationBuilder);
-    createClientMock.mockReturnValue({
-      from: fromMock,
-    });
-
-    const { updateTask } = await import('./supabase');
-
-    await expect(
-      updateTask('task-3', {
-        status: 'done',
-        subtasks: [{ id: 'subtask-1', title: 'Schuhe', done: true }],
-      }),
-    ).resolves.toEqual({
-      id: 'task-3',
-      title: 'Turnbeutel pruefen',
-      owner: 'Alex',
-      due: '2026-05-03',
-      status: 'done',
-      subtasks: [{ id: 'subtask-1', title: 'Schuhe', done: true }],
-    });
-
-    expect(fromMock).toHaveBeenCalledWith('tasks');
-    expect(taskMutationBuilder.update).toHaveBeenCalledWith({
-      status: 'done',
-      subtasks: [{ id: 'subtask-1', title: 'Schuhe', done: true }],
-    });
-    expect(taskMutationBuilder.eq).toHaveBeenCalledWith('id', 'task-3');
-  });
-
-  it('deletes a task by id', async () => {
-    const taskDeleteBuilder = buildTaskDeleteBuilder({
+    const todoItemDeleteBuilder = buildTaskDeleteBuilder({ error: null });
+    const todoItemInsertBuilder = buildShoppingItemInsertBuilder({
+      data: [{ id: 'todo-item-4', list_id: 'todo-list-4', title: 'Turnbeutel pruefen', checked: true }],
       error: null,
     });
 
-    const fromMock = vi.fn().mockReturnValue(taskDeleteBuilder);
+    const fromMock = vi.fn((table: string) => {
+      if (table === 'todo_lists') {
+        return todoListMutationBuilder;
+      }
+
+      if (todoItemDeleteBuilder.delete.mock.calls.length === 0) {
+        return todoItemDeleteBuilder;
+      }
+
+      return todoItemInsertBuilder;
+    });
     createClientMock.mockReturnValue({
       from: fromMock,
     });
 
-    const { deleteTask } = await import('./supabase');
+    const { updateTodoList } = await import('./supabase');
 
-    await expect(deleteTask('task-4')).resolves.toBeUndefined();
+    await expect(
+      updateTodoList('family-1', 'todo-list-4', {
+        title: 'Schule',
+        date: '2026-05-03',
+        items: [{ id: 'todo-item-draft', title: 'Turnbeutel pruefen', checked: true }],
+      }),
+    ).resolves.toEqual({
+      id: 'todo-list-4',
+      title: 'Schule',
+      date: '2026-05-03',
+      items: [{ id: 'todo-item-4', title: 'Turnbeutel pruefen', checked: true }],
+    });
 
-    expect(fromMock).toHaveBeenCalledWith('tasks');
-    expect(taskDeleteBuilder.eq).toHaveBeenCalledWith('id', 'task-4');
+    expect(todoListMutationBuilder.update).toHaveBeenCalledWith({
+      title: 'Schule',
+      todo_date: '2026-05-03',
+    });
+    expect(todoListMutationBuilder.eq).toHaveBeenCalledWith('id', 'todo-list-4');
+    expect(todoItemDeleteBuilder.eq).toHaveBeenCalledWith('list_id', 'todo-list-4');
+    expect(todoItemInsertBuilder.insert).toHaveBeenCalledWith([
+      {
+        family_id: 'family-1',
+        list_id: 'todo-list-4',
+        title: 'Turnbeutel pruefen',
+        checked: true,
+      },
+    ]);
+  });
+
+  it('creates, checks, deletes todo items and deletes lists by id', async () => {
+    const todoItemCreateBuilder = buildTaskMutationBuilder({
+      data: { id: 'todo-item-5', title: 'Brotdose einpacken', checked: false },
+      error: null,
+    });
+    const todoItemUpdateBuilder = buildCheckedUpdateBuilder({ error: null });
+    const todoItemDeleteBuilder = buildTaskDeleteBuilder({ error: null });
+    const todoListDeleteBuilder = buildTaskDeleteBuilder({ error: null });
+
+    const fromMock = vi.fn((table: string) => {
+      if (table === 'todo_lists') {
+        return todoListDeleteBuilder;
+      }
+
+      if (todoItemCreateBuilder.insert.mock.calls.length === 0) {
+        return todoItemCreateBuilder;
+      }
+
+      if (todoItemUpdateBuilder.update.mock.calls.length === 0) {
+        return todoItemUpdateBuilder;
+      }
+
+      return todoItemDeleteBuilder;
+    });
+    createClientMock.mockReturnValue({
+      from: fromMock,
+    });
+
+    const { createTodoItem, deleteTodoItem, deleteTodoList, updateTodoItemChecked } = await import('./supabase');
+
+    await expect(createTodoItem('family-1', 'todo-list-5', 'Brotdose einpacken')).resolves.toEqual({
+      id: 'todo-item-5',
+      title: 'Brotdose einpacken',
+      checked: false,
+    });
+    await expect(updateTodoItemChecked('todo-item-5', true)).resolves.toBeUndefined();
+    await expect(deleteTodoItem('todo-item-5')).resolves.toBeUndefined();
+    await expect(deleteTodoList('todo-list-5')).resolves.toBeUndefined();
+
+    expect(todoItemCreateBuilder.insert).toHaveBeenCalledWith({
+      family_id: 'family-1',
+      list_id: 'todo-list-5',
+      title: 'Brotdose einpacken',
+      checked: false,
+    });
+    expect(todoItemUpdateBuilder.update).toHaveBeenCalledWith({ checked: true });
+    expect(todoItemUpdateBuilder.eq).toHaveBeenCalledWith('id', 'todo-item-5');
+    expect(todoItemDeleteBuilder.eq).toHaveBeenCalledWith('id', 'todo-item-5');
+    expect(todoListDeleteBuilder.eq).toHaveBeenCalledWith('id', 'todo-list-5');
   });
 });

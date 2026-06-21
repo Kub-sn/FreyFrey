@@ -20,7 +20,7 @@ const {
   fetchMeals,
   fetchNotes,
   fetchShoppingLists,
-  fetchTasks,
+  fetchTodoLists,
   getCurrentSession,
   removeFamilyInvite,
   resetPasswordForEmail,
@@ -51,7 +51,7 @@ const {
     fetchMeals: vi.fn(),
     fetchNotes: vi.fn(),
     fetchShoppingLists: vi.fn(),
-    fetchTasks: vi.fn(),
+    fetchTodoLists: vi.fn(),
     getCurrentSession: vi.fn(),
     removeFamilyInvite: vi.fn(),
     resetPasswordForEmail: vi.fn(),
@@ -92,7 +92,7 @@ vi.mock('./lib/supabase', async () => {
     fetchMeals,
     fetchNotes,
     fetchShoppingLists,
-    fetchTasks,
+    fetchTodoLists,
     getCurrentSession,
     removeFamilyInvite,
     resetPasswordForEmail,
@@ -183,7 +183,7 @@ describe('App auth flow', () => {
     fetchMeals.mockReset();
     fetchNotes.mockReset();
     fetchShoppingLists.mockReset();
-    fetchTasks.mockReset();
+    fetchTodoLists.mockReset();
     getCurrentSession.mockReset();
     removeFamilyInvite.mockReset();
     resetPasswordForEmail.mockReset();
@@ -196,7 +196,7 @@ describe('App auth flow', () => {
 
     getCurrentSession.mockResolvedValue(null);
     fetchShoppingLists.mockResolvedValue([]);
-    fetchTasks.mockResolvedValue([]);
+    fetchTodoLists.mockResolvedValue([]);
     fetchNotes.mockResolvedValue([]);
     fetchMeals.mockResolvedValue([]);
     fetchDocuments.mockResolvedValue([]);

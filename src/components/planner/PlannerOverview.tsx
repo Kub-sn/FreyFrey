@@ -1,20 +1,24 @@
 import type { PlannerState } from '../../lib/planner-data';
 import { useActiveTab } from '../../context/ActiveTabContext';
-import { formatTaskDueLabel, isTaskDone } from '../../lib/tasks';
+import { formatTodoListDate } from '../../lib/tasks';
 import { AppButton } from '../ui/AppButton';
 import { AppCard } from '../ui/AppCard';
 
 export function PlannerOverview({
   openTasks,
   plannerState,
-  onToggleTask,
+  onToggleTodoItem,
 }: {
   openTasks: number;
   plannerState: PlannerState;
-  onToggleTask: (taskId: string, done: boolean) => Promise<void>;
+  onToggleTodoItem: (listId: string, itemId: string, checked: boolean) => Promise<void>;
 }) {
   const { activeTab } = useActiveTab();
-  const visibleTasks = plannerState.tasks.filter((task) => !isTaskDone(task)).slice(0, 6);
+  const visibleTodos = plannerState.todoLists
+    .flatMap((list) => list.items
+      .filter((item) => !item.checked)
+      .map((item) => ({ item, list })))
+    .slice(0, 6);
 
   return (
     <section className={activeTab === 'overview' ? 'overview-stack is-visible' : 'overview-stack'}>
@@ -24,22 +28,20 @@ export function PlannerOverview({
           <span className="chip alt">{openTasks} offen</span>
         </div>
         <div className="min-h-0 overflow-y-auto overflow-x-hidden">
-          {visibleTasks.length > 0 ? (
+          {visibleTodos.length > 0 ? (
             <ul className="task-list [&>li]:py-[0.7rem]">
-              {visibleTasks.map((task) => (
-                <li key={task.id}>
+              {visibleTodos.map(({ item, list }) => (
+                <li key={`${list.id}-${item.id}`}>
                   <AppButton
                     type="button"
                     variant="ghost"
-                    onClick={() => void onToggleTask(task.id, true)}
+                    onClick={() => void onToggleTodoItem(list.id, item.id, true)}
                   >
                     Erledigen
                   </AppButton>
                   <div>
-                    <strong>{task.title}</strong>
-                    <small>
-                      {task.owner} · {formatTaskDueLabel(task.due)}
-                    </small>
+                    <strong>{item.title}</strong>
+                    <small>{list.date ? `${list.title} · ${formatTodoListDate(list.date)}` : list.title}</small>
                   </div>
                 </li>
               ))}
@@ -47,7 +49,7 @@ export function PlannerOverview({
           ) : (
             <div className="overview-empty-state grid gap-[0.3rem] py-[0.35rem]">
               <strong>Keine offenen To-dos</strong>
-              <small>Neue Aufgaben tauchen hier automatisch auf.</small>
+              <small>Neue To-dos tauchen hier automatisch auf.</small>
             </div>
           )}
         </div>

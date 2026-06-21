@@ -6,14 +6,17 @@ import { useCrudModules } from './useCrudModules';
 
 const supabaseMocks = vi.hoisted(() => ({
   createShoppingList: vi.fn(),
-  createTask: vi.fn(),
+  createTodoItem: vi.fn(),
+  createTodoList: vi.fn(),
   createMeal: vi.fn(),
+  deleteTodoItem: vi.fn(),
   deleteMeal: vi.fn(),
   deleteShoppingList: vi.fn(),
-  deleteTask: vi.fn(),
+  deleteTodoList: vi.fn(),
   updateShoppingList: vi.fn(),
   updateShoppingListItemChecked: vi.fn(),
-  updateTask: vi.fn(),
+  updateTodoItemChecked: vi.fn(),
+  updateTodoList: vi.fn(),
 }));
 
 vi.mock('../lib/supabase', () => supabaseMocks);
@@ -58,12 +61,12 @@ describe('useCrudModules', () => {
     expect(setCloudSync).not.toHaveBeenCalledWith(expect.objectContaining({ phase: 'error' }));
   });
 
-  it('updates task subtasks optimistically before the cloud request resolves', async () => {
+  it('updates todo items optimistically before the cloud request resolves', async () => {
     const deferred = createDeferredPromise<void>();
     const updateState = vi.fn();
     const setCloudSync = vi.fn();
 
-    supabaseMocks.updateTask.mockReturnValueOnce(deferred.promise);
+    supabaseMocks.updateTodoItemChecked.mockReturnValueOnce(deferred.promise);
 
     const { result } = renderHook(() => useCrudModules({
       authState: authFixture,
@@ -73,12 +76,12 @@ describe('useCrudModules', () => {
     }));
 
     act(() => {
-      void result.current.handleToggleTaskSubtask('task-1', 'task-1-subtask-2', true);
+      void result.current.handleToggleTodoItem('todo-list-1', 'todo-2', true);
     });
 
     expect(updateState).toHaveBeenCalledTimes(1);
     const optimisticState = updateState.mock.calls[0][0](plannerFixture as PlannerState);
-    expect(optimisticState.tasks[0].subtasks[1].done).toBe(true);
+    expect(optimisticState.todoLists[0].items[1].checked).toBe(true);
 
     deferred.resolve();
     await Promise.resolve();

@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react';
-import { within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { PlannerState } from '../../lib/planner-data';
@@ -8,18 +7,21 @@ import { plannerFixture } from './planner-test-fixtures';
 import { PlannerOverview } from './PlannerOverview';
 
 describe('PlannerOverview', () => {
-  it('renders task previews and toggles tasks', async () => {
+  it('renders todo previews and toggles todo items', async () => {
     const user = userEvent.setup();
-    const onToggleTask = vi.fn().mockResolvedValue(undefined);
+    const onToggleTodoItem = vi.fn().mockResolvedValue(undefined);
     const plannerState: PlannerState = {
       ...plannerFixture,
-      tasks: [
-        ...plannerFixture.tasks,
-        { id: 'task-2', title: 'Brotdose einpacken', owner: 'Bea', due: '2026-05-03', status: 'todo', subtasks: [] },
-        { id: 'task-3', title: 'Elternbrief lesen', owner: 'Alex', due: '2026-05-04', status: 'in-progress', subtasks: [] },
-        { id: 'task-4', title: 'Turnbeutel prüfen', owner: 'Bea', due: '2026-05-05', status: 'todo', subtasks: [] },
-        { id: 'task-5', title: 'Bastelsachen ordnen', owner: 'Alex', due: '2026-05-06', status: 'done', subtasks: [] },
-        { id: 'task-6', title: 'Hausaufgabenmappe prüfen', owner: 'Bea', due: '2026-05-07', status: 'todo', subtasks: [] },
+      todoLists: [
+        ...plannerFixture.todoLists,
+        {
+          id: 'todo-list-2',
+          title: 'Haushalt',
+          items: [
+            { id: 'todo-3', title: 'Brotdose einpacken', checked: false },
+            { id: 'todo-4', title: 'Bastelsachen ordnen', checked: true },
+          ],
+        },
       ],
     };
 
@@ -28,15 +30,15 @@ describe('PlannerOverview', () => {
         <PlannerOverview
           openTasks={1}
           plannerState={plannerState}
-          onToggleTask={onToggleTask}
+          onToggleTodoItem={onToggleTodoItem}
         />
       </ActiveTabProvider>,
     );
 
-    expect(screen.getByText('Schultasche packen')).toBeInTheDocument();
-    expect(screen.getByText('Hausaufgabenmappe prüfen')).toBeInTheDocument();
+    expect(screen.getByText('Turnbeutel prüfen')).toBeInTheDocument();
+    expect(screen.getByText('Brotdose einpacken')).toBeInTheDocument();
     expect(screen.queryByText('Bastelsachen ordnen')).not.toBeInTheDocument();
-    await user.click(within(screen.getByText('Schultasche packen').closest('li') as HTMLElement).getByRole('button', { name: 'Erledigen' }));
-    expect(onToggleTask).toHaveBeenCalledWith('task-1', true);
+    await user.click(within(screen.getByText('Turnbeutel prüfen').closest('li') as HTMLElement).getByRole('button', { name: 'Erledigen' }));
+    expect(onToggleTodoItem).toHaveBeenCalledWith('todo-list-1', 'todo-2', true);
   });
 });

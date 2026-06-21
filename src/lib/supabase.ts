@@ -13,9 +13,8 @@ import type {
   NoteItem,
   ShoppingList,
   ShoppingListItem,
-  TaskItem,
-  TaskStatus,
-  TaskSubtask,
+  TodoList,
+  TodoListItem,
   UserRole,
 } from './planner-data';
 
@@ -86,13 +85,17 @@ type ShoppingListItemRow = {
   checked: boolean;
 };
 
-type TaskRow = {
+type TodoListRow = {
   id: string;
   title: string;
-  owner: string;
-  due: string;
-  status: TaskStatus;
-  subtasks: unknown;
+  todo_date: string | null;
+};
+
+type TodoItemRow = {
+  id: string;
+  list_id: string;
+  title: string;
+  checked: boolean;
 };
 
 type NoteRow = {
@@ -1062,146 +1065,202 @@ export async function updateShoppingListItemChecked(id: string, checked: boolean
   }
 }
 
-export async function fetchTasks(familyId: string): Promise<TaskItem[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('tasks')
-    .select('id, title, owner, due, status, subtasks')
-    .eq('family_id', familyId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  return (data as TaskRow[]).map((task) => ({
-    id: task.id,
-    title: task.title,
-    owner: task.owner,
-    due: task.due,
-    status: task.status,
-    subtasks: normalizeTaskSubtasks(task.subtasks),
-  }));
+function groupTodoListItems(items: TodoItemRow[]): Record<string, TodoListItem[]> {
+  return items.reduce<Record<string, TodoListItem[]>>((grouped, item) => {
+    const current = grouped[item.list_id] ?? [];
+    current.push({
+      id: item.id,
+      title: item.title,
+      checked: item.checked,
+    });
+    grouped[item.list_id] = current;
+    return grouped;
+  }, {});
 }
 
-function normalizeTaskSubtasks(subtasks: unknown): TaskSubtask[] {
-  if (!Array.isArray(subtasks)) {
+async function insertTodoListItems(
+  client: SupabaseClient,
+  familyId: string,
+  listId: string,
+  items: TodoListItem[],
+) {
+  if (items.length === 0) {
     return [];
   }
 
-  return subtasks.flatMap((subtask) => {
-    if (!subtask || typeof subtask !== 'object') {
-      return [];
-    }
+  const { data, error } = await client
+    .from('todo_items')
+    .insert(items.map((item) => ({
+      family_id: familyId,
+      list_id: listId,
+      title: item.title,
+      checked: item.checked,
+    })))
+    .select('id, list_id, title, checked');
 
-    const candidate = subtask as Partial<TaskSubtask>;
-    const id = typeof candidate.id === 'string' ? candidate.id : '';
-    const title = typeof candidate.title === 'string' ? candidate.title.trim() : '';
-    const done = Boolean(candidate.done);
+  if (error) {
+    throw error;
+  }
 
-    if (!id || !title) {
-      return [];
-    }
-
-    return [{ id, title, done }];
-  });
-}
-
-function serializeTaskSubtasks(subtasks: TaskSubtask[]) {
-  return subtasks.map((subtask) => ({
-    id: subtask.id,
-    title: subtask.title,
-    done: subtask.done,
+  return (data as TodoItemRow[]).map((item) => ({
+    id: item.id,
+    title: item.title,
+    checked: item.checked,
   }));
 }
 
-export async function createTask(
+export async function fetchTodoLists(familyId: string): Promise<TodoList[]> {
+  const client = requireSupabase();
+  const [{ data: lists, error: listsError }, { data: items, error: itemsError }] = await Promise.all([
+    client
+      .from('todo_lists')
+      .select('id, title, todo_date')
+      .eq('family_id', familyId)
+      .order('created_at', { ascending: false }),
+    client
+      .from('todo_items')
+      .select('id, list_id, title, checked')
+      .eq('family_id', familyId)
+      .order('created_at', { ascending: true }),
+  ]);
+
+  if (listsError) {
+    throw listsError;
+  }
+
+  if (itemsError) {
+    throw itemsError;
+  }
+
+  const itemsByListId = groupTodoListItems(items as TodoItemRow[]);
+
+  return (lists as TodoListRow[]).map((list) => ({
+    id: list.id,
+    title: list.title,
+    ...(list.todo_date ? { date: list.todo_date } : {}),
+    items: itemsByListId[list.id] ?? [],
+  }));
+}
+
+export async function createTodoList(
   familyId: string,
-  payload: Omit<TaskItem, 'id'>,
-): Promise<TaskItem> {
+  payload: Omit<TodoList, 'id'>,
+): Promise<TodoList> {
   const client = requireSupabase();
   const { data, error } = await client
-    .from('tasks')
+    .from('todo_lists')
     .insert({
       family_id: familyId,
       title: payload.title,
-      owner: payload.owner,
-      due: payload.due,
-      status: payload.status,
-      subtasks: serializeTaskSubtasks(payload.subtasks),
+      todo_date: payload.date ?? null,
     })
-    .select('id, title, owner, due, status, subtasks')
+    .select('id, title, todo_date')
     .single();
 
   if (error) {
     throw error;
   }
 
-  const task = data as TaskRow;
+  const list = data as TodoListRow;
 
   return {
-    id: task.id,
-    title: task.title,
-    owner: task.owner,
-    due: task.due,
-    status: task.status,
-    subtasks: normalizeTaskSubtasks(task.subtasks),
+    id: list.id,
+    title: list.title,
+    ...(list.todo_date ? { date: list.todo_date } : {}),
+    items: await insertTodoListItems(client, familyId, list.id, payload.items),
   };
 }
 
-export async function updateTask(
+export async function updateTodoList(
+  familyId: string,
   id: string,
-  payload: Partial<Omit<TaskItem, 'id'>>,
-): Promise<TaskItem> {
+  payload: Omit<TodoList, 'id'>,
+): Promise<TodoList> {
   const client = requireSupabase();
-  const nextPayload: Record<string, unknown> = {};
-
-  if (payload.title !== undefined) {
-    nextPayload.title = payload.title;
-  }
-
-  if (payload.owner !== undefined) {
-    nextPayload.owner = payload.owner;
-  }
-
-  if (payload.due !== undefined) {
-    nextPayload.due = payload.due;
-  }
-
-  if (payload.status !== undefined) {
-    nextPayload.status = payload.status;
-  }
-
-  if (payload.subtasks !== undefined) {
-    nextPayload.subtasks = serializeTaskSubtasks(payload.subtasks);
-  }
-
   const { data, error } = await client
-    .from('tasks')
-    .update(nextPayload)
+    .from('todo_lists')
+    .update({
+      title: payload.title,
+      todo_date: payload.date ?? null,
+    })
     .eq('id', id)
-    .select('id, title, owner, due, status, subtasks')
+    .select('id, title, todo_date')
     .single();
 
   if (error) {
     throw error;
   }
 
-  const task = data as TaskRow;
+  const { error: deleteItemsError } = await client
+    .from('todo_items')
+    .delete()
+    .eq('list_id', id);
+
+  if (deleteItemsError) {
+    throw deleteItemsError;
+  }
+
+  const list = data as TodoListRow;
 
   return {
-    id: task.id,
-    title: task.title,
-    owner: task.owner,
-    due: task.due,
-    status: task.status,
-    subtasks: normalizeTaskSubtasks(task.subtasks),
+    id: list.id,
+    title: list.title,
+    ...(list.todo_date ? { date: list.todo_date } : {}),
+    items: await insertTodoListItems(client, familyId, list.id, payload.items),
   };
 }
 
-export async function deleteTask(id: string) {
+export async function deleteTodoList(id: string) {
   const client = requireSupabase();
-  const { error } = await client.from('tasks').delete().eq('id', id);
+  const { error } = await client.from('todo_lists').delete().eq('id', id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function createTodoItem(
+  familyId: string,
+  listId: string,
+  title: string,
+): Promise<TodoListItem> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('todo_items')
+    .insert({
+      family_id: familyId,
+      list_id: listId,
+      title,
+      checked: false,
+    })
+    .select('id, title, checked')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const item = data as Pick<TodoItemRow, 'id' | 'title' | 'checked'>;
+
+  return {
+    id: item.id,
+    title: item.title,
+    checked: item.checked,
+  };
+}
+
+export async function updateTodoItemChecked(id: string, checked: boolean) {
+  const client = requireSupabase();
+  const { error } = await client.from('todo_items').update({ checked }).eq('id', id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function deleteTodoItem(id: string) {
+  const client = requireSupabase();
+  const { error } = await client.from('todo_items').delete().eq('id', id);
 
   if (error) {
     throw error;
