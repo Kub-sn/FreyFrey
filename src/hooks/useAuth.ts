@@ -94,6 +94,11 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
     error: null,
     message: null,
   });
+  const authStateRef = useRef(authState);
+
+  useEffect(() => {
+    authStateRef.current = authState;
+  }, [authState]);
 
   useEffect(() => {
     if (
@@ -205,7 +210,13 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
 
     let disposed = false;
 
-    const hydrateSession = async (session: Session | null) => {
+    const hydrateSession = async (
+      session: Session | null,
+      options: {
+        showBlockingLoader: boolean;
+        successMessage: string | null;
+      },
+    ) => {
       if (disposed) {
         return;
       }
@@ -235,12 +246,20 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
         return;
       }
 
-      setAuthState((current) => ({
-        ...current,
-        stage: 'loading',
-        session,
-        error: null,
-      }));
+      if (options.showBlockingLoader) {
+        setAuthState((current) => ({
+          ...current,
+          stage: 'loading',
+          session,
+          error: null,
+        }));
+      } else {
+        setAuthState((current) => ({
+          ...current,
+          session,
+          error: null,
+        }));
+      }
 
       try {
         const profile = await ensureProfile(session.user);
@@ -255,18 +274,18 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
           return;
         }
 
-        setAuthState({
+        setAuthState((current) => ({
           stage: family ? 'authenticated' : 'onboarding',
           session,
           profile: family ? { ...profile, role: family.role } : profile,
           family,
           error: null,
-          message: redirectAuthMessage
+          message: options.successMessage
             ? family
-              ? redirectAuthMessage
+              ? options.successMessage
               : 'E-Mail bestätigt. Lege jetzt deine Familie an.'
-            : null,
-        });
+            : current.message,
+        }));
       } catch (error) {
         if (disposed) {
           return;
@@ -284,7 +303,10 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
     };
 
     void getCurrentSession()
-      .then((session) => hydrateSession(session))
+      .then((session) => hydrateSession(session, {
+        showBlockingLoader: true,
+        successMessage: redirectAuthMessage,
+      }))
       .catch((error) => {
         if (disposed) {
           return;
@@ -297,8 +319,24 @@ export function useAuth({ setPlannerState, setFamilyInvites }: UseAuthParams) {
         }));
       });
 
-    const unsubscribe = subscribeToAuthChanges((session) => {
-      void hydrateSession(session);
+    const unsubscribe = subscribeToAuthChanges((session, event) => {
+      if (event === 'INITIAL_SESSION') {
+        return;
+      }
+
+      const currentAuthState = authStateRef.current;
+      const currentUserId = currentAuthState.session?.user?.id;
+      const nextUserId = session?.user?.id ?? null;
+      const keepsCurrentView = (
+        nextUserId !== null
+        && currentUserId === nextUserId
+        && (currentAuthState.stage === 'authenticated' || currentAuthState.stage === 'onboarding')
+      );
+
+      void hydrateSession(session, {
+        showBlockingLoader: !keepsCurrentView,
+        successMessage: null,
+      });
     });
 
     return () => {

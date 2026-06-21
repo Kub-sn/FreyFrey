@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -31,7 +31,7 @@ const {
   updateFamilyRegistrationSetting,
   updatePassword,
 } = vi.hoisted(() => {
-  let authChangeListener: ((session: unknown) => void) | null = null;
+  let authChangeListener: ((session: unknown, event: string) => void) | null = null;
 
   return {
     acceptPendingFamilyInvite: vi.fn(),
@@ -41,7 +41,7 @@ const {
     deleteFamily: vi.fn(),
     deleteFamilyMemberAccount: vi.fn(),
     deleteCurrentAccount: vi.fn(),
-    emitAuthChange: (session: unknown) => authChangeListener?.(session),
+    emitAuthChange: (session: unknown, event = 'SIGNED_IN') => authChangeListener?.(session, event),
     ensureProfile: vi.fn(),
     fetchAdminFamilyDirectory: vi.fn(),
     fetchDocuments: vi.fn(),
@@ -57,7 +57,7 @@ const {
     resetPasswordForEmail: vi.fn(),
     signInWithPassword: vi.fn(),
     signUpWithPassword: vi.fn(),
-    subscribeToAuthChanges: (callback: (session: unknown) => void) => {
+    subscribeToAuthChanges: (callback: (session: unknown, event: string) => void) => {
       authChangeListener = callback;
 
       return () => {
@@ -630,6 +630,56 @@ describe('App auth flow', () => {
     expect(acceptPendingFamilyInvite).toHaveBeenCalledWith('user-1', 'mia@example.com');
     expect(getAccountCard().getByText('Familie: Familie Test')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Einstellungen' })).toBeInTheDocument();
+  });
+
+  it('keeps the planner visible when the same user session refreshes', async () => {
+    getCurrentSession.mockResolvedValue({
+      user: {
+        id: 'user-refresh',
+        email: 'alex@example.com',
+        user_metadata: {},
+      },
+    });
+    ensureProfile.mockResolvedValue({
+      id: 'user-refresh',
+      display_name: 'Alex',
+      email: 'alex@example.com',
+      role: 'familyuser',
+    });
+    fetchFamilyContext.mockResolvedValue({
+      familyId: 'family-refresh',
+      familyName: 'Familie Test',
+      role: 'familyuser',
+      isOwner: false,
+    });
+    fetchFamilyMembers.mockResolvedValue([
+      {
+        id: 'user-refresh',
+        name: 'Alex',
+        email: 'alex@example.com',
+        role: 'familyuser',
+      },
+    ]);
+
+    render(<App />);
+
+    await expectPlannerShellHeading();
+
+    act(() => {
+      emitAuthChange({
+        user: {
+          id: 'user-refresh',
+          email: 'alex@example.com',
+          user_metadata: {},
+        },
+      }, 'TOKEN_REFRESHED');
+    });
+
+    expect(screen.queryByRole('status', { name: 'Lädt deine Familiendaten' })).not.toBeInTheDocument();
+    expect(await expectPlannerShellHeading()).toHaveLength(2);
+    await waitFor(() => {
+      expect(ensureProfile).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('does not show a generic sync success toast after family data has loaded', async () => {

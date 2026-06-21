@@ -1,4 +1,5 @@
 import {
+  type AuthChangeEvent,
   createClient,
   type Session,
   type SupabaseClient,
@@ -320,13 +321,13 @@ export async function getCurrentSession(): Promise<Session | null> {
   return data.session;
 }
 
-export function subscribeToAuthChanges(callback: (session: Session | null) => void) {
+export function subscribeToAuthChanges(callback: (session: Session | null, event: AuthChangeEvent) => void) {
   if (!supabase) {
     return () => undefined;
   }
 
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session);
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    callback(session, event);
   });
 
   return () => {
