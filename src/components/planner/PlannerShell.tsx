@@ -195,8 +195,10 @@ export default function PlannerShell({
 
         <PlannerOverview
           openTasks={openTasks}
+          pendingShopping={pendingShopping}
           plannerState={plannerState}
           onToggleTodoItem={crud.handleToggleTodoItem}
+          onToggleShoppingItem={crud.handleToggleShoppingListItem}
         />
 
         <ShoppingModule

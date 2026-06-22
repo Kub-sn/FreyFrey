@@ -125,9 +125,20 @@ describe('App', () => {
 
     await user.click(within(dialog).getByRole('button', { name: 'Liste anlegen' }));
 
-    await user.click(screen.getByText('Wocheneinkauf').closest('button') as HTMLButtonElement);
+    const visibleListButton = screen.getAllByText('Wocheneinkauf')
+      .map((element) => element.closest('button'))
+      .find((button): button is HTMLButtonElement => (
+        button?.closest('section')?.classList.contains('is-visible') ?? false
+      ));
 
-    expect(screen.getByRole('checkbox', { name: /Milch/i })).toHaveClass('app-checkbox', 'checkbox');
+    if (!visibleListButton) {
+      throw new Error('Sichtbare Einkaufsliste wurde nicht gefunden.');
+    }
+
+    await user.click(visibleListButton);
+
+    const shoppingDialog = screen.getByRole('dialog');
+    expect(within(shoppingDialog).getByRole('checkbox', { name: /Milch/i })).toHaveClass('app-checkbox', 'checkbox');
   });
 
   it('allows switching to the notes module', async () => {

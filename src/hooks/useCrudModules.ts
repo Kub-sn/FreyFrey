@@ -345,7 +345,7 @@ export function useCrudModules({
         ...current,
         todoLists: current.todoLists.map((entry) => (
           entry.id === listId
-            ? { ...entry, items: [...entry.items, createdItem] }
+            ? { ...entry, items: [createdItem, ...entry.items] }
             : entry
         )),
       }));

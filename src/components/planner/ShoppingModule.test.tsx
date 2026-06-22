@@ -69,13 +69,13 @@ describe('ShoppingModule', () => {
       date: '2026-05-06',
       items: [
         expect.objectContaining({
-          name: 'Brot',
-          quantity: '2',
+          name: 'Toilettenpapier',
+          quantity: undefined,
           checked: false,
         }),
         expect.objectContaining({
-          name: 'Toilettenpapier',
-          quantity: undefined,
+          name: 'Brot',
+          quantity: '2',
           checked: false,
         }),
       ],

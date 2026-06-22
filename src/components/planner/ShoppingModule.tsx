@@ -274,7 +274,7 @@ export function ShoppingModule({
 
     const nextDraftList: ShoppingListDraft = {
       ...draftList,
-      items: [...draftList.items, nextItem],
+      items: [nextItem, ...draftList.items],
     };
 
     setDraftList(nextDraftList);
@@ -512,7 +512,7 @@ export function ShoppingModule({
         <ModalDialog
           id="shopping-list-editor-title"
           title={editorState.mode === 'edit' ? 'Einkaufsliste bearbeiten' : 'Neue Einkaufsliste'}
-          className="w-[min(640px,100%)]"
+          className="w-[min(640px,100%)] lg:w-[min(860px,100%)] xl:w-[min(1040px,100%)]"
           actions={(
             <>
               <AppButton type="button" variant="secondary" onClick={resetEditor}>
@@ -549,9 +549,9 @@ export function ShoppingModule({
 
             <div className="grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.1)] bg-[rgba(255,255,255,0.62)] p-4 max-mobile:p-3.5">
               <label className="grid gap-2">
-                <span className="text-[0.8rem] text-[rgba(24,52,47,0.62)]">Neuer Artikel</span>
                 <input
                   ref={quickAddInputRef}
+                  aria-label="Neuer Artikel"
                   className={appInputClassName()}
                   value={quickAddItemText}
                   onChange={(event) => updateQuickAddItemText(event.currentTarget.value)}
@@ -574,7 +574,7 @@ export function ShoppingModule({
                     <span className="text-[0.82rem] text-[rgba(24,52,47,0.58)]">{draftList.items.length} Eintraege</span>
                   </div>
 
-                  <div className="grid gap-2 max-h-[min(40vh,18rem)] overflow-y-auto pr-1">
+                  <div className="grid gap-2 max-h-[min(40vh,18rem)] lg:max-h-[min(52vh,32rem)] overflow-y-auto pr-1">
                     {draftList.items.map((item) => (
                       <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[18px] border border-[rgba(24,52,47,0.08)] bg-[rgba(255,250,244,0.88)] p-2.5">
                         <input
@@ -598,11 +598,7 @@ export function ShoppingModule({
                     ))}
                   </div>
                 </div>
-              ) : (
-                <p className="m-0 rounded-[18px] border border-dashed border-[rgba(24,52,47,0.12)] bg-[rgba(255,250,244,0.74)] px-4 py-3 text-[0.9rem] text-[rgba(24,52,47,0.6)]">
-                  Noch keine Artikel erfasst. Nutze das Eingabefeld und druecke Enter.
-                </p>
-              )}
+              ) : null}
             </div>
 
             {validationMessage ? (
