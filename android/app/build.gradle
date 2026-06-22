@@ -1,8 +1,39 @@
 apply plugin: 'com.android.application'
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { stream ->
+        keystoreProperties.load(stream)
+    }
+}
+
+def hasReleaseSigningConfig = [
+    'storeFile',
+    'storePassword',
+    'keyAlias',
+    'keyPassword',
+].every { key ->
+    def value = keystoreProperties.getProperty(key)
+    value != null && !value.trim().isEmpty()
+}
+
 android {
     namespace = "com.familyplanner.app"
     compileSdk = rootProject.ext.compileSdkVersion
+
+    if (hasReleaseSigningConfig) {
+        signingConfigs {
+            release {
+                storeFile file(keystoreProperties.getProperty('storeFile'))
+                storePassword keystoreProperties.getProperty('storePassword')
+                keyAlias keystoreProperties.getProperty('keyAlias')
+                keyPassword keystoreProperties.getProperty('keyPassword')
+            }
+        }
+    }
+
     defaultConfig {
         applicationId "com.familyplanner.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -19,7 +50,11 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            if (hasReleaseSigningConfig) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

@@ -28,8 +28,10 @@ The app supports both a local MVP workflow and a cloud-backed setup with authent
 
 ## Android Distribution
 
-- Private direct APK distribution: [ANDROID_PRIVATE_DISTRIBUTION.md](/home/kubi/Documents/FamilyPlanner/ANDROID_PRIVATE_DISTRIBUTION.md)
-- Preferred Play Store Internal Testing flow: [ANDROID_INTERNAL_TESTING.md](/home/kubi/Documents/FamilyPlanner/ANDROID_INTERNAL_TESTING.md)
+- Private direct APK distribution: [android/docs/ANDROID_PRIVATE_DISTRIBUTION.md](/home/kubi/Documents/FamilyPlanner/android/docs/ANDROID_PRIVATE_DISTRIBUTION.md)
+- Preferred Play Store Internal Testing flow: [android/docs/ANDROID_INTERNAL_TESTING.md](/home/kubi/Documents/FamilyPlanner/android/docs/ANDROID_INTERNAL_TESTING.md)
+
+Android-specific docs, local signing templates, and helper scripts now live under [android](/home/kubi/Documents/FamilyPlanner/android).
 
 Useful Android helper commands:
 

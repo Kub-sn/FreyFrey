@@ -124,6 +124,52 @@ For Play Store Internal Testing you should:
 
 Without the same release key, future updates cannot replace the installed app cleanly.
 
+### Local signing file for this repo
+
+This project now supports a local-only signing file at:
+
+```text
+android/keystore.properties
+```
+
+That file is ignored by git. Start from:
+
+```text
+android/keystore.properties.example
+```
+
+Expected keys:
+
+```properties
+storeFile=/absolute/path/to/your-release-keystore.jks
+storePassword=your-store-password
+keyAlias=your-key-alias
+keyPassword=your-key-password
+```
+
+Notes:
+
+- `storeFile` should be an absolute path on your machine
+- do not commit `android/keystore.properties`
+- do not commit the keystore itself into the repo
+- once this file exists, the release scripts can build signed artifacts from the command line
+
+### Create a release keystore
+
+If you do not already have a release keystore, you can create one with `keytool`:
+
+```bash
+keytool -genkeypair \
+	-v \
+	-keystore "$HOME/.android/familyplanner-release.jks" \
+	-alias familyplanner \
+	-keyalg RSA \
+	-keysize 2048 \
+	-validity 10000
+```
+
+Then create `android/keystore.properties` and point `storeFile` to that keystore path.
+
 ## Versioning rules
 
 Every Android update uploaded to Play must have a higher `versionCode` than the previous one.
@@ -154,6 +200,18 @@ npm run test:unit && npm run test:e2e
 npm run android:prepare
 ```
 
+If Gradle says the Android SDK location is missing, open Android Studio once and let it install/configure the SDK, or create:
+
+```text
+android/local.properties
+```
+
+with:
+
+```properties
+sdk.dir=/absolute/path/to/your/Android/Sdk
+```
+
 3. Open Android Studio:
 
 ```bash
@@ -173,6 +231,25 @@ Build -> Generate Signed Bundle / APK -> Android App Bundle
 7. Upload it in Google Play Console to the `Internal testing` track.
 8. Add the two tester Google accounts.
 9. Share the tester opt-in link.
+
+### Optional command-line release build
+
+Once both of these local files exist:
+
+- `android/local.properties`
+- `android/keystore.properties`
+
+you can also build the Play artifact from the terminal:
+
+```bash
+npm run android:bundle:release
+```
+
+Expected output:
+
+```text
+android/app/build/outputs/bundle/release/app-release.aab
+```
 
 ## Later updates
 
@@ -212,7 +289,7 @@ Preferred route:
 
 ## Comparison to direct APK sharing
 
-Direct APK sharing is still possible and documented in [ANDROID_PRIVATE_DISTRIBUTION.md](/home/kubi/Documents/FamilyPlanner/ANDROID_PRIVATE_DISTRIBUTION.md).
+Direct APK sharing is still possible and documented in [android/docs/ANDROID_PRIVATE_DISTRIBUTION.md](/home/kubi/Documents/FamilyPlanner/android/docs/ANDROID_PRIVATE_DISTRIBUTION.md).
 
 Internal testing is usually better if:
 
