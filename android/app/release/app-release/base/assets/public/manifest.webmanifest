@@ -1,0 +1,18 @@
+{
+  "name": "Frey Frey",
+  "short_name": "Frey Frey",
+  "description": "Alltagsorganisation fuer Familien mit Listen, Kalender, Essensplan und Dokumenten.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6efe2",
+  "theme_color": "#f46f3a",
+  "lang": "de",
+  "icons": [
+    {
+      "src": "/freyLogo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

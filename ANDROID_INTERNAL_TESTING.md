@@ -47,7 +47,7 @@ Internal testing is not public publishing.
 
 - Capacitor config: [capacitor.config.ts](/home/kubi/Documents/FamilyPlanner/capacitor.config.ts)
 - Android build config: [android/app/build.gradle](/home/kubi/Documents/FamilyPlanner/android/app/build.gradle)
-- Current Android app id: `com.familyplanner.app`
+- Current Android app id: `com.freyfrey.app`
 - Web assets bundled into Android come from `dist`
 
 Current version values:

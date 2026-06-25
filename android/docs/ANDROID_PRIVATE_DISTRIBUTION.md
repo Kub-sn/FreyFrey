@@ -31,7 +31,7 @@ This keeps the app private. Nobody else can download it unless you give them the
 ## Important project facts
 
 - Capacitor config: [capacitor.config.ts](/home/kubi/Documents/FamilyPlanner/capacitor.config.ts)
-- Android app id: `com.familyplanner.app`
+- Android app id: `com.freyfrey.app`
 - Android version fields: [android/app/build.gradle](/home/kubi/Documents/FamilyPlanner/android/app/build.gradle)
 - Web assets are bundled from `dist`
 

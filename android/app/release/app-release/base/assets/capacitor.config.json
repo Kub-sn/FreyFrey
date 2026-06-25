@@ -1,0 +1,6 @@
+{
+	"appId": "com.freyfrey.app",
+	"appName": "Frey Frey",
+	"webDir": "dist",
+	"bundledWebRuntime": false
+}
