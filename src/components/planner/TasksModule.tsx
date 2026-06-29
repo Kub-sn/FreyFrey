@@ -397,8 +397,14 @@ export function TasksModule({
             {openList.items.length > 0 ? (
               <ul className="check-list max-h-[min(54vh,26rem)] overflow-y-auto pr-5">
                 {openList.items.map((item) => (
-                  <li key={item.id} className={cn(item.checked && '[&_.todo-item-copy]:opacity-60 [&_.todo-item-copy]:line-through')}>
-                    <label className="min-w-0 flex-1">
+                  <li
+                    key={item.id}
+                    className={cn(
+                      '!flex-row !items-center !gap-2 !py-2 text-[0.9rem]',
+                      item.checked && '[&_.todo-item-copy]:opacity-60 [&_.todo-item-copy]:line-through',
+                    )}
+                  >
+                    <label className="min-w-0 flex-1 text-[0.9rem]">
                       <input
                         type="checkbox"
                         className={appCheckboxClassName()}
@@ -412,7 +418,7 @@ export function TasksModule({
                       type="button"
                       variant="danger"
                       size="icon"
-                      className="ml-3 size-[2.85rem] min-w-[2.85rem] shrink-0 self-start"
+                      className="ml-1 size-8 min-w-8 shrink-0 self-center [&_svg]:size-4"
                       onClick={() => void onDeleteItem(openList.id, item.id)}
                       aria-label={`Todo ${item.title} löschen`}
                     >

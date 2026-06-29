@@ -488,8 +488,14 @@ export function ShoppingModule({
           <div className="grid gap-3">
             <ul className="check-list">
               {openList.items.map((item) => (
-                <li key={item.id} className={item.checked ? '[&_.shopping-item-copy]:opacity-60 [&_.shopping-item-copy]:line-through' : ''}>
-                  <label>
+                <li
+                  key={item.id}
+                  className={[
+                    '!flex-row !items-center !gap-2 !py-2 text-[0.9rem]',
+                    item.checked ? '[&_.shopping-item-copy]:opacity-60 [&_.shopping-item-copy]:line-through' : '',
+                  ].join(' ')}
+                >
+                  <label className="min-w-0 flex-1 text-[0.9rem]">
                     <input
                       type="checkbox"
                       className={appCheckboxClassName()}
@@ -576,9 +582,9 @@ export function ShoppingModule({
 
                   <div className="grid gap-2 max-h-[min(40vh,18rem)] lg:max-h-[min(52vh,32rem)] overflow-y-auto pr-1">
                     {draftList.items.map((item) => (
-                      <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[18px] border border-[rgba(24,52,47,0.08)] bg-[rgba(255,250,244,0.88)] p-2.5">
+                      <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[18px] border border-[rgba(24,52,47,0.08)] bg-[rgba(255,250,244,0.88)] p-2">
                         <input
-                          className={appInputClassName('min-h-[2.9rem] rounded-[14px] px-3 py-2 text-[0.95rem]')}
+                          className={appInputClassName('min-h-[2.5rem] rounded-[14px] px-3 py-1.5 text-[0.9rem]')}
                           value={item.text}
                           onChange={(event) => updateDraftItemText(item.id, event.currentTarget.value)}
                           placeholder="Artikel eingeben"
@@ -588,11 +594,11 @@ export function ShoppingModule({
                           type="button"
                           variant="danger"
                           size="icon"
-                          className="size-[2.4rem]"
+                          className="size-8 min-w-8 [&_svg]:size-4"
                           onClick={() => removeDraftItem(item.id)}
                           aria-label={`Artikel ${item.text || 'ohne Namen'} entfernen`}
                         >
-                          <Trash2 aria-hidden="true" size={20} strokeWidth={2.3} />
+                          <Trash2 aria-hidden="true" strokeWidth={2.3} />
                         </AppButton>
                       </div>
                     ))}
