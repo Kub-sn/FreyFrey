@@ -82,7 +82,6 @@ export function TasksModule({
     setMenuListId(null);
     setOpenListId(listId);
     setQuickAddText('');
-    focusQuickAddInput();
   };
 
   const handleCreateList = async () => {

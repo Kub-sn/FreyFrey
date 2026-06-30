@@ -310,7 +310,6 @@ export function ShoppingModule({
     setMenuListId(null);
     setOpenListId(listId);
     setOpenQuickAddText('');
-    focusOpenQuickAddInput();
   };
 
   const handleAddOpenListItem = async () => {
