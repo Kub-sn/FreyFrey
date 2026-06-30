@@ -25,9 +25,10 @@ export function NoteDialog({
       title={note.title}
       eyebrow="Notiz"
       className="w-[min(760px,100%)]"
+      onClose={onClose}
       actions={note.isEditing ? (
-        <div key="editing-actions" className="flex flex-wrap gap-3">
-          <AppButton type="button" variant="secondary" onClick={onClose}>
+        <div key="editing-actions" className="flex flex-wrap gap-3 max-mobile:contents">
+          <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={onClose}>
             Abbrechen
           </AppButton>
           <AppButton type="submit" form="note-edit-form" variant="primary">
@@ -35,8 +36,8 @@ export function NoteDialog({
           </AppButton>
         </div>
       ) : (
-        <div key="view-actions" className="flex flex-wrap gap-3">
-          <AppButton type="button" variant="secondary" onClick={onClose}>
+        <div key="view-actions" className="flex flex-wrap gap-3 max-mobile:contents">
+          <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={onClose}>
             Abbrechen
           </AppButton>
           <AppButton type="button" variant="secondary" onClick={onEdit}>

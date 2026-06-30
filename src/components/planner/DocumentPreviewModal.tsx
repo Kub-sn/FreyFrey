@@ -15,9 +15,10 @@ export function DocumentPreviewModal({
       title={documentPreviewState.name}
       eyebrow="Dokument-Vorschau"
       className="w-[min(980px,100%)]"
+      onClose={onClose}
       actions={(
         <>
-          <AppButton type="button" variant="secondary" onClick={onClose}>
+          <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={onClose}>
             Abbrechen
           </AppButton>
           <AppButtonLink variant="secondary" className="no-underline" href={documentPreviewState.url} target="_blank" rel="noreferrer">

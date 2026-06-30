@@ -482,9 +482,10 @@ export function MealsModule({
         <ModalDialog
           id="meal-dialog-title"
           title={`Gerichte für ${formatDialogTitle(selectedDate)}`}
+          onClose={handleCloseDialog}
           actions={(
             <>
-              <AppButton type="button" variant="secondary" onClick={handleCloseDialog}>
+              <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={handleCloseDialog}>
                 Schließen
               </AppButton>
               <AppButton type="submit" form="meal-entry-form">

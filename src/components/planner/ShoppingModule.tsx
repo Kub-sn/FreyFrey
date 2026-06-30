@@ -139,6 +139,8 @@ export function ShoppingModule({
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [quickAddItemText, setQuickAddItemText] = useState(initialEditorDraft?.quickAddItemText ?? '');
   const quickAddInputRef = useRef<HTMLInputElement | null>(null);
+  const [openQuickAddText, setOpenQuickAddText] = useState('');
+  const openQuickAddInputRef = useRef<HTMLInputElement | null>(null);
 
   const openList = useMemo(
     () => lists.find((list) => list.id === openListId) ?? null,
@@ -298,6 +300,51 @@ export function ShoppingModule({
     addDraftItem(quickAddItemText);
   };
 
+  const focusOpenQuickAddInput = () => {
+    requestAnimationFrame(() => {
+      openQuickAddInputRef.current?.focus();
+    });
+  };
+
+  const openListDialog = (listId: string) => {
+    setMenuListId(null);
+    setOpenListId(listId);
+    setOpenQuickAddText('');
+    focusOpenQuickAddInput();
+  };
+
+  const handleAddOpenListItem = async () => {
+    if (!openList) {
+      return;
+    }
+
+    const parsedItem = parseDraftItemText(openQuickAddText);
+
+    if (!parsedItem.name) {
+      return;
+    }
+
+    const nextItem: ShoppingListItem = {
+      id: nextStringId(),
+      name: parsedItem.name,
+      ...(parsedItem.quantity ? { quantity: parsedItem.quantity } : {}),
+      checked: false,
+    };
+
+    const didSave = await onUpdateList(openList.id, {
+      title: openList.title,
+      date: openList.date,
+      items: [nextItem, ...openList.items],
+    });
+
+    if (!didSave) {
+      return;
+    }
+
+    setOpenQuickAddText('');
+    focusOpenQuickAddInput();
+  };
+
   const handleSaveList = async () => {
     const normalizedItems = draftList.items
       .map((item) => ({
@@ -404,8 +451,7 @@ export function ShoppingModule({
                   type="button"
                   className="grid min-w-0 flex-1 gap-3 rounded-[20px] text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[rgba(25,98,77,0.12)]"
                   onClick={() => {
-                    setMenuListId(null);
-                    setOpenListId(list.id);
+                    openListDialog(list.id);
                   }}
                 >
                   <div className="grid gap-2">
@@ -479,14 +525,33 @@ export function ShoppingModule({
           id="shopping-list-open-title"
           title={openList.title}
           eyebrow={formatListDate(openList.date)}
+          onClose={() => setOpenListId(null)}
           actions={(
-            <AppButton type="button" variant="secondary" onClick={() => setOpenListId(null)}>
+            <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={() => setOpenListId(null)}>
               Schließen
             </AppButton>
           )}
         >
-          <div className="grid gap-3">
-            <ul className="check-list">
+          <div className="grid gap-4 max-mobile:gap-3 max-mobile:h-full max-mobile:min-h-0 max-mobile:grid-rows-[auto_minmax(0,1fr)]">
+            <div>
+              <input
+                ref={openQuickAddInputRef}
+                className={appInputClassName()}
+                value={openQuickAddText}
+                aria-label="Artikel hinzufügen"
+                onChange={(event) => setOpenQuickAddText(event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter') {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  void handleAddOpenListItem();
+                }}
+                placeholder="z. B. 2 Brot"
+              />
+            </div>
+            <ul className="check-list max-mobile:min-h-0 max-mobile:overflow-y-auto">
               {openList.items.map((item) => (
                 <li
                   key={item.id}
@@ -518,10 +583,11 @@ export function ShoppingModule({
         <ModalDialog
           id="shopping-list-editor-title"
           title={editorState.mode === 'edit' ? 'Einkaufsliste bearbeiten' : 'Neue Einkaufsliste'}
-          className="w-[min(640px,100%)] lg:w-[min(860px,100%)] xl:w-[min(1040px,100%)]"
+          className="w-[min(640px,100%)] lg:w-[min(860px,100%)] xl:w-[min(1040px,100%)] lg:h-[min(88vh,1000px)] lg:grid-rows-[auto_minmax(0,1fr)_auto]"
+          onClose={resetEditor}
           actions={(
             <>
-              <AppButton type="button" variant="secondary" onClick={resetEditor}>
+              <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={resetEditor}>
                 Abbrechen
               </AppButton>
               <AppButton type="button" variant="primary" onClick={() => void handleSaveList()}>
@@ -530,7 +596,7 @@ export function ShoppingModule({
             </>
           )}
         >
-          <div className="grid gap-4 max-mobile:gap-3">
+          <div className="grid gap-4 max-mobile:gap-3 max-mobile:h-full max-mobile:min-h-0 max-mobile:grid-rows-[auto_minmax(0,1fr)_auto] lg:h-full lg:min-h-0 lg:grid-rows-[auto_minmax(0,1fr)_auto]">
             <div className="grid gap-3 md:grid-cols-2">
               <label className="grid gap-2">
                 <span className="text-[0.82rem] font-semibold uppercase tracking-[0.08em] text-[rgba(24,52,47,0.62)]">Listenname</span>
@@ -553,7 +619,7 @@ export function ShoppingModule({
               </label>
             </div>
 
-            <div className="grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.1)] bg-[rgba(255,255,255,0.62)] p-4 max-mobile:p-3.5">
+            <div className="grid gap-3 rounded-[24px] border border-[rgba(24,52,47,0.1)] bg-[rgba(255,255,255,0.62)] p-4 max-mobile:p-3.5 max-mobile:min-h-0 max-mobile:grid-rows-[auto_minmax(0,1fr)] lg:min-h-0 lg:grid-rows-[auto_minmax(0,1fr)]">
               <label className="grid gap-2">
                 <input
                   ref={quickAddInputRef}
@@ -574,13 +640,13 @@ export function ShoppingModule({
               </label>
 
               {draftList.items.length > 0 ? (
-                <div className="grid gap-2">
+                <div className="grid gap-2 max-mobile:min-h-0 max-mobile:grid-rows-[auto_minmax(0,1fr)] lg:min-h-0 lg:grid-rows-[auto_minmax(0,1fr)]">
                   <div className="flex items-center justify-between gap-3">
                     <strong className="text-[#18342f]">Erfasste Artikel</strong>
                     <span className="text-[0.82rem] text-[rgba(24,52,47,0.58)]">{draftList.items.length} Eintraege</span>
                   </div>
 
-                  <div className="grid gap-2 max-h-[min(40vh,18rem)] lg:max-h-[min(52vh,32rem)] overflow-y-auto pr-1">
+                  <div className="grid gap-2 max-h-[min(40vh,18rem)] max-mobile:max-h-none max-mobile:min-h-0 lg:max-h-none lg:min-h-0 overflow-y-auto pr-1">
                     {draftList.items.map((item) => (
                       <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[18px] border border-[rgba(24,52,47,0.08)] bg-[rgba(255,250,244,0.88)] p-2">
                         <input

@@ -321,9 +321,10 @@ export function TasksModule({
           id="todo-list-create-title"
           title="Neue Todo-Liste"
           className="w-[min(560px,100%)]"
+          onClose={closeCreateDialog}
           actions={(
             <>
-              <AppButton type="button" variant="secondary" onClick={closeCreateDialog}>
+              <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={closeCreateDialog}>
                 Abbrechen
               </AppButton>
               <AppButton type="button" variant="primary" onClick={() => void handleCreateList()}>
@@ -368,13 +369,14 @@ export function TasksModule({
           title={openList.title}
           eyebrow={openList.date ? formatTodoListDate(openList.date) : undefined}
           className="w-[min(640px,100%)]"
+          onClose={() => setOpenListId(null)}
           actions={(
-            <AppButton type="button" variant="secondary" onClick={() => setOpenListId(null)}>
+            <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={() => setOpenListId(null)}>
               Schließen
             </AppButton>
           )}
         >
-          <div className="grid gap-4 max-mobile:gap-3">
+          <div className="grid gap-4 max-mobile:gap-3 max-mobile:h-full max-mobile:min-h-0 max-mobile:grid-rows-[auto_minmax(0,1fr)]">
             <div>
               <input
                 ref={quickAddInputRef}
@@ -395,7 +397,7 @@ export function TasksModule({
             </div>
 
             {openList.items.length > 0 ? (
-              <ul className="check-list max-h-[min(54vh,26rem)] overflow-y-auto pr-5">
+              <ul className="check-list max-h-[min(54vh,26rem)] max-mobile:max-h-none max-mobile:min-h-0 overflow-y-auto pr-5">
                 {openList.items.map((item) => (
                   <li
                     key={item.id}
@@ -437,9 +439,10 @@ export function TasksModule({
           id="todo-list-editor-title"
           title="Todo-Liste bearbeiten"
           className="w-[min(560px,100%)]"
+          onClose={closeEditDialog}
           actions={(
             <>
-              <AppButton type="button" variant="secondary" onClick={closeEditDialog}>
+              <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={closeEditDialog}>
                 Abbrechen
               </AppButton>
               <AppButton type="button" variant="primary" onClick={() => void handleSaveList()}>

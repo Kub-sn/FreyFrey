@@ -93,6 +93,39 @@ describe('ShoppingModule', () => {
     expect(onToggleItem).toHaveBeenCalledWith('shopping-list-1', 'shopping-1', true);
   });
 
+  it('adds an item directly from the open list dialog', async () => {
+    const user = userEvent.setup();
+    const onUpdateList = vi.fn().mockResolvedValue(true);
+
+    render(
+      <ActiveTabProvider activeTab="shopping" setActiveTab={vi.fn()}>
+        <ShoppingModule
+          lists={plannerFixture.shoppingLists}
+          onCreateList={vi.fn().mockResolvedValue(true)}
+          onDeleteList={vi.fn().mockResolvedValue(true)}
+          onToggleItem={vi.fn().mockResolvedValue(undefined)}
+          onUpdateList={onUpdateList}
+        />
+      </ActiveTabProvider>,
+    );
+
+    await user.click(screen.getByText('Wocheneinkauf').closest('button') as HTMLButtonElement);
+
+    const quickAddInput = screen.getByLabelText('Artikel hinzufügen');
+    await user.type(quickAddInput, '3 Eier{Enter}');
+
+    expect(onUpdateList).toHaveBeenCalledWith('shopping-list-1', {
+      title: 'Wocheneinkauf',
+      date: '2026-05-04',
+      items: [
+        expect.objectContaining({ name: 'Eier', quantity: '3', checked: false }),
+        { id: 'shopping-1', name: 'Milch', quantity: '2', checked: false },
+      ],
+    });
+
+    expect(quickAddInput).toHaveValue('');
+  });
+
   it('assigns a default title when a new list is created without a name', async () => {
     const user = userEvent.setup();
     const onCreateList = vi.fn().mockResolvedValue(true);

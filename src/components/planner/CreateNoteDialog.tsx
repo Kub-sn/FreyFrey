@@ -27,9 +27,10 @@ export function CreateNoteDialog({
       title="Neue Notiz"
       eyebrow="Notiz"
       className="w-[min(760px,100%)]"
+      onClose={onClose}
       actions={(
         <>
-          <AppButton type="button" variant="secondary" onClick={onClose}>
+          <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={onClose}>
             Abbrechen
           </AppButton>
           <AppButton type="submit" form="note-create-form" variant="primary">

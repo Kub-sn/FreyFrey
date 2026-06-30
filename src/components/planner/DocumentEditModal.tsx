@@ -20,9 +20,10 @@ export function DocumentEditModal({
       id="document-edit-title"
       title={documentEditState.name}
       eyebrow="Dokument bearbeiten"
+      onClose={onClose}
       actions={(
-        <div className="flex flex-wrap gap-3">
-          <AppButton type="button" variant="secondary" onClick={onClose}>
+        <div className="flex flex-wrap gap-3 max-mobile:contents">
+          <AppButton type="button" variant="secondary" className="max-mobile:hidden" onClick={onClose}>
             Abbrechen
           </AppButton>
           <AppButton type="submit" form="document-edit-form" variant="primary">
