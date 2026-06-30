@@ -396,7 +396,7 @@ export function TasksModule({
             </div>
 
             {openList.items.length > 0 ? (
-              <ul className="check-list max-h-[min(54vh,26rem)] max-mobile:max-h-none max-mobile:min-h-0 overflow-y-auto pr-5">
+              <ul className="check-list content-start max-h-[min(54vh,26rem)] max-mobile:max-h-none max-mobile:min-h-0 overflow-y-auto pr-5">
                 {openList.items.map((item) => (
                   <li
                     key={item.id}

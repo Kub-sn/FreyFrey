@@ -550,7 +550,7 @@ export function ShoppingModule({
                 placeholder="z. B. 2 Brot"
               />
             </div>
-            <ul className="check-list max-mobile:min-h-0 max-mobile:overflow-y-auto">
+            <ul className="check-list content-start max-mobile:min-h-0 max-mobile:overflow-y-auto">
               {openList.items.map((item) => (
                 <li
                   key={item.id}
@@ -645,7 +645,7 @@ export function ShoppingModule({
                     <span className="text-[0.82rem] text-[rgba(24,52,47,0.58)]">{draftList.items.length} Eintraege</span>
                   </div>
 
-                  <div className="grid gap-2 max-h-[min(40vh,18rem)] max-mobile:max-h-none max-mobile:min-h-0 lg:max-h-none lg:min-h-0 overflow-y-auto pr-1">
+                  <div className="grid content-start gap-2 max-h-[min(40vh,18rem)] max-mobile:max-h-none max-mobile:min-h-0 lg:max-h-none lg:min-h-0 overflow-y-auto pr-1">
                     {draftList.items.map((item) => (
                       <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[18px] border border-[rgba(24,52,47,0.08)] bg-[rgba(255,250,244,0.88)] p-2">
                         <input
