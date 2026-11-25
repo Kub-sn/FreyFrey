@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -79,7 +79,8 @@ describe('TasksModule', () => {
     expect(screen.queryByText('Neues Todo')).not.toBeInTheDocument();
     expect(screen.queryByText('Ohne Datum')).not.toBeInTheDocument();
     expect(screen.queryByText('Noch keine To-dos erfasst. Tippe oben etwas ein und drücke Enter.')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Todo hinzufügen')).toHaveFocus();
+    // The input is focused one animation frame after the dialog opens.
+    await waitFor(() => expect(screen.getByLabelText('Todo hinzufügen')).toHaveFocus());
   });
 
   it('creates a todo list with a custom name and optional date', async () => {
