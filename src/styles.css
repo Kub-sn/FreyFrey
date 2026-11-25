@@ -76,6 +76,58 @@
 
   --animate-loader-spin: loader-spin 1.8s linear infinite;
   --animate-loader-spin-reverse: loader-spin-reverse 1.15s linear infinite;
+
+  /* Busfahrer result overlay (fades in, holds, fades out; its animationend closes it). */
+  --animate-game-overlay: game-overlay 2.2s ease-in-out both;
+  --animate-card-flip: card-flip 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop-in: pop-in 0.45s 0.3s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  --animate-pop-in-fast: pop-in 0.35s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  --animate-confetti-small: confetti 0.7s ease-out both;
+  --animate-shake: shake 0.55s 0.45s ease-in-out both;
+  --animate-confetti: confetti 1.3s 0.3s ease-out both;
+  --animate-wobble: wobble 1s 0.3s ease-in-out both;
+  --animate-bubble: bubble 1.3s ease-in infinite;
+}
+
+@keyframes game-overlay {
+  0% { opacity: 0; }
+  10%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes card-flip {
+  from { transform: perspective(600px) rotateY(90deg) scale(0.6); opacity: 0; }
+  to { transform: perspective(600px) rotateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes pop-in {
+  from { transform: scale(0.3); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-12px) rotate(-3deg); }
+  40%, 80% { transform: translateX(12px) rotate(3deg); }
+}
+
+/* Particles set --dx, --dy and --rot inline. */
+@keyframes confetti {
+  from { transform: translate(0, 0) rotate(0); opacity: 1; }
+  to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+
+@keyframes wobble {
+  0% { transform: scale(0.2) rotate(0); opacity: 0; }
+  30% { transform: scale(1.15) rotate(-14deg); opacity: 1; }
+  50% { transform: scale(1) rotate(12deg); }
+  70% { transform: rotate(-8deg); }
+  100% { transform: rotate(0); }
+}
+
+@keyframes bubble {
+  from { transform: translateY(0) scale(0.6); opacity: 0.9; }
+  to { transform: translateY(-110px) scale(1.1); opacity: 0; }
 }
 
 @keyframes loader-spin {

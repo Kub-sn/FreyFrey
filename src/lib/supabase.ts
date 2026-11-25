@@ -1009,10 +1009,9 @@ export async function createShoppingList(
 }
 
 export async function updateShoppingList(
-  familyId: string,
   id: string,
-  payload: Omit<ShoppingList, 'id'>,
-): Promise<ShoppingList> {
+  payload: Omit<ShoppingList, 'id' | 'items'>,
+): Promise<Omit<ShoppingList, 'items'>> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('shopping_lists')
@@ -1028,22 +1027,14 @@ export async function updateShoppingList(
     throw error;
   }
 
-  const { error: deleteItemsError } = await client
-    .from('shopping_items')
-    .delete()
-    .eq('list_id', id);
-
-  if (deleteItemsError) {
-    throw deleteItemsError;
-  }
-
   const list = data as ShoppingListRow;
 
+  // Items are managed individually and must not be rewritten here, otherwise
+  // concurrent edits by other family members would be overwritten.
   return {
     id: list.id,
     title: list.title,
     date: list.shopping_date,
-    items: await insertShoppingListItems(client, familyId, list.id, payload.items),
   };
 }
 
@@ -1059,6 +1050,48 @@ export async function deleteShoppingList(id: string) {
 export async function updateShoppingListItemChecked(id: string, checked: boolean) {
   const client = requireSupabase();
   const { error } = await client.from('shopping_items').update({ checked }).eq('id', id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function createShoppingListItem(
+  familyId: string,
+  listId: string,
+  payload: Pick<ShoppingListItem, 'name' | 'quantity'>,
+): Promise<ShoppingListItem> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('shopping_items')
+    .insert({
+      family_id: familyId,
+      list_id: listId,
+      name: payload.name,
+      // Keep old databases with a lingering NOT NULL constraint working.
+      quantity: payload.quantity?.trim() || '',
+      checked: false,
+    })
+    .select('id, name, quantity, checked')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const item = data as Pick<ShoppingListItemRow, 'id' | 'name' | 'quantity' | 'checked'>;
+
+  return {
+    id: item.id,
+    name: item.name,
+    quantity: item.quantity?.trim() || undefined,
+    checked: item.checked,
+  };
+}
+
+export async function deleteShoppingListItem(id: string) {
+  const client = requireSupabase();
+  const { error } = await client.from('shopping_items').delete().eq('id', id);
 
   if (error) {
     throw error;
@@ -1172,10 +1205,9 @@ export async function createTodoList(
 }
 
 export async function updateTodoList(
-  familyId: string,
   id: string,
-  payload: Omit<TodoList, 'id'>,
-): Promise<TodoList> {
+  payload: Omit<TodoList, 'id' | 'items'>,
+): Promise<Omit<TodoList, 'items'>> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('todo_lists')
@@ -1191,22 +1223,14 @@ export async function updateTodoList(
     throw error;
   }
 
-  const { error: deleteItemsError } = await client
-    .from('todo_items')
-    .delete()
-    .eq('list_id', id);
-
-  if (deleteItemsError) {
-    throw deleteItemsError;
-  }
-
   const list = data as TodoListRow;
 
+  // Items are managed individually and must not be rewritten here, otherwise
+  // concurrent edits by other family members would be overwritten.
   return {
     id: list.id,
     title: list.title,
     ...(list.todo_date ? { date: list.todo_date } : {}),
-    items: await insertTodoListItems(client, familyId, list.id, payload.items),
   };
 }
 

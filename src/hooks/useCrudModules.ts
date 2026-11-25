@@ -12,10 +12,12 @@ import type {
 import {
   createMeal,
   createShoppingList,
+  createShoppingListItem,
   createTodoItem,
   createTodoList,
   deleteMeal,
   deleteShoppingList,
+  deleteShoppingListItem,
   deleteTodoItem,
   deleteTodoList,
   updateShoppingList,
@@ -103,12 +105,12 @@ export function useCrudModules({
     items: normalizeTodoItems(payload.items),
   });
 
-  const handleCreateShoppingList = async (payload: Omit<ShoppingList, 'id'>) => {
+  const handleCreateShoppingList = async (payload: Omit<ShoppingList, 'id'>): Promise<ShoppingList | null> => {
     const title = payload.title.trim();
     const normalizedItems = normalizeShoppingItems(payload.items);
 
-    if (!title || !payload.date || normalizedItems.length === 0) {
-      return false;
+    if (!title || !payload.date) {
+      return null;
     }
 
     try {
@@ -134,42 +136,34 @@ export function useCrudModules({
         message: 'Neue Einkaufsliste wurde gespeichert.',
       });
 
-      return true;
+      return createdList;
     } catch (error) {
       setCloudSync({
         phase: 'error',
         message: humanizeAuthError(error),
       });
-      return false;
+      return null;
     }
   };
 
-  const handleUpdateShoppingList = async (id: string, payload: Omit<ShoppingList, 'id'>) => {
+  const handleUpdateShoppingList = async (id: string, payload: Omit<ShoppingList, 'id' | 'items'>) => {
     const title = payload.title.trim();
-    const normalizedItems = normalizeShoppingItems(payload.items);
+    const date = payload.date.trim();
 
-    if (!title || !payload.date || normalizedItems.length === 0) {
+    if (!title || !date) {
       return false;
     }
 
     try {
       const savedList = authState.family
-        ? await updateShoppingList(authState.family.familyId, id, {
-            title,
-            date: payload.date,
-            items: normalizedItems,
-          })
-        : {
-            id,
-            title,
-            date: payload.date,
-            items: normalizedItems,
-          };
+        ? await updateShoppingList(id, { title, date })
+        : { id, title, date };
 
+      // Only title/date change here; keep the items from the latest state.
       updateState((current) => ({
         ...current,
         shoppingLists: current.shoppingLists.map((entry) => (
-          entry.id === id ? savedList : entry
+          entry.id === id ? { ...savedList, items: entry.items } : entry
         )),
       }));
       setCloudSync({
@@ -228,6 +222,81 @@ export function useCrudModules({
     }
   };
 
+  const handleCreateShoppingListItem = async (
+    listId: string,
+    payload: Pick<ShoppingListItem, 'name' | 'quantity'>,
+  ): Promise<ShoppingListItem | null> => {
+    const currentList = plannerState.shoppingLists.find((entry) => entry.id === listId) ?? null;
+    const name = payload.name.trim().replace(/\s+/g, ' ');
+    const quantity = payload.quantity?.trim() || undefined;
+
+    if (!currentList || !name) {
+      return null;
+    }
+
+    try {
+      const createdItem = authState.family
+        ? await createShoppingListItem(authState.family.familyId, listId, { name, quantity })
+        : {
+            id: nextStringId(),
+            name,
+            quantity,
+            checked: false,
+          };
+
+      updateState((current) => ({
+        ...current,
+        shoppingLists: current.shoppingLists.map((entry) => (
+          entry.id === listId
+            ? { ...entry, items: [createdItem, ...entry.items] }
+            : entry
+        )),
+      }));
+
+      return createdItem;
+    } catch (error) {
+      setCloudSync({
+        phase: 'error',
+        message: humanizeAuthError(error),
+      });
+      return null;
+    }
+  };
+
+  const handleDeleteShoppingListItem = async (listId: string, itemId: string) => {
+    const currentList = plannerState.shoppingLists.find((entry) => entry.id === listId) ?? null;
+
+    if (!currentList) {
+      return;
+    }
+
+    updateState((current) => ({
+      ...current,
+      shoppingLists: current.shoppingLists.map((entry) => (
+        entry.id === listId
+          ? { ...entry, items: entry.items.filter((item) => item.id !== itemId) }
+          : entry
+      )),
+    }));
+
+    try {
+      if (authState.family) {
+        await deleteShoppingListItem(itemId);
+      }
+    } catch (error) {
+      updateState((current) => ({
+        ...current,
+        shoppingLists: current.shoppingLists.map((entry) => (
+          entry.id === listId ? currentList : entry
+        )),
+      }));
+      setCloudSync({
+        phase: 'error',
+        message: humanizeAuthError(error),
+      });
+    }
+  };
+
   const handleCreateTodoList = async (payload: Omit<TodoList, 'id'>): Promise<TodoList | null> => {
     const normalizedPayload = normalizeTodoListPayload(payload);
 
@@ -262,26 +331,30 @@ export function useCrudModules({
     }
   };
 
-  const handleUpdateTodoList = async (id: string, payload: Omit<TodoList, 'id'>) => {
+  const handleUpdateTodoList = async (id: string, payload: Omit<TodoList, 'id' | 'items'>) => {
     const currentList = plannerState.todoLists.find((entry) => entry.id === id) ?? null;
-    const normalizedPayload = normalizeTodoListPayload(payload);
+    const title = payload.title.trim();
+    const date = payload.date?.trim();
+    const normalizedPayload = {
+      title,
+      ...(date ? { date } : {}),
+    };
 
-    if (!currentList || !normalizedPayload.title) {
+    if (!currentList || !title) {
       return false;
     }
 
     try {
       const savedList = authState.family
-        ? await updateTodoList(authState.family.familyId, id, normalizedPayload)
-        : {
-            id,
-            ...normalizedPayload,
-          };
+        ? await updateTodoList(id, normalizedPayload)
+        : { id, ...normalizedPayload };
 
+      // Only title/date change here; keep the items from the latest state.
+      // savedList replaces the entry (instead of a spread merge) so a cleared date is dropped.
       updateState((current) => ({
         ...current,
         todoLists: current.todoLists.map((entry) => (
-          entry.id === id ? savedList : entry
+          entry.id === id ? { ...savedList, items: entry.items } : entry
         )),
       }));
       setCloudSync({
@@ -475,6 +548,8 @@ export function useCrudModules({
     handleUpdateShoppingList,
     handleDeleteShoppingList,
     handleToggleShoppingListItem,
+    handleCreateShoppingListItem,
+    handleDeleteShoppingListItem,
     handleCreateTodoList,
     handleUpdateTodoList,
     handleDeleteTodoList,

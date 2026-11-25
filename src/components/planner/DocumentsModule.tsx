@@ -163,8 +163,8 @@ export function DocumentsModule({
             {documents.visibleDocuments.length > 0 ? (
               documents.visibleDocuments.map((document) => (
                 <li key={document.id}>
-                  <div>
-                    <div className="flex items-center gap-[0.9rem]">
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 items-center gap-[0.9rem]">
                       {isPreviewableImage(document) ? (
                         <img className="document-preview size-12 rounded-[14px] shrink-0 object-cover border border-[rgba(24,52,47,0.12)] bg-[rgba(255,255,255,0.92)]" src={document.url} alt={`Vorschau für ${document.name}`} />
                       ) : (
@@ -172,8 +172,8 @@ export function DocumentsModule({
                           {getDocumentIcon(document)}
                         </span>
                       )}
-                      <div className="grid gap-[0.2rem]">
-                        <strong className="block">{document.name}</strong>
+                      <div className="grid min-w-0 gap-[0.2rem]">
+                        <strong className="block [overflow-wrap:anywhere]">{document.name}</strong>
                         <small className="inline-flex flex-wrap gap-0 items-center text-[rgba(24,52,47,0.68)] max-compact:text-[#4c564d]">
                           {getDocumentMetaParts(document).map((part, index) => (
                             <span key={part.key}>

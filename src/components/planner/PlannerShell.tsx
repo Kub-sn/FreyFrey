@@ -20,6 +20,7 @@ import { AppButton } from '../ui/AppButton';
 import { AccountCard } from './AccountCard';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { DocumentsModule } from './DocumentsModule';
+import { GamesModule } from './GamesModule';
 import { FamilyModule } from './FamilyModule';
 import { MealsModule } from './MealsModule';
 import { NoteDialog } from './NoteDialog';
@@ -205,8 +206,10 @@ export default function PlannerShell({
           lists={plannerState.shoppingLists}
           onCreateList={crud.handleCreateShoppingList}
           onDeleteList={crud.handleDeleteShoppingList}
-          onToggleItem={crud.handleToggleShoppingListItem}
           onUpdateList={crud.handleUpdateShoppingList}
+          onCreateItem={crud.handleCreateShoppingListItem}
+          onToggleItem={crud.handleToggleShoppingListItem}
+          onDeleteItem={crud.handleDeleteShoppingListItem}
         />
 
         <TasksModule
@@ -279,6 +282,8 @@ export default function PlannerShell({
           setCloudSync={setCloudSync}
           updateState={updateState}
         />
+
+        <GamesModule />
 
         <FamilyModule
           adminFamilyDirectory={adminDir.adminFamilyDirectory}

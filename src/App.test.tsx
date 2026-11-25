@@ -110,34 +110,18 @@ describe('App', () => {
     expect(getVisibleModuleButton('Liste erstellen')).toBeInTheDocument();
     await user.click(getVisibleModuleButton('Liste erstellen'));
 
-    const dialog = screen.getByRole('dialog');
+    const createDialog = screen.getByRole('dialog', { name: 'Neue Einkaufsliste' });
 
-    expect(within(dialog).getByRole('heading', { level: 3, name: 'Neue Einkaufsliste' })).toBeInTheDocument();
-    await user.type(within(dialog).getByPlaceholderText('z. B. Wocheneinkauf'), 'Wocheneinkauf');
-    await user.clear(within(dialog).getByLabelText('Datum'));
-    await user.type(within(dialog).getByLabelText('Datum'), '2026-05-07');
+    await user.type(within(createDialog).getByLabelText('Listenname'), 'Wocheneinkauf');
+    await user.clear(within(createDialog).getByLabelText('Datum'));
+    await user.type(within(createDialog).getByLabelText('Datum'), '2026-05-07');
+    await user.click(within(createDialog).getByRole('button', { name: 'Liste erstellen' }));
 
-    const quickAddInput = within(dialog).getByLabelText('Neuer Artikel');
+    const shoppingDialog = await screen.findByRole('dialog', { name: 'Wocheneinkauf' });
+    const quickAddInput = within(shoppingDialog).getByLabelText('Artikel hinzufügen');
 
     await user.type(quickAddInput, '2 Milch{Enter}');
     expect(quickAddInput).toHaveValue('');
-    expect(quickAddInput).toHaveFocus();
-
-    await user.click(within(dialog).getByRole('button', { name: 'Liste anlegen' }));
-
-    const visibleListButton = screen.getAllByText('Wocheneinkauf')
-      .map((element) => element.closest('button'))
-      .find((button): button is HTMLButtonElement => (
-        button?.closest('section')?.classList.contains('is-visible') ?? false
-      ));
-
-    if (!visibleListButton) {
-      throw new Error('Sichtbare Einkaufsliste wurde nicht gefunden.');
-    }
-
-    await user.click(visibleListButton);
-
-    const shoppingDialog = screen.getByRole('dialog');
     expect(within(shoppingDialog).getByRole('checkbox', { name: /Milch/i })).toHaveClass('app-checkbox', 'checkbox');
   });
 
@@ -169,7 +153,8 @@ describe('App', () => {
     const dialog = screen.getByRole('dialog', { name: 'Neue Notiz' });
 
     await user.type(within(dialog).getByPlaceholderText('Titel'), 'Lösch mich');
-    await user.type(getRichTextEditor(dialog), 'Diese Notiz wird direkt wieder entfernt.');
+    // Short text on purpose: every keystroke re-renders the whole app, the content is irrelevant here.
+    await user.type(getRichTextEditor(dialog), 'Weg damit.');
     await user.click(within(dialog).getByRole('button', { name: 'Notiz speichern' }));
 
     expect(screen.getByRole('button', { name: 'Notiz Lösch mich öffnen' })).toBeInTheDocument();
@@ -240,29 +225,6 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Neue Notiz erstellen' })).toBeInTheDocument();
     expect(within(secondDialog).getByDisplayValue('Einkaufsidee')).toBeInTheDocument();
     expect(getRichTextEditor(secondDialog)).toHaveTextContent('Blaubeeren nicht vergessen');
-  });
-
-
-  it('restores an unsaved shopping draft dialog after a reload', async () => {
-    const user = userEvent.setup();
-    const firstRender = render(<App />);
-
-    const moduleNav = screen.getByRole('navigation', { name: 'Module' });
-
-    await user.click(within(moduleNav).getByRole('button', { name: 'Einkauf' }));
-    await user.click(getVisibleModuleButton('Liste erstellen'));
-
-    const firstDialog = screen.getByRole('dialog', { name: 'Neue Einkaufsliste' });
-    await user.type(within(firstDialog).getByPlaceholderText('z. B. Wocheneinkauf'), 'Samstag');
-    await user.type(within(firstDialog).getByLabelText('Neuer Artikel'), 'Hafermilch{Enter}');
-
-    firstRender.unmount();
-    render(<App />);
-
-    const secondDialog = screen.getByRole('dialog', { name: 'Neue Einkaufsliste' });
-
-    expect(within(secondDialog).getByDisplayValue('Samstag')).toBeInTheDocument();
-    expect(within(secondDialog).getByDisplayValue('Hafermilch')).toBeInTheDocument();
   });
 
   it('creates a todo list and adds items with Enter', async () => {

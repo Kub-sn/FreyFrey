@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -142,6 +142,44 @@ describe('TasksModule', () => {
     expect(quickAddInput).toHaveFocus();
   });
 
+  it('creates a todo only once on a fast double Enter', async () => {
+    const user = userEvent.setup();
+    let resolveCreate!: (value: unknown) => void;
+    const onCreateItem = vi.fn(() => new Promise((resolve) => {
+      resolveCreate = resolve;
+    }));
+
+    renderTasksModule({ onCreateItem: onCreateItem as ComponentProps<typeof TasksModule>['onCreateItem'] });
+
+    await user.click(screen.getByRole('button', { name: 'Todo-Liste Schule öffnen' }));
+    const quickAddInput = within(screen.getByRole('dialog', { name: 'Schule' })).getByLabelText('Todo hinzufügen');
+
+    await user.type(quickAddInput, 'Muell rausbringen{Enter}{Enter}');
+
+    expect(onCreateItem).toHaveBeenCalledTimes(1);
+    expect(quickAddInput).toHaveValue('');
+
+    await act(async () => {
+      resolveCreate({ id: 'todo-created', title: 'Muell rausbringen', checked: false });
+    });
+    expect(onCreateItem).toHaveBeenCalledTimes(1);
+  });
+
+  it('restores the todo text when adding it fails', async () => {
+    const user = userEvent.setup();
+    const onCreateItem = vi.fn().mockResolvedValue(null);
+
+    renderTasksModule({ onCreateItem });
+
+    await user.click(screen.getByRole('button', { name: 'Todo-Liste Schule öffnen' }));
+    const quickAddInput = within(screen.getByRole('dialog', { name: 'Schule' })).getByLabelText('Todo hinzufügen');
+
+    await user.type(quickAddInput, 'Fenster putzen{Enter}');
+
+    expect(onCreateItem).toHaveBeenCalledTimes(1);
+    expect(quickAddInput).toHaveValue('Fenster putzen');
+  });
+
   it('keeps the date read-only in the open dialog and updates it only in edit mode', async () => {
     const user = userEvent.setup();
     const onUpdateList = vi.fn().mockResolvedValue(true);
@@ -166,7 +204,6 @@ describe('TasksModule', () => {
     expect(onUpdateList).toHaveBeenCalledTimes(1);
     expect(onUpdateList).toHaveBeenCalledWith('todo-list-1', {
       title: 'Wochenende',
-      items: plannerFixture.todoLists[0].items,
     });
 
     await user.click(screen.getByRole('button', { name: 'Todo-Liste Schule öffnen' }));

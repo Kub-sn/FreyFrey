@@ -73,6 +73,7 @@ export const tabs = [
   { id: 'notes', label: 'Notizen' },
   { id: 'meals', label: 'Essensplan' },
   { id: 'documents', label: 'Dokumente' },
+  { id: 'games', label: 'Games' },
   { id: 'family', label: 'Einstellungen' },
 ] as const;
 

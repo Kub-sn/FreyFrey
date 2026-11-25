@@ -1,5 +1,5 @@
 import { CalendarDays, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { PlannerState, TodoList, TodoListItem } from '../../lib/planner-data';
 import { useActiveTab } from '../../context/ActiveTabContext';
 import { cn } from '../../lib/classnames';
@@ -9,6 +9,7 @@ import { AppCard } from '../ui/AppCard';
 import { appCheckboxClassName, appInputClassName } from '../ui/AppField';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { ModalDialog } from './ModalDialog';
+import { useQuickAddInput } from './useQuickAddInput';
 
 type TodoListDraft = {
   title: string;
@@ -40,7 +41,7 @@ export function TasksModule({
 }: {
   lists: PlannerState['todoLists'];
   onCreateList: (payload: Omit<TodoList, 'id'>) => Promise<TodoList | null>;
-  onUpdateList: (id: string, payload: Omit<TodoList, 'id'>) => Promise<boolean>;
+  onUpdateList: (id: string, payload: Omit<TodoList, 'id' | 'items'>) => Promise<boolean>;
   onDeleteList: (id: string) => Promise<boolean>;
   onCreateItem: (listId: string, title: string) => Promise<TodoListItem | null>;
   onToggleItem: (listId: string, itemId: string, checked: boolean) => Promise<void>;
@@ -53,9 +54,7 @@ export function TasksModule({
   const [pendingDeleteListId, setPendingDeleteListId] = useState<string | null>(null);
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [listDraft, setListDraft] = useState<TodoListDraft>({ title: '', date: '' });
-  const [quickAddText, setQuickAddText] = useState('');
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
-  const quickAddInputRef = useRef<HTMLInputElement | null>(null);
 
   const openList = useMemo(
     () => lists.find((list) => list.id === openListId) ?? null,
@@ -72,16 +71,20 @@ export function TasksModule({
     [lists, editingListId],
   );
 
-  const focusQuickAddInput = () => {
-    requestAnimationFrame(() => {
-      quickAddInputRef.current?.focus();
-    });
-  };
+  const quickAdd = useQuickAddInput(async (text) => {
+    const title = normalizeTodoText(text);
+
+    if (!openList || !title) {
+      return false;
+    }
+
+    return Boolean(await onCreateItem(openList.id, title));
+  });
 
   const openListDialog = (listId: string) => {
     setMenuListId(null);
     setOpenListId(listId);
-    setQuickAddText('');
+    quickAdd.reset();
   };
 
   const handleCreateList = async () => {
@@ -100,9 +103,9 @@ export function TasksModule({
     setIsCreateDialogOpen(false);
     setListDraft({ title: '', date: '' });
     setOpenListId(createdList.id);
-    setQuickAddText('');
+    quickAdd.reset();
     setValidationMessage(null);
-    focusQuickAddInput();
+    quickAdd.focus();
   };
 
   const openEditDialog = (list: TodoList) => {
@@ -149,7 +152,6 @@ export function TasksModule({
     const didSave = await onUpdateList(editingList.id, {
       title,
       ...(listDraft.date.trim() ? { date: listDraft.date.trim() } : {}),
-      items: editingList.items,
     });
 
     if (!didSave) {
@@ -157,27 +159,6 @@ export function TasksModule({
     }
 
     closeEditDialog();
-  };
-
-  const handleQuickAddItem = async () => {
-    if (!openList) {
-      return;
-    }
-
-    const title = normalizeTodoText(quickAddText);
-
-    if (!title) {
-      return;
-    }
-
-    const createdItem = await onCreateItem(openList.id, title);
-
-    if (!createdItem) {
-      return;
-    }
-
-    setQuickAddText('');
-    focusQuickAddInput();
   };
 
   const handleConfirmDelete = async () => {
@@ -378,19 +359,9 @@ export function TasksModule({
           <div className="grid gap-4 max-mobile:gap-3 max-mobile:h-full max-mobile:min-h-0 max-mobile:grid-rows-[auto_minmax(0,1fr)]">
             <div>
               <input
-                ref={quickAddInputRef}
+                {...quickAdd.inputProps}
                 className={appInputClassName()}
-                value={quickAddText}
                 aria-label="Todo hinzufügen"
-                onChange={(event) => setQuickAddText(event.currentTarget.value)}
-                onKeyDown={(event) => {
-                  if (event.key !== 'Enter') {
-                    return;
-                  }
-
-                  event.preventDefault();
-                  void handleQuickAddItem();
-                }}
                 placeholder="z. B. Kinderzimmer aufräumen"
               />
             </div>

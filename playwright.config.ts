@@ -1,23 +1,41 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const supabaseServerUrl = 'http://127.0.0.1:4173';
+// Separate dev server without Supabase configuration so the app starts in demo mode.
+// Empty env vars take precedence over values from .env/.env.local.
+const demoServerUrl = 'http://127.0.0.1:4174';
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   retries: 0,
   use: {
-    baseURL: 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
   },
-  webServer: {
-    command: 'VITE_SUPABASE_URL=https://aachyijzixdeupeqcdvk.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=playwright-publishable-key npm run dev -- --host 127.0.0.1 --port 4173',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: true,
-    timeout: 120000,
-  },
+  webServer: [
+    {
+      command: 'VITE_SUPABASE_URL=https://aachyijzixdeupeqcdvk.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=playwright-publishable-key npm run dev -- --host 127.0.0.1 --port 4173',
+      url: supabaseServerUrl,
+      reuseExistingServer: true,
+      timeout: 120000,
+    },
+    {
+      command: 'VITE_SUPABASE_URL= VITE_SUPABASE_PUBLISHABLE_KEY= npm run dev -- --host 127.0.0.1 --port 4174',
+      url: demoServerUrl,
+      reuseExistingServer: true,
+      timeout: 120000,
+    },
+  ],
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      testIgnore: /demo\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], baseURL: supabaseServerUrl },
+    },
+    {
+      name: 'chromium-demo',
+      testMatch: /demo\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], baseURL: demoServerUrl },
     },
   ],
 });
